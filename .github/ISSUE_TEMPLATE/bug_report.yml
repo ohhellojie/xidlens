@@ -1,0 +1,22 @@
+name: 问题反馈
+description: 解析结果或操作遇到问题
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 版本与系统
+      placeholder: XidLens 版本、Windows 版本
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 问题与复现步骤
+      description: 日志类型、操作步骤、预期结果和实际结果。
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: 脱敏片段（可选）
+      description: 请移除真实 SN、UUID、IP、主机名、客户名和内部路径，不上传原始客户日志。

@@ -1,0 +1,18 @@
+XidLens · Windows x64 v0.1.0
+
+双击 XidLens.exe，在默认浏览器打开界面。
+点击“导入日志”选择文件，右上角“退出”停止程序。
+关闭标签页后，双击 EXE 可重新打开。
+
+支持 nvidia-bug-report、dmesg / journal、nvidia-smi -q 文本，以及 GZ、ZIP、TAR。
+可查看设备信息、槽位参考、PCIe 拓扑和错误原文，复制摘要或导出清单。
+
+默认显示 Xid 编号、原始日志和官方链接。
+自用中文规则文件 xid_catalog.local.json 放在 EXE 旁，重启后生效。
+规则生成：https://github.com/ohhellojie/xidlens/blob/main/docs/catalog.md
+
+日志在本机处理，结果保存在 runtime/results。
+退出后可删除 results 内的 JSON 清空历史。槽位需核对实际位置。
+启动失败时查看 runtime/startup-error.log。
+
+问题反馈：https://github.com/ohhellojie/xidlens/issues
