@@ -3,6 +3,7 @@ const paths={
  x:'M6 4l12 16M18 4L6 20',
  server:'M4 3h16v7H4zM4 14h16v7H4zM7 6.5h.01M7 17.5h.01M15 6.5h2M15 17.5h2',
  errors:'M7 3h10l4 4v10l-4 4H7l-4-4V7zM12 7v6M12 17h.01',
+ refresh:'M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-2l2 7M4 12l2 7a7 7 0 0 0 12-2',
  compare:'M4 7h15M15 3l4 4-4 4M20 17H5M9 13l-4 4 4 4',
  topology:'M9 3h6v5H9zM3 16h6v5H3zM15 16h6v5h-6zM12 8v4M6 16v-4h12v4',
  file:'M14 2H5v20h14V7zM14 2v6h5M8 12h8M8 16h6',
@@ -166,20 +167,23 @@ function reportOrder(a,b,descending=false){const av=reportTime(a.server.time).st
 function reportRows(){return cases.filter(d=>reportMatches(d)&&(reportState.filter==='all'||(reportState.filter==='errors'?d.events>0:!d.complete))).sort((a,b)=>reportState.sort==='errors'?b.events-a.events:reportState.sort==='oldest'?reportOrder(a,b):reportOrder(a,b,true));}
 function matchIdentity(d){const q=reportState.query.trim().toLowerCase();if(!q)return '';const g=d.identities.find(g=>[g.sn,g.uuid].some(v=>v&&v.toLowerCase().includes(q)));if(!g)return '';return `${g.label} · ${String(g.sn||'').toLowerCase().includes(q)&&g.sn?'SN '+g.sn:g.uuid}`;}
 function renderReports(){return heading()+`<div class="report-toolbar"><label class="search report-search">${icon('search')}<input id="report-search" type="search" placeholder="文件名、服务器 SN、GPU SN / UUID" aria-label="搜索报告" value="${esc(reportState.query)}"><button class="btn quiet icon-btn clear-search" data-report-action="clear" aria-label="清除搜索" ${reportState.query?'':'hidden'}>${icon('close')}</button></label><select class="select" id="report-filter" aria-label="筛选报告"><option value="all">全部报告</option><option value="errors">含错误记录</option><option value="partial">读取不完整</option></select><select class="select report-sort" id="report-sort" aria-label="报告排序"><option value="newest">采集时间：从新到旧</option><option value="oldest">采集时间：从旧到新</option><option value="errors">错误条数：从多到少</option></select></div><div id="report-results" class="report-list">${reportResults()}</div>`;}
-function reportResults(){const rows=reportRows(),selected=reportState.selected.size;return `<div class="report-selection"><span>${selected?`<strong>已选 ${selected} 份</strong> <button class="link-btn" data-report-action="deselect">取消选择</button>`:`${reportState.query||reportState.filter!=='all'?'找到 ':'共 '}${rows.length} 份报告`}</span><div class="actions"><button class="btn" data-report-action="compare" ${selected===2?'':'disabled'} title="选择两份报告进行对比">${icon('compare','small-icon')}对比报告</button><button class="btn ${selected?'danger':''}" data-report-action="delete" ${selected?'':'disabled'}>${icon('trash','small-icon')}删除${selected?'（'+selected+'）':''}</button></div></div>${rows.length?`<div class="table-frame"><div class="table-scroll"><table class="report-table"><thead><tr><th><input type="checkbox" id="report-select-all" aria-label="全选当前列表"></th><th>报告</th><th>服务器</th><th>采集时间</th><th>GPU</th><th>错误条数</th><th>操作</th></tr></thead><tbody>${rows.map(d=>`<tr class="report-row ${reportState.selected.has(d.id)?'is-selected':''}" data-report-row="${d.id}"><td><input type="checkbox" data-report-check="${d.id}" aria-label="选择 ${esc(d.source)} ${esc(d.server.sn)} ${esc(d.server.time)}" ${reportState.selected.has(d.id)?'checked':''}></td><td><div class="report-name">${icon('file')}<div><button class="cell-btn report-open" data-report-open="${d.id}" title="${esc(d.source)}">${esc(d.source)}</button><div class="report-sub">${d.bytes==null?'':'已解析 '+importSize(d.bytes)}${d.id===loadedCase?'<span class="badge">当前</span>':''}${!d.complete?'<span class="badge amber">读取不完整</span>':''}</div>${matchIdentity(d)?`<span class="report-match">${esc(matchIdentity(d))}</span>`:''}</div></div></td><td><span class="report-server">${esc(d.server.model||'—')}</span><span class="mono muted">${esc(d.server.sn||'—')}</span></td><td>${reportDate(d)}</td><td>${d.gpus}</td><td><span class="${d.events?'report-errors':'muted'}">${d.events}</span></td><td><button class="btn quiet icon-btn" data-report-delete="${d.id}" aria-label="删除 ${esc(d.source)} ${esc(d.server.sn)}" title="删除报告">${icon('trash','small-icon')}</button></td></tr>`).join('')}</tbody></table></div></div>`:`<div class="report-empty">${icon(cases.length?'search':'file')}<h2>${cases.length?'没有匹配的报告':'暂无报告'}</h2>${cases.length?'<button class="btn" data-report-action="clear-filters">清除筛选</button>':''}</div>`}`;}
+function reportResults(){const rows=reportRows(),selected=reportState.selected.size;return `<div class="report-selection"><span>${selected?`<strong>已选 ${selected} 份</strong> <button class="link-btn" data-report-action="deselect">取消选择</button>`:`${reportState.query||reportState.filter!=='all'?'找到 ':'共 '}${rows.length} 份报告`}</span><div class="actions"><button class="btn" data-report-action="reparse" ${selected?'':'disabled'}>${icon('refresh','small-icon')}重新解析</button><button class="btn" data-report-action="compare" ${selected===2?'':'disabled'} title="选择两份报告进行对比">${icon('compare','small-icon')}对比报告</button><button class="btn ${selected?'danger':''}" data-report-action="delete" ${selected?'':'disabled'}>${icon('trash','small-icon')}删除${selected?'（'+selected+'）':''}</button></div></div>${rows.length?`<div class="table-frame"><div class="table-scroll"><table class="report-table"><thead><tr><th><input type="checkbox" id="report-select-all" aria-label="全选当前列表"></th><th>报告</th><th>服务器</th><th>采集时间</th><th>GPU</th><th>错误条数</th><th>操作</th></tr></thead><tbody>${rows.map(d=>`<tr class="report-row ${reportState.selected.has(d.id)?'is-selected':''}" data-report-row="${d.id}"><td><input type="checkbox" data-report-check="${d.id}" aria-label="选择 ${esc(d.source)} ${esc(d.server.sn)} ${esc(d.server.time)}" ${reportState.selected.has(d.id)?'checked':''}></td><td><div class="report-name">${icon('file')}<div><button class="cell-btn report-open" data-report-open="${d.id}" title="${esc(d.source)}">${esc(d.source)}</button><div class="report-sub">${d.bytes==null?'':'已解析 '+importSize(d.bytes)}${d.id===loadedCase?'<span class="badge">当前</span>':''}${!d.complete?'<span class="badge amber">读取不完整</span>':''}</div>${matchIdentity(d)?`<span class="report-match">${esc(matchIdentity(d))}</span>`:''}</div></div></td><td><span class="report-server">${esc(d.server.model||'—')}</span><span class="mono muted">${esc(d.server.sn||'—')}</span></td><td>${reportDate(d)}</td><td>${d.gpus}</td><td><span class="${d.events?'report-errors':'muted'}">${d.events}</span></td><td><button class="btn quiet icon-btn" data-report-delete="${d.id}" aria-label="删除 ${esc(d.source)} ${esc(d.server.sn)}" title="删除报告">${icon('trash','small-icon')}</button></td></tr>`).join('')}</tbody></table></div></div>`:`<div class="report-empty">${icon(cases.length?'search':'file')}<h2>${cases.length?'没有匹配的报告':'暂无报告'}</h2>${cases.length?'<button class="btn" data-report-action="clear-filters">清除筛选</button>':''}</div>`}`;}
 paths.trash='M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7';
 function syncReportControls(){const managing=state.page==='reports';$('manage-reports').setAttribute('aria-pressed',String(managing));if(!managing)return;$('report-filter').value=reportState.filter;$('report-sort').value=reportState.sort;const all=$('report-select-all'),rows=reportRows();if(all){const count=rows.filter(d=>reportState.selected.has(d.id)).length;all.checked=count===rows.length;all.indeterminate=count>0&&count<rows.length;}status('报告管理');}
 function updateReports(){const scroll=$('report-results')?.querySelector('.table-scroll')?.scrollTop||0;$('report-results').innerHTML=reportResults();syncReportControls();const el=$('report-results').querySelector('.table-scroll');if(el)el.scrollTop=scroll;}
-function askDelete(ids){reportState.pending=ids;const list=cases.filter(d=>ids.includes(d.id));openDialog(`删除 ${list.length} 份报告？`,`<p>删除解析结果，原始日志不受影响。</p><div class="delete-list">${list.map(d=>`<div><strong>${esc(d.source)}</strong><span>${esc(d.server.sn||'—')} · ${esc(d.server.time||'—')}</span></div>`).join('')}</div>`,`<button class="btn" data-report-action="cancel-delete">取消</button><button class="btn danger solid" data-report-action="confirm-delete">删除报告</button>`,'delete-reports');$('dialog-close').hidden=true;$('dialog-foot').querySelector('button').focus();}
+function askDelete(ids){reportState.pending=ids;const list=cases.filter(d=>ids.includes(d.id));openDialog(`删除 ${list.length} 份报告？`,`<p>删除报告及不再使用的日志副本。原始文件不受影响。</p><div class="delete-list">${list.map(d=>`<div><strong>${esc(d.source)}</strong><span>${esc(d.server.sn||'—')} · ${esc(d.server.time||'—')}</span></div>`).join('')}</div>`,`<button class="btn" data-report-action="cancel-delete">取消</button><button class="btn danger solid" data-report-action="confirm-delete">删除报告</button>`,'delete-reports');$('dialog-close').hidden=true;$('dialog-foot').querySelector('button').focus();}
 document.addEventListener('input',e=>{if(e.target.id==='report-search'){reportState.query=e.target.value;reportState.selected.clear();document.querySelector('[data-report-action="clear"]').hidden=!reportState.query;updateReports();}});
 document.addEventListener('change',e=>{if(e.target.dataset.reportCheck){const id=e.target.dataset.reportCheck;e.target.checked?reportState.selected.add(id):reportState.selected.delete(id);updateReports();document.querySelector(`[data-report-check="${id}"]`)?.focus({preventScroll:true});}if(e.target.id==='report-select-all'){for(const d of reportRows())e.target.checked?reportState.selected.add(d.id):reportState.selected.delete(d.id);updateReports();$('report-select-all')?.focus();}if(e.target.id==='report-filter'){reportState.filter=e.target.value;reportState.selected.clear();updateReports();}if(e.target.id==='report-sort'){reportState.sort=e.target.value;updateReports();}});
 document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{
+ if(b.dataset.reparseFile!==undefined){reparsePick=Number(b.dataset.reparseFile);$('reparse-file-input').click();return;}
  if(b.dataset.reportOpen){if(await loadCase(b.dataset.reportOpen))goto('devices');return;}
  if(b.dataset.reportDelete){askDelete([b.dataset.reportDelete]);return;}
  switch(b.dataset.reportAction){
  case'clear':reportState.query='';reportState.selected.clear();$('report-search').value='';b.hidden=true;updateReports();$('report-search').focus();return;
  case'clear-filters':reportState.query='';reportState.filter='all';reportState.selected.clear();render();$('report-search').focus();return;
  case'deselect':reportState.selected.clear();updateReports();return;
+ case'reparse':await reparseDialog([...reportState.selected]);return;
+ case'reparse-start':await startReparse();return;
  case'delete':askDelete([...reportState.selected]);return;
  case'cancel-delete':closeDialog();$('dialog-close').hidden=false;return;
  case'confirm-delete':{if(deletingReports)return;deletingReports=true;const ids=[...reportState.pending];for(const el of $('dialog-foot').querySelectorAll('button'))el.disabled=true;b.textContent='正在删除…';let result;
@@ -193,16 +197,75 @@ document.addEventListener('click',async e=>{const b=e.target.closest('button');i
 }catch(error){toast(error.message);}});
 $('dialog').addEventListener('close',()=>{$('dialog-close').hidden=false;});
 
-function importDialog(){openDialog('导入日志',`<div id="import-picker"><button type="button" class="dropzone" id="dropzone" data-action="choose-files">${icon('import')}<strong>选择日志文件</strong><span>或将文件拖到这里</span></button><input type="file" id="file-input" multiple aria-label="选择日志文件" hidden><p class="import-formats">日志文本 · GZ · ZIP · TAR</p></div><div id="import-progress" hidden><div class="import-file-row">${icon('file')}<strong id="import-file"></strong><span id="import-position"></span></div><div class="import-progress-head"><span id="import-phase" role="status"></span><span id="import-percent"></span></div><progress id="import-bar" max="100" aria-label="当前文件处理进度"></progress><p id="import-detail" class="source-meta"></p><p id="import-member" class="source-meta" hidden></p></div><p class="import-feedback" id="import-feedback" role="status" hidden></p>`,'','import');}
+let reparseRows=[],reparsePick=-1;
+function importProgressMarkup(){return `<div id="import-progress" hidden><div class="import-file-row">${icon('file')}<strong id="import-file"></strong><span id="import-position"></span></div><div class="import-progress-head"><span id="import-phase" role="status"></span><span id="import-percent"></span></div><progress id="import-bar" max="100" aria-label="当前文件处理进度"></progress><p id="import-detail" class="source-meta"></p><p id="import-member" class="source-meta" hidden></p></div>`;}
+async function reparseDialog(ids){
+ if(busy||!ids.length)return;
+ openDialog('重新解析', '<p class="muted">正在检查原日志…</p>','','reparse');
+ reparseRows=cases.filter(d=>ids.includes(d.id)).map(d=>({id:d.id,source:d.source,available:false,file:null,state:'pending',message:''}));
+ await Promise.all(reparseRows.map(async row=>{try{row.available=(await api('/api/reparse/source?id='+row.id)).available;}catch{row.message='原日志无法读取';}}));
+ if(!$('dialog').open||$('dialog').dataset.kind!=='reparse')return;
+ $('dialog-body').innerHTML='<p class="reparse-note">成功后更新报告；失败或取消保留旧结果。</p><div id="reparse-list"></div><input type="file" id="reparse-file-input" aria-label="重新选择原日志" hidden>'+importProgressMarkup()+'<p id="import-feedback" class="import-feedback" role="status" hidden></p>';
+ updateReparse();
+}
+function updateReparse(){
+ $('reparse-list').innerHTML=reparseRows.map((row,i)=>`<div class="reparse-row"><div><strong title="${esc(row.source)}">${esc(row.source)}</strong><span class="${row.state==='error'?'reparse-error':''}">${esc(row.state==='done'?'已更新':row.state==='running'?'正在解析':row.message||(row.file?row.file.name:row.available?'原日志可用':'请选择原日志'))}</span></div>${row.state==='done'?icon('check'):!busy?`<button class="btn" data-reparse-file="${i}">${row.file||row.available?'更换文件':'选择文件'}</button>`:''}</div>`).join('');
+ if(busy)return;
+ const remaining=reparseRows.filter(r=>r.state!=='done');
+ $('dialog-foot').hidden=!remaining.length;
+ $('dialog-foot').innerHTML=remaining.length?`<button class="btn primary" data-report-action="reparse-start" ${remaining.some(r=>!r.available&&!r.file)?'disabled':''}>重新解析${remaining.length>1?'（'+remaining.length+'）':''}</button>`:'';
+}
+async function startReparse(){
+ if(busy)return;const pending=reparseRows.filter(r=>r.state!=='done');if(!pending.length||pending.some(r=>!r.available&&!r.file))return;
+ busy=true;const op={kind:'reparse',job:'',xhr:null,cancelRequested:false};activeImport=op;
+ $('dialog-close').hidden=true;$('import-progress').hidden=false;$('import-feedback').hidden=true;$('reparse-file-input').disabled=true;
+ $('import-button').disabled=true;$('log-select').disabled=true;
+ $('dialog-foot').innerHTML='<button class="btn" id="cancel-import" data-action="cancel-import">取消解析</button>';$('dialog-foot').hidden=false;$('cancel-import').focus();
+ let completed=0,failed=0;
+ try{
+  for(let i=0;i<pending.length;i++){
+   if(op.cancelRequested)break;
+   const row=pending[i];row.state='running';row.message='';updateReparse();
+   $('import-file').textContent=row.source;$('import-file').title=row.source;$('import-position').textContent=`${i+1} / ${pending.length}`;showImportProgress({phase:'queued'});
+   try{
+    const start=await api('/api/reparse/start?id='+row.id+(row.file?'&file=1':''),{method:'POST'});op.job=start.job;
+    if(op.cancelRequested)await api('/api/job/'+op.job+'/cancel',{method:'POST'});
+    else if(start.needsFile){
+     if(!row.file){row.available=false;throw Error('找不到原日志，请重新选择');}
+     try{await uploadImport(row.file,op);}catch(error){if(!op.cancelRequested)throw error;}
+    }
+    const result=await waitImport(op);op.job='';
+    if(result.state==='cancelled'){row.state='pending';row.message='已取消 · 保留旧结果';break;}
+    if(result.state==='error')throw Error(result.message);
+    row.state='done';completed++;
+   }catch(error){
+    if(op.job){await api('/api/job/'+op.job+'/cancel',{method:'POST'}).catch(()=>{});op.job='';}
+    row.state='error';row.message=error.message.replace(/^解析失败：[^·]+·\s*/,'');failed++;
+   }
+   updateReparse();
+  }
+  await refreshCases(loadedCase);
+  if(state.compareBase)await loadComparison(state.compareBase);
+ }catch(error){toast(error.message);}
+ finally{
+  for(const row of pending)if(row.state==='pending'&&!row.message)row.message='未处理';
+  busy=false;activeImport=null;$('dialog-close').hidden=false;$('import-progress').hidden=true;$('reparse-file-input').disabled=false;
+  $('import-feedback').hidden=false;$('import-feedback').textContent=[completed?`已更新 ${completed} 份`:'',failed?`${failed} 份未更新`:'',op.cancelRequested?'已取消':''].filter(Boolean).join(' · ')||'未更新';
+  $('import-button').disabled=false;$('log-select').disabled=!cases.length;updateReparse();$('dialog-close').focus();
+ }
+}
+document.addEventListener('change',event=>{if(event.target.id==='reparse-file-input'){const file=event.target.files[0],row=reparseRows[reparsePick];if(file&&row){row.file=file;row.message='';row.state='pending';updateReparse();}event.target.value='';}});
+
+function importDialog(){openDialog('导入日志',`<div id="import-picker"><button type="button" class="dropzone" id="dropzone" data-action="choose-files">${icon('import')}<strong>选择日志文件</strong><span>或将文件拖到这里</span></button><input type="file" id="file-input" multiple aria-label="选择日志文件" hidden><p class="import-formats">日志文本 · GZ · ZIP · TAR</p></div>${importProgressMarkup()}<p class="import-feedback" id="import-feedback" role="status" hidden></p>`,'','import');}
 const importSize=bytes=>bytes<1024*1024?`${(bytes/1024).toFixed(0)} KB`:`${(bytes/1024/1024).toFixed(1)} MB`;
 function showImportProgress(p){
  const op=activeImport;if(!op)return;
- const phase=op.cancelRequested?'正在取消…':({uploading:'读取文件',queued:'等待解析',parsing:'解析日志',organizing:'整理记录',saving:'保存报告'}[p.phase]||'处理中');
+ const phase=op.cancelRequested?'正在取消…':({copying:op.kind==='reparse'?'读取原日志':'保存原日志',uploading:'读取文件',queued:'等待解析',parsing:'解析日志',organizing:'整理记录',saving:'保存报告'}[p.phase]||'处理中');
  $('import-phase').textContent=phase;
- const measurable=['uploading','parsing'].includes(p.phase)&&p.totalBytes>0;
+ const measurable=['uploading','copying','parsing'].includes(p.phase)&&p.totalBytes>0;
  if(measurable){const percent=Math.min(100,Math.floor((p.bytes||0)/p.totalBytes*100));$('import-bar').value=percent;$('import-percent').textContent=percent+'%';}
  else{$('import-bar').removeAttribute('value');$('import-percent').textContent='';}
- $('import-detail').textContent=p.phase==='parsing'?`已解析 ${(p.lines||0).toLocaleString()} 行 · ${importSize(p.bytes||0)}`:p.phase==='uploading'?`${importSize(p.bytes||0)} / ${importSize(p.totalBytes||0)}`:'';
+ $('import-detail').textContent=p.phase==='parsing'?`已解析 ${(p.lines||0).toLocaleString()} 行 · ${importSize(p.bytes||0)}`:['uploading','copying'].includes(p.phase)?`${importSize(p.bytes||0)} / ${importSize(p.totalBytes||0)}`:'';
  const member=p.source?.includes('!')?p.source.split('!').slice(1).join('!'):'';$('import-member').textContent=member;$('import-member').title=member;$('import-member').hidden=!member;
 }
 async function cancelImport(){
@@ -210,7 +273,7 @@ async function cancelImport(){
  op.cancelRequested=true;const button=$('cancel-import');button.disabled=true;button.textContent='正在取消…';$('import-phase').textContent='正在取消…';
  if(op.job){
   try{await api('/api/job/'+op.job+'/cancel',{method:'POST'});op.xhr?.abort();}
-  catch(e){op.cancelRequested=false;button.disabled=false;button.textContent='取消导入';$('import-feedback').hidden=false;$('import-feedback').textContent='取消失败，请重试';}
+  catch(e){op.cancelRequested=false;button.disabled=false;button.textContent=op.kind==='reparse'?'取消解析':'取消导入';$('import-feedback').hidden=false;$('import-feedback').textContent='取消失败，请重试';}
  }
 }
 function uploadImport(file,op){return new Promise((resolve,reject)=>{

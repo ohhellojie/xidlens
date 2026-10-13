@@ -1,6 +1,6 @@
 """仅监听本机的离线界面；不向外部服务发送日志。"""
 from __future__ import annotations
-import argparse, concurrent.futures, json, os, secrets, select, sys, threading, uuid
+import argparse, concurrent.futures, hashlib, json, os, secrets, select, sys, threading, uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -10,12 +10,17 @@ from parser import analyze, core
 ROOT=Path(__file__).resolve().parent
 APP_HOME=Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else ROOT
 RUNTIME=Path(os.environ.get('GPU_LOG_DATA_DIR',str(APP_HOME/'runtime'))).resolve();RESULTS=RUNTIME/'results';UPLOADS=RUNTIME/'uploads'
-for p in (RUNTIME,RESULTS,UPLOADS):p.mkdir(parents=True,exist_ok=True)
+SOURCES=RUNTIME/'sources'
+for p in (RUNTIME,RESULTS,UPLOADS,SOURCES):p.mkdir(parents=True,exist_ok=True)
 TOKEN=secrets.token_urlsafe(24);JOBS={};LOCK=threading.Lock()
 EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
 CASE_CACHE={}
+
+def cleanup_file(path):
+    try:path.unlink(missing_ok=True)
+    except OSError:pass
 
 class ImportJob:
     def __init__(self):
@@ -23,6 +28,9 @@ class ImportJob:
         self.result={'state':'ready','phase':'uploading','bytes':0,'lines':0,'totalBytes':None}
         self.future=None
         self.path=None
+        self.target=None
+        self.input_ref=None
+        self.new_source=None
 
     def is_set(self):return self.cancelled.is_set() or STOP_EVENT.is_set()
 
@@ -32,8 +40,9 @@ class ImportJob:
             if self.result['state']!='cancelling':self.result.update(values)
 
     def cleanup(self):
+        if self.new_source and self.result['state']!='done':cleanup_file(self.new_source)
         if self.path:
-            self.path.unlink(missing_ok=True)
+            cleanup_file(self.path)
             try:self.path.parent.rmdir()
             except OSError:pass
 
@@ -55,11 +64,17 @@ def save_cases(cases, job):
 
 def _save_cases(cases, job):
     # Prepare all reports before publishing any, so cancellation keeps prior results intact.
-    identities={}
+    identities={};old_sources=[]
+    if job.target:
+        old,stamp=job.target
+        path=RESULTS/(old['id']+'.json')
+        if not path.is_file() or path.is_symlink() or hashlib.sha256(path.read_bytes()).hexdigest()!=stamp:
+            raise ValueError('报告已变更，请刷新后重试')
     for p in RESULTS.glob('*.json'):
         core.check_cancel(job)
         try:
             old=json.loads(p.read_text(encoding='utf-8'))
+            if old.get('input'):old_sources.append(old['input'])
             if old.get('contentSha256'):identities[(old['contentSha256'],old['source'],json.dumps(old.get('catalog'),sort_keys=True))]=old['id']
         except (ValueError,KeyError):continue
     staged={};backups={};published=[];committed=False
@@ -67,7 +82,7 @@ def _save_cases(cases, job):
         for case in cases:
             core.check_cancel(job)
             key=(case.get('contentSha256'),case['source'],json.dumps(case.get('catalog'),sort_keys=True))
-            case_id=identities.get(key) if key[0] else None
+            case_id=job.target[0]['id'] if job.target else identities.get(key) if key[0] else None
             case_id=case_id or uuid.uuid4().hex
             if key[0]:identities[key]=case_id
             case['id']=case_id
@@ -97,9 +112,82 @@ def _save_cases(cases, job):
             committed=True
         return list(staged)
     finally:
-        for p in staged.values():p.unlink(missing_ok=True)
+        for p in staged.values():cleanup_file(p)
         if committed:
-            for p in backups.values():p.unlink(missing_ok=True)
+            for p in backups.values():cleanup_file(p)
+            prune_sources(old_sources)
+
+
+def read_case(key):
+    if not isinstance(key,str) or not re_id(key):raise ValueError('报告不存在')
+    path=RESULTS/(key+'.json')
+    if path.is_symlink() or path.resolve().parent!=RESULTS:raise ValueError('报告不存在')
+    raw=path.read_bytes();report=json.loads(raw);report['id']=key
+    return report,hashlib.sha256(raw).hexdigest()
+
+
+def source_path(ref):
+    if not isinstance(ref,dict) or not isinstance(ref.get('key'),str) or not re_id(ref['key']):return None
+    name=ref.get('name')
+    if not isinstance(name,str) or not name or name in ('.','..') or any(c in name for c in '/\\\x00:'):return None
+    path=SOURCES/ref['key']
+    if path.is_symlink() or path.resolve().parent!=SOURCES or not path.is_file():return None
+    return path
+
+
+def prune_sources(refs):
+    # Only remove known, unreferenced application copies, never original user files.
+    used=set()
+    try:
+        for p in RESULTS.glob('*.json'):
+            d=json.loads(p.read_text(encoding='utf-8'));ref=d.get('input') or {}
+            if isinstance(ref,dict):used.add(ref.get('key'))
+    except (OSError,ValueError,TypeError,AttributeError):return
+    for ref in refs:
+        path=source_path(ref)
+        if path and ref['key'] not in used:
+            try:path.unlink()
+            except OSError:pass
+
+
+def copy_input(source,target,job):
+    total=source.stat().st_size;done=0
+    with source.open('rb') as src,target.open('wb') as dst:
+        while True:
+            core.check_cancel(job)
+            chunk=src.read(1024*1024)
+            if not chunk:break
+            dst.write(chunk);done+=len(chunk)
+            job.progress({'phase':'copying','bytes':done,'totalBytes':total})
+
+
+def reparse_job(key,use_file=False):
+    with RESULTS_LOCK:target=read_case(key)
+    if not target[0].get('contentSha256'):raise ValueError('报告缺少文件校验信息，请重新导入')
+    job=ImportJob();job.target=target
+    cached=None if use_file else source_path(target[0].get('input'))
+    job_key=uuid.uuid4().hex
+    with LOCK:
+        JOBS[job_key]=job
+        if cached:
+            job.input_ref=target[0]['input']
+            job.result.update(state='queued',phase='queued')
+            job.future=EXECUTOR.submit(run_cached_job,job,cached)
+    return {'job':job_key,'needsFile':cached is None}
+
+
+def run_cached_job(job,cached):
+    try:
+        core.check_cancel(job)
+        folder=UPLOADS/uuid.uuid4().hex;folder.mkdir();job.path=folder/job.input_ref['name']
+        job.progress({'state':'running','phase':'copying'})
+        copy_input(cached,job.path,job)
+        run_job(job)
+    except core.AnalysisCancelled:
+        with LOCK:job.result.update(state='cancelled')
+    except OSError:
+        with LOCK:job.result.update(state='error',message='原日志无法读取，请重新选择文件')
+    finally:job.cleanup()
 
 
 def case_list():
@@ -127,15 +215,18 @@ def case_list():
 def delete_cases(ids):
     if not isinstance(ids,list) or not 0<len(ids)<=1000 or any(not isinstance(key,str) or not re_id(key) for key in ids):
         raise ValueError('请选择有效报告（最多 1000 份）')
-    deleted=[];failed=[]
+    deleted=[];failed=[];refs=[]
     with RESULTS_LOCK:
         for key in dict.fromkeys(ids):
             path=RESULTS/(key+'.json')
             try:
                 if path.is_symlink() or path.resolve().parent!=RESULTS:raise OSError('Invalid report path')
+                try:refs.append(json.loads(path.read_text(encoding='utf-8')).get('input'))
+                except (OSError,ValueError,AttributeError):pass
                 path.unlink(missing_ok=True)
                 CASE_CACHE.pop(key,None);deleted.append(key)
             except OSError:failed.append(key)
+        prune_sources(refs)
     return {'deleted':deleted,'failed':failed}
 
 def run_job(job):
@@ -143,12 +234,31 @@ def run_job(job):
         job.progress({'state':'running','phase':'parsing','source':job.path.name,'bytes':0,'lines':0,'totalBytes':None})
         cases=analyze(job.path,cancel_event=job,progress=job.progress)
         if not cases:raise ValueError('没有可读取的报告')
+        if job.target:
+            old=job.target[0]
+            matches=[c for c in cases if c.get('contentSha256')==old['contentSha256']]
+            if len(matches)>1:
+                member=old['source'].partition('!')[2]
+                matches=[c for c in matches if c['source'].partition('!')[2]==member]
+            if len(matches)!=1:raise ValueError('文件内容与原报告不符，请重新选择')
+            case=matches[0]
+            if not case.get('complete',True):raise ValueError('日志读取不完整，已保留原报告')
+            case['source']=old['source']
+            for event in case['events']:event['source']=old['source']
+            cases=[case]
+        if not job.input_ref:
+            source_key=uuid.uuid4().hex
+            job.new_source=SOURCES/source_key
+            copy_input(job.path,job.new_source,job)
+            job.input_ref={'key':source_key,'name':job.path.name}
+        for case in cases:case['input']=job.input_ref
         job.progress({'phase':'saving'})
         save_cases(cases,job)
     except core.AnalysisCancelled:
         with LOCK:job.result.update(state='cancelled')
     except Exception as exc:
-        with LOCK:job.result.update(state='error',message=f'解析失败：{type(exc).__name__} · {exc}')
+        message=(str(exc) if isinstance(exc,ValueError) else '重新解析失败，请重试') if job.target else f'解析失败：{type(exc).__name__} · {exc}'
+        with LOCK:job.result.update(state='error',message=message)
     finally:job.cleanup()
 
 
@@ -173,6 +283,11 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
         if url.path=='/api/cases':return self.respond({'cases':case_list()})
+        if url.path=='/api/reparse/source':
+            try:
+                with RESULTS_LOCK:report,_=read_case(parse_qs(url.query).get('id',[''])[0])
+                return self.respond({'available':source_path(report.get('input')) is not None})
+            except (OSError,ValueError):return self.respond({'error':'报告不存在'},404)
         if url.path.startswith('/api/case/'):
             key=url.path.rsplit('/',1)[-1]
             if not re_id(key):return self.respond({'error':'不存在的记录'},404)
@@ -215,6 +330,10 @@ class Handler(BaseHTTPRequestHandler):
             key=uuid.uuid4().hex
             with LOCK:JOBS[key]=ImportJob()
             return self.respond({'job':key},201)
+        if url.path=='/api/reparse/start':
+            query=parse_qs(url.query)
+            try:return self.respond(reparse_job(query.get('id',[''])[0],query.get('file',['0'])[0]=='1'),201)
+            except (OSError,ValueError) as exc:return self.respond({'error':str(exc)},400)
         if url.path.startswith('/api/job/') and url.path.endswith('/cancel'):
             key=url.path.split('/')[-2]
             with LOCK:job=JOBS.get(key)
