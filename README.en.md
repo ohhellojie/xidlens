@@ -13,6 +13,7 @@ Import a report, find a GPU by serial number, UUID, or PCI address, and follow i
 - Xid, initialization, and PCIe/AER records with original log text.
 - Error groups with record counts and first/last evidence.
 - Two-report comparison of device fields, links, and errors using serial numbers or UUIDs.
+- Report management with filename, server/GPU serial number and UUID search, filters, sorting, and batch deletion.
 - PCIe paths and system-reported slot references.
 - TSV inventory, text summaries, and JSON evidence export.
 
@@ -51,6 +52,7 @@ Descriptions and suggested actions come from matching rules; fault causes requir
 python -m unittest discover -s tests -v
 node tests/test_analysis.cjs
 node tests/test_topology.cjs
+node tests/test_report_time.cjs
 python tools/check_repository.py
 ```
 

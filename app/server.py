@@ -14,6 +14,8 @@ for p in (RUNTIME,RESULTS,UPLOADS):p.mkdir(parents=True,exist_ok=True)
 TOKEN=secrets.token_urlsafe(24);JOBS={};LOCK=threading.Lock()
 EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
+RESULTS_LOCK=threading.RLock()
+CASE_CACHE={}
 
 class ImportJob:
     def __init__(self):
@@ -48,6 +50,10 @@ class ImportJob:
 
 
 def save_cases(cases, job):
+    with RESULTS_LOCK:
+        return _save_cases(cases,job)
+
+def _save_cases(cases, job):
     # Prepare all reports before publishing any, so cancellation keeps prior results intact.
     identities={}
     for p in RESULTS.glob('*.json'):
@@ -82,6 +88,7 @@ def save_cases(cases, job):
                     if target.exists():
                         backup=job.path.parent/(case_id+'.backup');target.replace(backup);backups[case_id]=backup
                     temporary.replace(target);published.append(case_id)
+                    CASE_CACHE.pop(case_id,None)
             except Exception:
                 for case_id in published:(RESULTS/(case_id+'.json')).unlink(missing_ok=True)
                 for case_id,backup in backups.items():backup.replace(RESULTS/(case_id+'.json'))
@@ -96,12 +103,40 @@ def save_cases(cases, job):
 
 
 def case_list():
-    cases=[]
-    for p in sorted(RESULTS.glob('*.json'),key=lambda p:p.stat().st_mtime):
-        try:
-            d=json.loads(p.read_text(encoding='utf-8'));cases.append({'id':d['id'],'source':d['source'],'gpus':len(d['gpus']),'events':len(d['events']),'complete':d['complete'],'collected':d.get('server',{}).get('time','')})
-        except (ValueError,KeyError):continue
-    return cases
+    with RESULTS_LOCK:
+        cases=[];seen=set()
+        for p in RESULTS.glob('*.json'):
+            if not re_id(p.stem) or p.is_symlink() or p.resolve().parent!=RESULTS:continue
+            try:
+                stat=p.stat();stamp=(stat.st_mtime_ns,stat.st_size);seen.add(p.stem)
+                cached=CASE_CACHE.get(p.stem)
+                if cached and cached[0]==stamp:summary=cached[1]
+                else:
+                    d=json.loads(p.read_text(encoding='utf-8'));server=d.get('server') or {}
+                    summary={'id':p.stem,'source':d['source'],'gpus':len(d['gpus']),'events':len(d['events']),
+                             'complete':d.get('complete',True),'collected':server.get('time',''),
+                             'server':{k:(server.get(k) or '') for k in ('sn','model','time')},
+                             'identities':[{k:(g.get(k) or '') for k in ('label','sn','uuid')} for g in d['gpus']],
+                             'bytes':d.get('bytes'),'modified':stat.st_mtime}
+                    CASE_CACHE[p.stem]=(stamp,summary)
+                cases.append(summary)
+            except (OSError,ValueError,KeyError,TypeError,AttributeError):continue
+        for key in set(CASE_CACHE)-seen:CASE_CACHE.pop(key,None)
+        return sorted(cases,key=lambda d:(d['modified'],d['id']))
+
+def delete_cases(ids):
+    if not isinstance(ids,list) or not 0<len(ids)<=1000 or any(not isinstance(key,str) or not re_id(key) for key in ids):
+        raise ValueError('请选择有效报告（最多 1000 份）')
+    deleted=[];failed=[]
+    with RESULTS_LOCK:
+        for key in dict.fromkeys(ids):
+            path=RESULTS/(key+'.json')
+            try:
+                if path.is_symlink() or path.resolve().parent!=RESULTS:raise OSError('Invalid report path')
+                path.unlink(missing_ok=True)
+                CASE_CACHE.pop(key,None);deleted.append(key)
+            except OSError:failed.append(key)
+    return {'deleted':deleted,'failed':failed}
 
 def run_job(job):
     try:
@@ -142,7 +177,11 @@ class Handler(BaseHTTPRequestHandler):
             key=url.path.rsplit('/',1)[-1]
             if not re_id(key):return self.respond({'error':'不存在的记录'},404)
             path=RESULTS/(key+'.json')
-            if path.is_file():return self.respond(path.read_bytes(),ctype='application/octet-stream')
+            with RESULTS_LOCK:
+                try:
+                    if not path.is_symlink() and path.resolve().parent==RESULTS and path.is_file():
+                        return self.respond(path.read_bytes(),ctype='application/octet-stream')
+                except OSError:return self.respond({'error':'报告读取失败'},500)
         if url.path.startswith('/api/job/'):
             with LOCK:
                 job=JOBS.get(url.path.rsplit('/',1)[-1]);d=dict(job.result) if job else {'state':'error','message':'任务不存在'}
@@ -153,6 +192,23 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if url.path=='/api/cases/delete':
+            try:
+                length=int(self.headers.get('Content-Length','0'))
+                if not 0<length<=65536:raise ValueError('无效请求长度')
+                self.connection.settimeout(5)
+                chunks=[];remaining=length
+                while remaining:
+                    chunk=self.rfile.read(remaining)
+                    if not chunk:raise ValueError('请求未完成')
+                    chunks.append(chunk);remaining-=len(chunk)
+                body=json.loads(b''.join(chunks))
+                if not isinstance(body,dict):raise ValueError('无效请求')
+                result=delete_cases(body.get('ids'))
+            except (ValueError,UnicodeError):return self.respond({'error':'请选择有效报告（最多 1000 份）'},400)
+            except OSError:return self.respond({'error':'删除请求未完成，请重试'},400)
+            finally:self.connection.settimeout(None)
+            return self.respond(result)
         if url.path=='/api/stop':
             self.respond({'ok':True});threading.Thread(target=self.server.request_stop,daemon=True).start();return
         if url.path=='/api/import/start':
