@@ -104,3 +104,17 @@ class CatalogApiTests(unittest.TestCase):
             self.assertEqual(error.exception.code,403)
         with self.assertRaises(urllib.error.HTTPError) as error:self.request('api/catalog/reset',b'',headers={'X-Local-Token':self.server.TOKEN,'Origin':'https://example.com'})
         self.assertEqual(error.exception.code,403)
+
+    def test_online_api_authentication_and_settings(self):
+        import urllib.error
+        self.assertFalse(self.request('api/online')['settings']['automatic'])
+        for path,body in [('api/online',None),('api/online/check-app',b''),('api/online/enable',b'')]:
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request(path,body,headers={})
+            self.assertEqual(error.exception.code,403)
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.request('api/online/enable',b'',headers={'X-Local-Token':self.server.TOKEN,'Origin':'https://example.com'})
+        self.assertEqual(error.exception.code,403)
+        self.assertTrue(self.request('api/online/enable',b'')['settings']['automatic'])
+        self.assertFalse(self.request('api/online/disable',b'')['settings']['automatic'])
+        with self.assertRaises(urllib.error.HTTPError) as error:self.request('api/online/unknown',b'')
+        self.assertEqual(error.exception.code,400)

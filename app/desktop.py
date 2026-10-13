@@ -26,6 +26,17 @@ class DesktopActions:
     def __init__(self):
         self._window=None
 
+    def install_update(self):
+        import update_install
+        with server.LOCK:
+            if any(j.result['state'] not in {'done','error','cancelled'} for j in server.JOBS.values()):
+                raise ValueError('请等待导入或解析结束')
+        with server.ONLINE.lock:
+            if server.ONLINE.active or not server.ONLINE.ready:raise ValueError('请先完成更新下载')
+            update_install.launch(server.APP_HOME,dict(server.ONLINE.ready))
+        self._window.destroy()
+        return True
+
     def save_text(self,name,text):
         if name not in {'GPU设备清单.tsv','GPU日志摘要.txt','GPU日志证据.json'}:
             raise ValueError('无效文件名')

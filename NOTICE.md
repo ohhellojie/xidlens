@@ -14,3 +14,5 @@ NVIDIA 名称及其商标属于对应权利人。
 Windows 打包使用 [PyInstaller](https://pyinstaller.org/)，其许可证及引导程序例外见官方项目。构建使用的 Python 及依赖保留各自许可证。
 
 桌面窗口使用 [pywebview](https://pywebview.flowrl.com/) 和 Microsoft Edge WebView2。第三方许可证随下载包提供。
+
+排查参考是对 NVIDIA GPU Debug Guidelines 与 Xid Errors 的简要整理，各项保留官方来源链接。在线规则直接从 NVIDIA 官方获取，内容权利归原权利人。

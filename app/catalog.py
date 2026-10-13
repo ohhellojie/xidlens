@@ -41,6 +41,10 @@ def validate(data,allow_empty=False):
         if not isinstance(architectures,dict) or len(architectures)>100 or any(not isinstance(k,str) or not isinstance(v,(str,int,float,bool,type(None))) for k,v in architectures.items()):raise ValueError('架构字段格式不正确')
         codes[key]['architectures']=architectures
     result={'file':file,'sha256':digest.lower(),'codes':codes}
+    if data.get('sourceUrl'):
+        url=text(data['sourceUrl'],'来源链接',2048)
+        if url!='https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html':raise ValueError('来源链接不受支持')
+        result.update(sourceUrl=url,provider='NVIDIA',language='en')
     if data.get('sourceSha256'):result['sourceSha256']=text(data['sourceSha256'],'来源 SHA-256',64)
     if data.get('importFile'):result['importFile']=basename(text(data['importFile'],'导入文件',512))
     return result

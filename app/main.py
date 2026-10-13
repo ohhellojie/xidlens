@@ -8,7 +8,10 @@ if __name__ == '__main__':
     try:
         from multiprocessing import freeze_support
         freeze_support()
-        if '--no-browser' in sys.argv:
+        if len(sys.argv)==3 and sys.argv[1]=='--apply-update':
+            import update_install
+            update_install.main(sys.argv[2])
+        elif '--no-browser' in sys.argv:
             import server
             server.main()
         else:

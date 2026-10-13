@@ -7,6 +7,7 @@ from urllib.parse import urlparse, parse_qs
 sys.dont_write_bytecode=True
 from parser import analyze, core, CATALOG, CATALOG_WARNING
 from catalog import CatalogStore, MAX_UPLOAD
+from online import OnlineUpdates
 
 ROOT=Path(__file__).resolve().parent
 APP_HOME=Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else ROOT
@@ -19,6 +20,7 @@ STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
 CASE_CACHE={}
 CATALOG_STORE=CatalogStore(RUNTIME,CATALOG,CATALOG_WARNING)
+ONLINE=OnlineUpdates(RUNTIME,CATALOG_STORE)
 
 def cleanup_file(path):
     try:path.unlink(missing_ok=True)
@@ -285,6 +287,7 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
+        if url.path=='/api/online':return self.respond(ONLINE.snapshot())
         if url.path=='/api/catalog':return self.respond(CATALOG_STORE.info())
         if url.path=='/api/catalog/rules':
             catalog=CATALOG_STORE.snapshot()
@@ -314,6 +317,19 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if url.path.startswith('/api/online/'):
+            action=url.path.rsplit('/',1)[-1]
+            try:
+                if action=='enable':ONLINE.settings_save(True)
+                elif action=='disable':ONLINE.settings_save(False)
+                elif action=='cancel':ONLINE.cancel.set()
+                else:ONLINE.start(action)
+                return self.respond(ONLINE.snapshot())
+            except ValueError as exc:return self.respond({'error':str(exc)},400)
+            except OSError:return self.respond({'error':'设置保存失败'},500)
+        if url.path in ('/api/catalog/reset','/api/catalog/import'):
+            with ONLINE.lock:
+                if 'rules' in ONLINE.active:return self.respond({'error':'请等待规则操作结束'},409)
         if url.path=='/api/catalog/reset':
             try:return self.respond(CATALOG_STORE.reset())
             except OSError:return self.respond({'error':'规则保存失败，请重试'},500)
@@ -419,6 +435,7 @@ class LocalService:
         self.close_lock=threading.Lock()
 
     def start(self):
+        ONLINE.schedule()
         self.thread=threading.Thread(target=self.http.serve_forever,kwargs={'poll_interval':0.1},daemon=True)
         self.thread.start()
         (RUNTIME/'session.json').write_text(json.dumps({'url':self.url,'pid':os.getpid()}),encoding='utf-8')
@@ -431,6 +448,7 @@ class LocalService:
         with self.close_lock:
             if self.closed.is_set():return
             self.closed.set()
+            ONLINE.stop.set();ONLINE.cancel.set()
             STOP_EVENT.set()
             with LOCK:jobs=list(JOBS.values())
             for job in jobs:job.cancel()
