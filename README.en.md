@@ -11,6 +11,8 @@ Import a report, find a GPU by serial number, UUID, or PCI address, and follow i
 - Server and GPU serial numbers, UUIDs, models, and reported metrics.
 - Search by serial number, UUID, or PCI address; copy inventory to Excel.
 - Xid, initialization, and PCIe/AER records with original log text.
+- Error groups with record counts and first/last evidence.
+- Two-report comparison of device fields, links, and errors using serial numbers or UUIDs.
 - PCIe paths and system-reported slot references.
 - TSV inventory, text summaries, and JSON evidence export.
 
@@ -47,6 +49,7 @@ Descriptions and suggested actions come from matching rules; fault causes requir
 
 ```sh
 python -m unittest discover -s tests -v
+node tests/test_analysis.cjs
 python tools/check_repository.py
 ```
 

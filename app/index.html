@@ -37,7 +37,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 @media(max-height:560px) and (min-width:761px){.content{padding-top:10px}.server-fields{grid-template-columns:1fr 1fr .65fr 1fr;gap:12px}.page-heading{margin-bottom:8px}.server-strip{padding-bottom:8px;margin-bottom:10px}.table-toolbar{gap:6px}.server-fields .field-label{font-size:11px}.page-heading h1{font-size:21px}.table-foot{padding-top:6px}}
 .error-table .badge{white-space:normal;max-width:100%;line-height:1.55;padding:3px 7px}.error-table .cell-btn{max-width:100%}
 @media(min-width:761px) and (max-width:1060px){.server-fields{grid-template-columns:1fr 1fr .7fr 1.3fr;gap:14px}.server-fields .field-value{font-size:12px}}
-.server-fields>div:first-child .field-value-text{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}</style>
+.server-fields>div:first-child .field-value-text{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.group-table{min-width:660px}.group-table th:nth-child(1){width:140px}.group-table th:nth-child(2){width:200px}.group-table th:nth-child(3){width:88px}.group-table th:nth-child(4){width:230px}.group-range>span{display:block;overflow-wrap:anywhere;font-size:11px}.group-range>span+span{margin-top:6px}.group-overview{padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid var(--line)}.group-overview>.btn{margin-top:12px;display:flex}.group-times{display:grid;grid-template-columns:32px minmax(0,1fr);gap:8px;margin:16px 0;font-size:12px;overflow-wrap:anywhere}.group-times>span:nth-child(odd){color:var(--muted)}[data-group],[data-compare-row]{cursor:pointer}.compare-controls{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding-bottom:18px;flex-shrink:0}.compare-controls>*,.compare-controls label{min-width:0}.compare-controls .field-label{display:block}.compare-controls .select{width:100%;max-width:none}.current-report{height:34px;line-height:34px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:13px}.compare-summary{display:flex;gap:16px;flex-wrap:wrap;align-items:center;padding:0 0 14px;font-size:12px;color:var(--muted);flex-shrink:0}.compare-summary .check-label{margin-left:auto}.compare-warning{color:var(--amber);font-size:12px;padding-bottom:12px;flex-shrink:0}.compare-table{min-width:630px}.compare-table th:nth-child(1){width:106px}.compare-table th:nth-child(2),.compare-table th:nth-child(3){width:170px}.compare-field{display:grid;grid-template-columns:70px minmax(0,1fr) minmax(0,1fr);gap:10px;font-size:12px;line-height:1.8;padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.compare-field>span:first-child{color:var(--muted)}.compare-field-head{color:var(--muted);font-size:11px}.compare-field.field-changed>span:not(:first-child){color:var(--amber)}.compare-note{font-size:11px;color:var(--muted);padding-top:12px}.compare-split>.inspector{padding-right:8px}.page-heading>.actions{justify-content:flex-end}
+@media(min-width:1251px){.compare-split{grid-template-columns:minmax(0,1fr) 360px}}
+@media(max-width:760px){.compare-controls{gap:12px}.compare-field{grid-template-columns:76px minmax(0,1fr) minmax(0,1fr)}.page-heading{flex-wrap:wrap}.page-heading>.actions{width:100%;justify-content:flex-start}.compare-summary{gap:8px 14px}}
+.report-meta{color:var(--muted);font-size:11px;margin-top:6px;overflow-wrap:anywhere}</style>
 <link rel="icon" type="image/png" href="/logo.png">
 </head>
 <body>
@@ -46,7 +50,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
   <div class="brand"><span class="brand-mark" id="brand-mark" aria-hidden="true"><img src="/logo.png" alt=""></span><span class="brand-text">XidLens</span></div>
   <div class="nav-caption">日志分析</div>
   <nav id="navigation"></nav>
-  <div class="sidebar-foot"><a class="manual-link" href="https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html" target="_blank" rel="noopener noreferrer" aria-label="打开 NVIDIA 官方手册" id="manual"></a><div class="prototype-tag">v0.1.5</div></div>
+  <div class="sidebar-foot"><a class="manual-link" href="https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html" target="_blank" rel="noopener noreferrer" aria-label="打开 NVIDIA 官方手册" id="manual"></a><div class="prototype-tag">v0.2.0</div></div>
  </aside>
  <div class="workspace">
   <header class="topbar">
@@ -61,6 +65,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
  <dialog class="dialog" id="dialog" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button class="btn quiet icon-btn" data-action="close-dialog" aria-label="关闭弹窗" id="dialog-close"></button></div><div class="dialog-body" id="dialog-body"></div><div class="dialog-foot" id="dialog-foot"></div></dialog>
  <div class="toast" id="toast" role="status" hidden></div>
 </div>
+<script src="/analysis.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

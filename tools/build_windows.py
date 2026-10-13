@@ -28,7 +28,7 @@ def main():
                '--exclude-module', 'webview.platforms.qt',
                '--exclude-module', 'webview.platforms.cef',
                '--exclude-module', 'PyQt5', '--exclude-module', 'PySide6']
-    for name in ('index.html', 'app.js', 'logo.png'):
+    for name in ('index.html', 'app.js', 'analysis.js', 'logo.png'):
         command += ['--add-data', f'{root/"app"/name}:.']
     # A stage preserves the expected filename for optional local catalogs.
     import shutil

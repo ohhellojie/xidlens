@@ -32,7 +32,7 @@ def case_list():
     cases=[]
     for p in sorted(RESULTS.glob('*.json'),key=lambda p:p.stat().st_mtime):
         try:
-            d=json.loads(p.read_text(encoding='utf-8'));cases.append({'id':d['id'],'source':d['source'],'gpus':len(d['gpus']),'events':len(d['events']),'complete':d['complete']})
+            d=json.loads(p.read_text(encoding='utf-8'));cases.append({'id':d['id'],'source':d['source'],'gpus':len(d['gpus']),'events':len(d['events']),'complete':d['complete'],'collected':d.get('server',{}).get('time','')})
         except (ValueError,KeyError):continue
     return cases
 
@@ -68,6 +68,7 @@ class Handler(BaseHTTPRequestHandler):
         url=urlparse(self.path)
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
         if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).encode(),ctype='text/html; charset=utf-8')
+        if url.path=='/analysis.js':return self.respond((ROOT/'analysis.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)

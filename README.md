@@ -9,6 +9,8 @@
 - 查看服务器 SN、GPU 型号、SN、UUID 和采集状态。
 - 按 SN、UUID 或 PCI 地址搜索，复制到 Excel，导出设备清单与日志摘要。
 - 整理 Xid、初始化失败、PCIe/AER 等记录，查看日志原文。
+- 按设备和错误类型聚合记录，查看条数和首末记录。
+- 按 SN / UUID 对比两份报告中的设备、链路及错误记录。
 - 查看 PCIe 路径与槽位参考，追溯字段来源。
 
 支持 nvidia-bug-report、dmesg / journal、nvidia-smi -q 文本，以及 GZ、ZIP、TAR。每份报告独立查看，日志在本机处理。
@@ -44,6 +46,7 @@ python app/main.py
 
 ```sh
 python -m unittest discover -s tests -v
+node tests/test_analysis.cjs
 python tools/check_repository.py
 ```
 
