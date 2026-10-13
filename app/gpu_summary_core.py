@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import sys
 import tarfile
+import time
 import uuid
 import zipfile
 
@@ -72,8 +73,9 @@ def timestamp(line):
 
 
 class Parser:
-    def __init__(self, source, max_bytes=512*1024*1024, max_groups=2000, cancel_event=None):
+    def __init__(self, source, max_bytes=512*1024*1024, max_groups=2000, cancel_event=None, progress=None):
         self.cancel_event = cancel_event
+        self.progress = progress
         self.r = {'source': source, 'complete': True, 'bytes_read': 0, 'lines_read': 0,
                   'sha256_content': None, 'warnings': [], 'collection_time': [],
                   'driver_versions': [], 'gpu_inventory': {}, 'pci_gpu_addresses': [],
@@ -247,6 +249,7 @@ class Parser:
 
     def parse(self, stream):
         digest = hashlib.sha256()
+        last_progress = 0
         try:
             while True:
                 check_cancel(self.cancel_event)
@@ -277,10 +280,17 @@ class Parser:
                     line = raw.decode('gb18030', errors='replace')
                     self.encoding_replacements += 1
                 self.consume(line.rstrip('\r\n'), self.r['lines_read'])
+                if self.progress and (self.r['lines_read'] % 128 == 0 or len(raw) > 65536):
+                    now = time.monotonic()
+                    if now-last_progress >= .15:
+                        self.progress(self.r['bytes_read'], self.r['lines_read'])
+                        last_progress = now
         except (OSError, EOFError, RuntimeError, ValueError, zipfile.BadZipFile) as exc:
             self.r['complete'] = False
             self.warn(f'读取失败：{type(exc).__name__}；结果仅覆盖已读部分。')
         self.r['sha256_content'] = digest.hexdigest() if self.r['complete'] else None
+        check_cancel(self.cancel_event)
+        if self.progress:self.progress(self.r['bytes_read'], self.r['lines_read'])
         if self.encoding_replacements:
             self.warn(f'{self.encoding_replacements} 行非 UTF-8，已尝试 GB18030 解码；非 ASCII 内容需核对。')
         if self.nul_lines:
@@ -313,13 +323,13 @@ class ReadBudget:
         return data
 
 
-def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes=2*1024*1024*1024, cancel_event=None):
+def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes=2*1024*1024*1024, cancel_event=None, progress=None):
     check_cancel(cancel_event)
     path = Path(path).resolve()
     result = {'path': str(path), 'reports': [], 'warnings': [], 'complete': True}
     used = 0
 
-    def read(stream, label, gz=False):
+    def read(stream, label, gz=False, total_bytes=None):
         nonlocal used
         check_cancel(cancel_event)
         remaining = max_total_bytes - used
@@ -327,7 +337,10 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
             result['complete'] = False
             result['warnings'].append('压缩包总读取量达到上限，剩余成员未读。')
             return
-        parser = Parser(label, min(max_bytes, remaining), cancel_event=cancel_event)
+        def report_progress(size, lines):
+            if progress:progress({'phase':'parsing','source':label,'bytes':size,'lines':lines,'totalBytes':None if gz else total_bytes})
+        report_progress(0,0)
+        parser = Parser(label, min(max_bytes, remaining), cancel_event=cancel_event, progress=report_progress if progress else None)
         if gz:
             with gzip.GzipFile(fileobj=stream) as inner:
                 report = parser.parse(inner)
@@ -354,7 +367,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                         break
                     try:
                         with archive.open(m) as f:
-                            read(f, f'{path.name}!{m.filename}', m.filename.lower().endswith('.gz'))
+                            read(f, f'{path.name}!{m.filename}', m.filename.lower().endswith('.gz'), m.file_size)
                     except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
                         result['complete'] = False
                         result['warnings'].append(f'成员 {m.filename} 读取失败：{type(exc).__name__}')
@@ -385,12 +398,12 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                     f = archive.extractfile(m)
                     if f:
                         with f:
-                            read(f, f'{path.name}!{m.name}', m.name.lower().endswith('.gz'))
+                            read(f, f'{path.name}!{m.name}', m.name.lower().endswith('.gz'), m.size)
                 if skipped:
                     result['warnings'].append(f'{skipped} 个非支持文本/链接成员未解析。')
         else:
             with path.open('rb') as f:
-                read(f, path.name, lower.endswith('.gz'))
+                read(f, path.name, lower.endswith('.gz'), path.stat().st_size)
     except (OSError, EOFError, ValueError, RuntimeError, tarfile.TarError, zipfile.BadZipFile) as exc:
         result['complete'] = False
         result['warnings'].append(f'文件读取失败：{type(exc).__name__}；输入未被修改。')

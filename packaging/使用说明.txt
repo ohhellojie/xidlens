@@ -1,4 +1,4 @@
-XidLens · Windows x64 v0.2.2
+XidLens · Windows x64 v0.3.0
 
 双击 XidLens.exe 打开软件，关闭窗口退出。
 点击“导入日志”选择文件；多份报告可在顶部切换。

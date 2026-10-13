@@ -1,6 +1,6 @@
 """仅监听本机的离线界面；不向外部服务发送日志。"""
 from __future__ import annotations
-import argparse, concurrent.futures, json, os, secrets, sys, threading, uuid
+import argparse, concurrent.futures, json, os, secrets, select, sys, threading, uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -15,18 +15,85 @@ TOKEN=secrets.token_urlsafe(24);JOBS={};LOCK=threading.Lock()
 EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 
-def save_case(case):
-    case_id=uuid.uuid4().hex
-    if case.get('contentSha256'):
-        for p in RESULTS.glob('*.json'):
+class ImportJob:
+    def __init__(self):
+        self.cancelled=threading.Event()
+        self.result={'state':'ready','phase':'uploading','bytes':0,'lines':0,'totalBytes':None}
+        self.future=None
+        self.path=None
+
+    def is_set(self):return self.cancelled.is_set() or STOP_EVENT.is_set()
+
+    def progress(self, values):
+        core.check_cancel(self)
+        with LOCK:
+            if self.result['state']!='cancelling':self.result.update(values)
+
+    def cleanup(self):
+        if self.path:
+            self.path.unlink(missing_ok=True)
+            try:self.path.parent.rmdir()
+            except OSError:pass
+
+    def cancel(self):
+        with LOCK:
+            if self.result['state'] in {'done','error','cancelled'}:return
+            self.cancelled.set()
+            previous=self.result['state']
+            self.result['state']='cancelling'
+            queued=self.future is not None and self.future.cancel()
+        if previous=='ready' or queued:
+            self.cleanup()
+            with LOCK:self.result['state']='cancelled'
+
+
+def save_cases(cases, job):
+    # Prepare all reports before publishing any, so cancellation keeps prior results intact.
+    identities={}
+    for p in RESULTS.glob('*.json'):
+        core.check_cancel(job)
+        try:
             old=json.loads(p.read_text(encoding='utf-8'))
-            if old.get('contentSha256')==case['contentSha256'] and old.get('source')==case['source'] and old.get('catalog')==case.get('catalog'):
-                case_id=old['id'];break
-    case['id']=case_id
-    temporary=RESULTS/(case_id+'.tmp')
-    temporary.write_text(json.dumps(case,ensure_ascii=False),encoding='utf-8')
-    temporary.replace(RESULTS/(case_id+'.json'))
-    return case_id
+            if old.get('contentSha256'):identities[(old['contentSha256'],old['source'],json.dumps(old.get('catalog'),sort_keys=True))]=old['id']
+        except (ValueError,KeyError):continue
+    staged={};backups={};published=[];committed=False
+    try:
+        for case in cases:
+            core.check_cancel(job)
+            key=(case.get('contentSha256'),case['source'],json.dumps(case.get('catalog'),sort_keys=True))
+            case_id=identities.get(key) if key[0] else None
+            case_id=case_id or uuid.uuid4().hex
+            if key[0]:identities[key]=case_id
+            case['id']=case_id
+            target=job.path.parent/(case_id+'.pending')
+            staged[case_id]=target
+            with target.open('w',encoding='utf-8') as f:
+                parts=[];size=0
+                for part in json.JSONEncoder(ensure_ascii=False).iterencode(case):
+                    parts.append(part);size+=len(part)
+                    if size>=65536:
+                        core.check_cancel(job);f.write(''.join(parts));parts=[];size=0
+                core.check_cancel(job);f.write(''.join(parts))
+        with LOCK:
+            core.check_cancel(job)
+            try:
+                for case_id,temporary in staged.items():
+                    target=RESULTS/(case_id+'.json')
+                    if target.exists():
+                        backup=job.path.parent/(case_id+'.backup');target.replace(backup);backups[case_id]=backup
+                    temporary.replace(target);published.append(case_id)
+            except Exception:
+                for case_id in published:(RESULTS/(case_id+'.json')).unlink(missing_ok=True)
+                for case_id,backup in backups.items():backup.replace(RESULTS/(case_id+'.json'))
+                raise
+            job.result.update(state='done',phase='done',ids=list(staged))
+            committed=True
+        return list(staged)
+    finally:
+        for p in staged.values():p.unlink(missing_ok=True)
+        if committed:
+            for p in backups.values():p.unlink(missing_ok=True)
+
 
 def case_list():
     cases=[]
@@ -36,25 +103,22 @@ def case_list():
         except (ValueError,KeyError):continue
     return cases
 
-def run_job(job,path):
+def run_job(job):
     try:
-        cases=analyze(path,cancel_event=STOP_EVENT)
+        job.progress({'state':'running','phase':'parsing','source':job.path.name,'bytes':0,'lines':0,'totalBytes':None})
+        cases=analyze(job.path,cancel_event=job,progress=job.progress)
         if not cases:raise ValueError('没有可读取的报告')
-        ids=[]
-        for case in cases:
-            core.check_cancel(STOP_EVENT)
-            ids.append(save_case(case))
-        with LOCK:JOBS[job]={'state':'done','ids':ids}
+        job.progress({'phase':'saving'})
+        save_cases(cases,job)
     except core.AnalysisCancelled:
-        with LOCK:JOBS[job]={'state':'error','message':'已停止读取'}
+        with LOCK:job.result.update(state='cancelled')
     except Exception as exc:
-        with LOCK:JOBS[job]={'state':'error','message':f'解析失败：{type(exc).__name__} · {exc}'}
-    finally:
-        path.unlink(missing_ok=True)
-        try:path.parent.rmdir()
-        except OSError:pass
+        with LOCK:job.result.update(state='error',message=f'解析失败：{type(exc).__name__} · {exc}')
+    finally:job.cleanup()
+
 
 class Handler(BaseHTTPRequestHandler):
+    rbufsize=0
     def log_message(self,*args):pass
     def allowed(self):return self.headers.get('Host')==f'127.0.0.1:{self.server.server_port}'
     def authenticated(self):return self.allowed() and secrets.compare_digest(self.headers.get('X-Local-Token',''),TOKEN)
@@ -63,7 +127,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status);self.send_header('Content-Type',ctype);self.send_header('Content-Length',str(len(body)))
         self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff')
         self.send_header('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'")
-        self.end_headers();self.wfile.write(body)
+        try:self.end_headers();self.wfile.write(body)
+        except (BrokenPipeError,ConnectionResetError,ConnectionAbortedError):pass
     def do_GET(self):
         url=urlparse(self.path)
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
@@ -79,7 +144,8 @@ class Handler(BaseHTTPRequestHandler):
             path=RESULTS/(key+'.json')
             if path.is_file():return self.respond(path.read_bytes(),ctype='application/octet-stream')
         if url.path.startswith('/api/job/'):
-            with LOCK:d=JOBS.get(url.path.rsplit('/',1)[-1],{'state':'error','message':'任务不存在'})
+            with LOCK:
+                job=JOBS.get(url.path.rsplit('/',1)[-1]);d=dict(job.result) if job else {'state':'error','message':'任务不存在'}
             return self.respond(d)
         return self.respond({'error':'不存在的资源'},404)
     def do_POST(self):
@@ -89,24 +155,55 @@ class Handler(BaseHTTPRequestHandler):
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
         if url.path=='/api/stop':
             self.respond({'ok':True});threading.Thread(target=self.server.request_stop,daemon=True).start();return
+        if url.path=='/api/import/start':
+            key=uuid.uuid4().hex
+            with LOCK:JOBS[key]=ImportJob()
+            return self.respond({'job':key},201)
+        if url.path.startswith('/api/job/') and url.path.endswith('/cancel'):
+            key=url.path.split('/')[-2]
+            with LOCK:job=JOBS.get(key)
+            if not job:return self.respond({'error':'任务不存在'},404)
+            job.cancel()
+            with LOCK:result=dict(job.result)
+            return self.respond(result)
         if url.path!='/api/import':return self.respond({'error':'不存在的资源'},404)
         try:length=int(self.headers.get('Content-Length','0'))
         except ValueError:return self.respond({'error':'无效文件长度'},400)
         if not 0<length<=512*1024*1024:return self.respond({'error':'请选择 512 MB 以内的文件'},413)
-        name=Path(parse_qs(url.query).get('name',['log.txt'])[0].replace('\\','/')).name
+        query=parse_qs(url.query)
+        name=Path(query.get('name',['log.txt'])[0].replace('\\','/')).name
         if not name or name in ('.','..') or '\x00' in name:return self.respond({'error':'无效文件名'},400)
-        job=uuid.uuid4().hex;folder=UPLOADS/job;folder.mkdir();path=folder/name
+        key=query.get('job',[''])[0]
+        with LOCK:
+            if not key:key=uuid.uuid4().hex;JOBS[key]=ImportJob()
+            job=JOBS.get(key)
+            if job is None or job.result['state']!='ready':job=None
+            else:job.result.update(state='uploading',totalBytes=length)
+        if job is None:return self.respond({'error':'导入任务已结束'},409)
+        folder=UPLOADS/key
         try:
-            with path.open('wb') as f:
+            folder.mkdir();job.path=folder/name
+            with job.path.open('wb') as f:
                 left=length
                 while left:
+                    core.check_cancel(job)
+                    if not select.select([self.connection],[],[],.2)[0]:continue
                     chunk=self.rfile.read(min(left,1024*1024))
+                    core.check_cancel(job)
                     if not chunk:raise ValueError('文件传输中断')
                     f.write(chunk);left-=len(chunk)
-        except Exception:
-            path.unlink(missing_ok=True);return self.respond({'error':'文件读取失败'},400)
-        with LOCK:JOBS[job]={'state':'running'}
-        EXECUTOR.submit(run_job,job,path);return self.respond({'job':job},202)
+                    job.progress({'bytes':length-left})
+            with LOCK:
+                core.check_cancel(job)
+                job.result.update(state='queued',phase='queued')
+                job.future=EXECUTOR.submit(run_job,job)
+        except Exception as exc:
+            job.cleanup()
+            with LOCK:
+                job.result.update(state='cancelled' if job.is_set() else 'error',message='文件读取失败')
+            return self.respond({'error':'已取消' if job.is_set() else '文件读取失败'},409 if job.is_set() else 400)
+        return self.respond({'job':key},202)
+
 
 def re_id(s):return len(s)==32 and all(c in '0123456789abcdef' for c in s)
 
@@ -135,6 +232,8 @@ class LocalService:
             if self.closed.is_set():return
             self.closed.set()
             STOP_EVENT.set()
+            with LOCK:jobs=list(JOBS.values())
+            for job in jobs:job.cancel()
             if self.thread and self.thread.is_alive():
                 self.http.shutdown()
                 self.thread.join(timeout=5)

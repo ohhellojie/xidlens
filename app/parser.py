@@ -223,8 +223,9 @@ def convert(r,container_warnings=(),cancel_event=None):
     if any(g['status']=='有冲突' for g in gpus):warnings.append('设备字段存在冲突，可在来源中核对。')
     return {'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{'file':CATALOG['file'],'sha256':CATALOG['sha256']},'contentSha256':r['sha256_content']}
 
-def analyze(path,cancel_event=None):
-    result=core.analyze_path(path,cancel_event=cancel_event)
+def analyze(path,cancel_event=None,progress=None):
+    result=core.analyze_path(path,cancel_event=cancel_event,progress=progress)
+    if progress:progress({'phase':'organizing'})
     cases=[convert(r,result['warnings'],cancel_event) for r in result['reports']]
     for case in cases:
         case['complete']=case['complete'] and result['complete']

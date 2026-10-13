@@ -43,6 +43,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 @media(max-width:760px){.compare-controls{gap:12px}.compare-field{grid-template-columns:76px minmax(0,1fr) minmax(0,1fr)}.page-heading{flex-wrap:wrap}.page-heading>.actions{width:100%;justify-content:flex-start}.compare-summary{gap:8px 14px}}
 .report-meta{color:var(--muted);font-size:11px;margin-top:6px;overflow-wrap:anywhere}
 .health-values{display:grid;gap:12px}.health-value{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;font-size:12px;line-height:1.6}.health-value span{overflow-wrap:anywhere;color:var(--muted)}.health-value strong{font-variant-numeric:tabular-nums}
+.import-file-row{display:flex;gap:10px;align-items:center;margin-bottom:24px}.import-file-row strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:500;flex:1}.import-file-row>span{font-size:12px;color:var(--muted);flex-shrink:0}.import-progress-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:10px}#import-bar{display:block;width:100%;height:6px;border:0;border-radius:3px;overflow:hidden;accent-color:var(--accent);background:var(--line)}#import-bar::-webkit-progress-bar{background:var(--line)}#import-bar::-webkit-progress-value{background:var(--accent);border-radius:3px}#import-bar:indeterminate{background:linear-gradient(90deg,var(--line) 0 30%,var(--accent) 45% 55%,var(--line) 70%);background-size:250% 100%;animation:import-busy 1.8s linear infinite}#import-bar:indeterminate::-webkit-progress-bar{background:transparent}#import-detail{margin-top:12px;min-height:19px}#import-member{margin-top:6px;overflow-wrap:anywhere}@keyframes import-busy{from{background-position:100%}to{background-position:0}}@media(prefers-reduced-motion:reduce){#import-bar:indeterminate{animation:none}}
 </style>
 <link rel="icon" type="image/png" href="/logo.png">
 </head>
@@ -52,7 +53,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
   <div class="brand"><span class="brand-mark" id="brand-mark" aria-hidden="true"><img src="/logo.png" alt=""></span><span class="brand-text">XidLens</span></div>
   <div class="nav-caption">日志分析</div>
   <nav id="navigation"></nav>
-  <div class="sidebar-foot"><a class="manual-link" href="https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html" target="_blank" rel="noopener noreferrer" aria-label="打开 NVIDIA 官方手册" id="manual"></a><div class="prototype-tag">v0.2.2</div></div>
+  <div class="sidebar-foot"><a class="manual-link" href="https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html" target="_blank" rel="noopener noreferrer" aria-label="打开 NVIDIA 官方手册" id="manual"></a><div class="prototype-tag">v0.3.0</div></div>
  </aside>
  <div class="workspace">
   <header class="topbar">
