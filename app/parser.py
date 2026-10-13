@@ -29,13 +29,15 @@ class Parser(BaseParser):
         self.dmi_type=None;self.pci_node=None;self.os_block=False;self.smi_scope='';self.in_sysfs=None;self.dmi_slot={}
         self.r['dmi_slots']=[]
         self.csv_columns=None
+        self.smi_path=[]
+        self.r['scoped_metrics']={}
 
     def field(self,address,key,value,n,line,origin):
         if not valid(value):return
         super().field(address,key,str(value).strip(),n,line,origin)
 
     def evidence(self,n,line):
-        ev=super().evidence(n,line);ev['text']=line[:32768];ev['truncated']=len(line)>32768
+        ev=super().evidence(n,line);ev['text']=line;ev['truncated']=False
         return ev
 
     def flush_slot(self):
@@ -45,7 +47,7 @@ class Parser(BaseParser):
 
     def put(self,fields,key,value,n,line,origin):
         value=str(value).strip()
-        if not valid(value) and not (value=='0' and (key in {'numa','index'} or key.startswith('ecc'))):return
+        if not valid(value) and not (value=='0' and (key in {'numa','index','memory_used','memory_total'} or key.startswith('ecc') or key.endswith(('Instance ID','/Index')))):return
         values=fields.setdefault(key,[])
         if not any(x['value']==value for x in values):values.append({'value':value,'origin':origin,'evidence':self.evidence(n,line)})
 
@@ -64,7 +66,20 @@ class Parser(BaseParser):
             self.flush_slot()
             self.dmi_type=None;self.pci_node=None;self.os_block=False;self.smi_scope='';self.in_sysfs=None
             self.csv_columns=None
+        if boundary or core.SMI_GPU_RE.match(line) or re.match(r'Attached GPUs\s*:',s):self.smi_path=[]
+        health_start=len(self.r['health_counters'])
         super().consume(line,n)
+        # The adapter retains the full hierarchy, including MIG instance scope.
+        if self.current_gpu and self.smi is not None and s and not core.SMI_GPU_RE.match(line):
+            indent=len(line)-len(line.lstrip())
+            while self.smi_path and self.smi_path[-1][0]>=indent:self.smi_path.pop()
+            if ':' not in s:self.smi_path.append((indent,s))
+            m=re.match(r'Index\s*:\s*(\d+)$',s)
+            if m and self.smi_path and self.smi_path[-1][1]=='MIG Device':
+                self.smi_path[-1]=(self.smi_path[-1][0],'MIG Device '+m[1])
+            path=[name for _,name in self.smi_path]
+            for counter in self.r['health_counters'][health_start:]:
+                counter['path']='/'.join(path+[s.split(':',1)[0].strip()])
         if 'NVRM:' in line or line.startswith('['):return
         # Explicit nvidia-smi CSV headers establish the BDF/identity mapping.
         if ',' in s:
@@ -138,14 +153,25 @@ class Parser(BaseParser):
         m=re.search(r'^\|\s*(\d+)\s+[^|]+\|\s*('+core.BDF+r')\s+',line)
         if m:self.put(self.r['gpu_indices'].setdefault(core.bdf(m[2]),{}),'index',m[1],n,line,'nvidia-smi table')
         if self.current_gpu and self.smi is not None:
-            if s and ':' not in s:self.smi_scope=s
+            scopes=[name for _,name in self.smi_path]
+            self.smi_scope=scopes[-1] if scopes else ''
+            is_mig=any(name.startswith('MIG Device') for name in scopes)
+            if is_mig:
+                m=re.match(r'(Index|GPU Instance ID|Compute Instance ID)\s*:\s*(\d+)',s)
+                if m:self.put(self.r['scoped_metrics'].setdefault(self.current_gpu,{}),'/'.join(scopes+[m[1]]),m[2],n,line,'nvidia-smi snapshot')
             m=re.match(r'(GPU Current Temp|GPU Power Draw|Power Draw|Instantaneous Power Draw|Average Power Draw|DRAM Uncorrectable|Used|Total|Volatile Uncorr\. ECC)\s*:\s*(.*)',s)
             if m:
-                key={'GPU Current Temp':'temp','GPU Power Draw':'power','Power Draw':'power','Volatile Uncorr. ECC':'ecc'}.get(m[1])
+                key={'GPU Current Temp':'temp','Volatile Uncorr. ECC':'ecc'}.get(m[1])
+                if m[1] in {'GPU Power Draw','Power Draw'} and (not scopes or self.smi_scope in {'GPU Power Readings','Power Readings'}):key='power'
                 if m[1] in {'Instantaneous Power Draw','Average Power Draw'} and self.smi_scope in {'GPU Power Readings','Power Readings'}:key='power' if m[1]=='Instantaneous Power Draw' else 'power_average'
-                if m[1]=='DRAM Uncorrectable' and self.health_block and self.health_block[0]=='ECC Errors' and self.health_scope=='Volatile':key='ecc_dram_volatile'
+                if m[1]=='DRAM Uncorrectable' and scopes[-2:]==['ECC Errors','Volatile']:key='ecc_dram_volatile'
                 if m[1] in {'Used','Total'} and self.smi_scope=='FB Memory Usage':key='memory_'+m[1].lower()
-                if key:self.put(self.r['metrics'].setdefault(self.current_gpu,{}),key,m[2],n,line,'nvidia-smi snapshot')
+                if key:
+                    target=self.r['scoped_metrics'] if is_mig else self.r['metrics']
+                    self.put(target.setdefault(self.current_gpu,{}),'/'.join(scopes+[key]) if is_mig else key,m[2],n,line,'nvidia-smi snapshot')
+            if scopes[-3:]==['ECC Errors','Volatile','Double Bit']:
+                m=re.match(r'Device Memory\s*:\s*(.*)',s)
+                if m and not is_mig:self.put(self.r['metrics'].setdefault(self.current_gpu,{}),'ecc_dram_volatile',m[1],n,line,'nvidia-smi snapshot')
 
     def parse(self,stream):
         result=super().parse(stream);self.flush_slot();return result
@@ -157,6 +183,10 @@ def one(fields,key):
     return values[0]['value'] if len(values)==1 else ('冲突' if len(values)>1 else '')
 
 def refs(fields,key):return fields.get(key,[])
+
+def sampled(fields,key):
+    value=one(fields,key)
+    return '多个采集值' if value=='冲突' else value
 
 def convert(r,container_warnings=(),cancel_event=None):
     inventory=r['gpu_inventory'];nodes=r['pci_nodes']
@@ -176,13 +206,13 @@ def convert(r,container_warnings=(),cancel_event=None):
         slot_refs=refs(nf,'slot')+refs(nf,'slotDesignation')
         parents=[p for p,v in nodes.items() if v.get('bridge') and p.split(':')[0]==address.split(':')[0] and one(v['fields'],'secondary')==address.split(':')[1]]
         parent=parents[0] if len(parents)==1 else ''
-        gpus.append({'id':i,'index':index,'label':f'GPU {index}' if index not in ('','冲突') else f'GPU · {address[5:]}','pci':address,'model':one(fields,'model') or one(nf,'pci_model'),'sn':sn,'uuid':one(fields,'uuid'),'slot':slot,'slotSource':'; '.join(x['origin'] for x in slot_refs),'slotRaw':'\n\n'.join(f"{r['source']} · 第 {v['evidence']['line']} 行\n{v['evidence']['text']}" for v in slot_refs),'status':'有冲突' if '冲突' in [sn,slot,one(fields,'uuid')] else ('已读取' if inventory.get(address) else '仅 PCI / 错误记录'),'temp':one(mf,'temp'),'power':one(mf,'power') or (one(mf,'power_average')+'（平均）' if one(mf,'power_average') else ''),'memory':' / '.join(filter(None,[one(mf,'memory_used'),one(mf,'memory_total')])),'ecc':one(mf,'ecc_dram_volatile'),'numa':one(nf,'numa'),'cpuAffinity':one(nf,'cpu_affinity'),'parent':parent,'link':one(nf,'link'),'linkMax':one(nf,'link_max'),'fields':fields,'pciFields':nf,'metrics':mf,'errors':0})
+        gpus.append({'id':i,'index':index,'label':f'GPU {index}' if index not in ('','冲突') else f'GPU · {address[5:]}','pci':address,'model':one(fields,'model') or one(nf,'pci_model'),'sn':sn,'uuid':one(fields,'uuid'),'slot':slot,'slotSource':'; '.join(x['origin'] for x in slot_refs),'slotRaw':'\n\n'.join(f"{r['source']} · 第 {v['evidence']['line']} 行\n{v['evidence']['text']}" for v in slot_refs),'status':'有冲突' if '冲突' in [sn,slot,one(fields,'uuid')] else ('已读取' if inventory.get(address) else '仅 PCI / 错误记录'),'temp':sampled(mf,'temp'),'power':sampled(mf,'power') or (sampled(mf,'power_average')+'（平均）' if sampled(mf,'power_average') else ''),'memory':' / '.join(filter(None,[sampled(mf,'memory_used'),sampled(mf,'memory_total')])),'ecc':sampled(mf,'ecc_dram_volatile'),'numa':one(nf,'numa'),'cpuAffinity':one(nf,'cpu_affinity'),'parent':parent,'link':one(nf,'link'),'linkMax':one(nf,'link_max'),'fields':fields,'pciFields':nf,'metrics':mf,'scopedMetrics':r['scoped_metrics'].get(address,{}),'healthCounters':[c for c in r['health_counters'] if c['address']==address],'errors':0})
     ids={g['pci']:g['id'] for g in gpus};events=[]
     for i,e in enumerate(r['event_records']):
         core.check_cancel(cancel_event)
         ev=e['evidence'];item=CATALOG['codes'].get(e['code']) if e['kind']=='xid' else None
         title=item['title'] if item else (f"未收录 Xid {e['code']}" if e['kind']=='xid' else core.LABELS.get(e['kind'],e['kind']))
-        row={'id':f'e{i}','gpu':ids.get(e['address']),'address':e['address'] or '', 'kind':e['kind'],'code':e['code'],'time':ev['time']['raw'] or '—','title':title,'description':item['description'] if item else '', 'actions':item['actions'] if item else [],'line':ev['line'],'raw':ev['text'],'section':ev['section'],'boot':ev['boot_marker'],'manual':item,'source':r['source']}
+        row={'id':f'e{i}','gpu':ids.get(e['address']),'address':e['address'] or '', 'kind':e['kind'],'code':e['code'],'time':ev['time']['raw'] or '—','title':title,'description':item['description'] if item else '', 'actions':item['actions'] if item else [],'line':ev['line'],'raw':ev['text'],'truncated':ev.get('truncated',False),'section':ev['section'],'boot':ev['boot_marker'],'manual':item,'source':r['source']}
         events.append(row)
         if row['gpu'] is not None:gpus[row['gpu']]['errors']+=1
     sf=r['server_fields'];server={k:one(sf,k) for k in ('model','sn','host','os','manufacturer','uuid')}

@@ -92,7 +92,20 @@
       serverMismatch:available(before.server?.sn)&&available(after.server?.sn)&&before.server.sn!==after.server.sn,
       incomplete:before.complete===false||after.complete===false};
   }
-  const api={eventKey,groupEvents,compareReports,fields};
+  function upstream(nodes,address){
+    const path=[],seen=new Set([address]);let current=address;
+    while(path.length<32){
+      const matches=Object.values(nodes||{}).filter(n=>n.bridge&&n.address.split(':')[0]===current.split(':')[0]&&n.fields?.secondary?.length===1&&n.fields.secondary[0].value===current.split(':')[1]);
+      if(matches.length!==1||seen.has(matches[0].address))break;
+      current=matches[0].address;seen.add(current);path.unshift(current);
+    }
+    return path;
+  }
+  function pathErrorCount(report,gpu){
+    const addresses=new Set([...upstream(report.nodes,gpu.pci),gpu.pci]);
+    return (report.events||[]).filter(e=>addresses.has(e.address)).length;
+  }
+  const api={eventKey,groupEvents,compareReports,fields,upstream,pathErrorCount};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.XidAnalysis=api;
 })(globalThis);

@@ -50,6 +50,7 @@ Descriptions and suggested actions come from matching rules; fault causes requir
 ```sh
 python -m unittest discover -s tests -v
 node tests/test_analysis.cjs
+node tests/test_topology.cjs
 python tools/check_repository.py
 ```
 

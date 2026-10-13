@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {upstream,pathErrorCount}=require('../app/analysis.js');
+const bridge=(address,secondary)=>({address,bridge:true,fields:{secondary:[{value:secondary}]}});
+const nodes={'0000:00:01.0':bridge('0000:00:01.0','20'),'0000:20:00.0':bridge('0000:20:00.0','41')};
+const gpu={id:0,pci:'0000:41:00.0',errors:0};
+const report={nodes,events:[{address:'0000:00:01.0',gpu:null},{address:'0001:20:00.0',gpu:null}]};
+assert.deepEqual(upstream(nodes,gpu.pci),['0000:00:01.0','0000:20:00.0']);
+assert.equal(pathErrorCount(report,gpu),1);
+assert.equal(gpu.errors,0);
+assert.equal(report.events[0].gpu,null);
+assert.deepEqual(upstream({...nodes,'0000:20:01.0':bridge('0000:20:01.0','41')},gpu.pci),[]);
+assert.equal(pathErrorCount({...report,events:[{address:'0000:55:00.0'}]},gpu),0);
+assert.deepEqual(upstream({'0000:41:00.0':bridge('0000:41:00.0','41')},gpu.pci),[]);
+console.log('Topology path, scope, ambiguity and cycle checks passed');
