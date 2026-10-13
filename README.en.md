@@ -13,7 +13,8 @@ Import a report, find a GPU by serial number, UUID, or PCI address, and follow i
 - Xid, initialization, and PCIe/AER records with original log text.
 - Error groups with record counts and first/last evidence.
 - Compare device fields, drivers, links, ECC, and errors by serial number or UUID, with source text from both reports.
-- Report management with filename, server/GPU serial number and UUID search, filters, sorting, and batch deletion.
+- Report search, filters, sorting, batch reparse, and deletion.
+- Import Xid rules, inspect their sources, and open NVIDIA documentation.
 - PCIe paths and system-reported slot references.
 - TSV inventory, text summaries, and JSON evidence export.
 

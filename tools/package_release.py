@@ -5,13 +5,15 @@ from pathlib import Path
 import sys
 import zipfile
 
-VERSION = '0.6.0-preview.1'
+VERSION = '0.7.0'
 
 def main():
     root = Path(__file__).resolve().parent.parent
     exe = root/'dist/XidLens.exe'
     if not exe.is_file():
         raise SystemExit('Build dist/XidLens.exe first.')
+    if f'v{VERSION}' not in (root/'packaging/使用说明.txt').read_text(encoding='utf-8').splitlines()[0]:
+        raise SystemExit('The bundled instructions version does not match the package version.')
     out = root/'dist/release'
     out.mkdir(parents=True, exist_ok=True)
     import shutil
@@ -34,10 +36,10 @@ def main():
         if str(item).endswith('COPYING.txt'):
             files['licenses/PYINSTALLER-COPYING.txt'] = Path(distribution.locate_file(item))
             break
-    for project in ('pywebview','pythonnet','clr_loader','cffi','pycparser','typing_extensions','bottle','proxy_tools'):
+    for project in ('pywebview','pythonnet','clr_loader','cffi','pycparser','typing_extensions','bottle','proxy_tools','openpyxl','et_xmlfile','Pillow'):
         distribution=importlib.metadata.distribution(project)
         for item in distribution.files or []:
-            if Path(str(item)).name.lower().startswith(('license','copying','authors')):
+            if Path(str(item)).name.lower().startswith(('license','licence','copying','authors')):
                 files['licenses/'+project+'/'+Path(str(item)).name]=Path(distribution.locate_file(item))
     archive = out/f'XidLens_v{VERSION}_Windows_x64.zip'
     with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:

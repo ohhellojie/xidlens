@@ -8,9 +8,8 @@ ROOT = Path(__file__).resolve().parent
 import gpu_summary_core as core
 BaseParser = core.Parser
 APP_HOME = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else ROOT
-LOCAL_CATALOG = APP_HOME/'xid_catalog.local.json'
-CATALOG_PATH = Path(os.environ.get('XIDLENS_CATALOG', str(LOCAL_CATALOG if LOCAL_CATALOG.is_file() else ROOT/'xid_catalog.json')))
-CATALOG = json.loads(CATALOG_PATH.read_text(encoding='utf-8'))
+from catalog import initial_catalog
+CATALOG, CATALOG_WARNING = initial_catalog(ROOT, APP_HOME)
 PCI_HEADER = re.compile(r'^((?:[\da-fA-F]{4,8}:)?[\da-fA-F]{2}:[\da-fA-F]{2}\.[0-7])\s+(.+)')
 UNAVAILABLE = {'', '—', 'n/a', 'na', 'none', 'unknown', 'not specified', 'not available', 'not supported', 'to be filled by o.e.m.', 'default string', '0'}
 
@@ -201,7 +200,8 @@ def sampled(fields,key):
     value=one(fields,key)
     return '多个采集值' if value=='冲突' else value
 
-def convert(r,container_warnings=(),cancel_event=None):
+def convert(r,container_warnings=(),cancel_event=None,catalog=None):
+    catalog = CATALOG if catalog is None else catalog
     inventory=r['gpu_inventory'];nodes=r['pci_nodes']
     addresses=sorted(set(inventory)|set(r['pci_gpu_addresses'])|{e['address'] for e in r['event_records'] if e['address'] and e['kind'] in {'xid','init','fallen','channel','ecc','smi_error'}})
     gpus=[]
@@ -223,7 +223,7 @@ def convert(r,container_warnings=(),cancel_event=None):
     ids={g['pci']:g['id'] for g in gpus};events=[]
     for i,e in enumerate(r['event_records']):
         core.check_cancel(cancel_event)
-        ev=e['evidence'];item=CATALOG['codes'].get(e['code']) if e['kind']=='xid' else None
+        ev=e['evidence'];item=catalog['codes'].get(e['code']) if e['kind']=='xid' else None
         title=item['title'] if item else (f"未收录 Xid {e['code']}" if e['kind']=='xid' else core.LABELS.get(e['kind'],e['kind']))
         row={'id':f'e{i}','gpu':ids.get(e['address']),'address':e['address'] or '', 'kind':e['kind'],'code':e['code'],'time':ev['time']['raw'] or '—','title':title,'description':item['description'] if item else '', 'actions':item['actions'] if item else [],'line':ev['line'],'raw':ev['text'],'truncated':ev.get('truncated',False),'section':ev['section'],'boot':ev['boot_marker'],'manual':item,'source':r['source']}
         events.append(row)
@@ -234,12 +234,13 @@ def convert(r,container_warnings=(),cancel_event=None):
     raw='\n\n'.join(f"{p}\n"+'\n'.join(f"{k}: {v['value']} [第 {v['evidence']['line']} 行]" for k,vs in node['fields'].items() for v in vs) for p,node in nodes.items() if node.get('bridge') or p in ids)
     warnings=list(dict.fromkeys(list(container_warnings)+r['warnings']))
     if any(g['status']=='有冲突' for g in gpus):warnings.append('设备字段存在冲突，可在来源中核对。')
-    return {'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{'file':CATALOG['file'],'sha256':CATALOG['sha256']},'contentSha256':r['sha256_content']}
+    return {'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{k:catalog[k] for k in ('file','sha256','importFile','sourceSha256') if k in catalog},'contentSha256':r['sha256_content']}
 
-def analyze(path,cancel_event=None,progress=None):
+def analyze(path,cancel_event=None,progress=None,catalog=None):
+    catalog = CATALOG if catalog is None else catalog
     result=core.analyze_path(path,cancel_event=cancel_event,progress=progress)
     if progress:progress({'phase':'organizing'})
-    cases=[convert(r,result['warnings'],cancel_event) for r in result['reports']]
+    cases=[convert(r,result['warnings'],cancel_event,catalog) for r in result['reports']]
     for case in cases:
         case['complete']=case['complete'] and result['complete']
     return cases

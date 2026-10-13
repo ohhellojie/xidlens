@@ -1,9 +1,9 @@
 """Windows desktop window for the existing local interface."""
 import argparse
-from pathlib import Path
 import webview
 import server
 from window_layout import fitted_bounds
+from file_export import save_export
 
 
 def position_window(window):
@@ -29,9 +29,11 @@ class DesktopActions:
     def save_text(self,name,text):
         if name not in {'GPU设备清单.tsv','GPU日志摘要.txt','GPU日志证据.json'}:
             raise ValueError('无效文件名')
-        selected=self._window.create_file_dialog(webview.FileDialog.SAVE,save_filename=name)
+        extension=name.rsplit('.',1)[-1]
+        selected=self._window.create_file_dialog(webview.FileDialog.SAVE,save_filename=name,
+                                                 file_types=(f'{extension.upper()} (*.{extension})',))
         if not selected:return False
-        Path(selected[0]).write_text(text,encoding='utf-8-sig')
+        save_export(selected[0],text)
         return True
 
 

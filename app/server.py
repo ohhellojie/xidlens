@@ -5,7 +5,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 sys.dont_write_bytecode=True
-from parser import analyze, core
+from parser import analyze, core, CATALOG, CATALOG_WARNING
+from catalog import CatalogStore, MAX_UPLOAD
 
 ROOT=Path(__file__).resolve().parent
 APP_HOME=Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else ROOT
@@ -17,6 +18,7 @@ EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
 CASE_CACHE={}
+CATALOG_STORE=CatalogStore(RUNTIME,CATALOG,CATALOG_WARNING)
 
 def cleanup_file(path):
     try:path.unlink(missing_ok=True)
@@ -28,6 +30,7 @@ class ImportJob:
         self.result={'state':'ready','phase':'uploading','bytes':0,'lines':0,'totalBytes':None}
         self.future=None
         self.path=None
+        self.catalog=CATALOG_STORE.snapshot()
         self.target=None
         self.input_ref=None
         self.new_source=None
@@ -232,7 +235,7 @@ def delete_cases(ids):
 def run_job(job):
     try:
         job.progress({'state':'running','phase':'parsing','source':job.path.name,'bytes':0,'lines':0,'totalBytes':None})
-        cases=analyze(job.path,cancel_event=job,progress=job.progress)
+        cases=analyze(job.path,cancel_event=job,progress=job.progress,catalog=job.catalog)
         if not cases:raise ValueError('没有可读取的报告')
         if job.target:
             old=job.target[0]
@@ -282,6 +285,10 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
+        if url.path=='/api/catalog':return self.respond(CATALOG_STORE.info())
+        if url.path=='/api/catalog/rules':
+            catalog=CATALOG_STORE.snapshot()
+            return self.respond({'rules':[dict(code=key,**value) for key,value in sorted(catalog['codes'].items(),key=lambda item:int(item[0]))],'catalog':{k:v for k,v in catalog.items() if k!='codes'}})
         if url.path=='/api/cases':return self.respond({'cases':case_list()})
         if url.path=='/api/reparse/source':
             try:
@@ -307,6 +314,24 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if url.path=='/api/catalog/reset':
+            try:return self.respond(CATALOG_STORE.reset())
+            except OSError:return self.respond({'error':'规则保存失败，请重试'},500)
+        if url.path=='/api/catalog/import':
+            try:
+                length=int(self.headers.get('Content-Length','0'))
+                if not 0<length<=MAX_UPLOAD:return self.respond({'error':'请选择 10 MB 以内的规则文件'},413)
+                self.connection.settimeout(20)
+                chunks=[];left=length
+                while left:
+                    chunk=self.rfile.read(min(left,1024*1024))
+                    if not chunk:raise ValueError('文件读取未完成')
+                    chunks.append(chunk);left-=len(chunk)
+                name=parse_qs(url.query).get('name',[''])[0]
+                return self.respond(CATALOG_STORE.import_file(b''.join(chunks),name))
+            except ValueError as exc:return self.respond({'error':str(exc)},400)
+            except OSError:return self.respond({'error':'规则读取或保存失败，请重试'},500)
+            finally:self.connection.settimeout(None)
         if url.path=='/api/cases/delete':
             try:
                 length=int(self.headers.get('Content-Length','0'))

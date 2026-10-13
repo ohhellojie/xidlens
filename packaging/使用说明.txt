@@ -1,6 +1,7 @@
-XidLens · Windows x64 v0.6.0-preview.1
+XidLens · Windows x64 v0.7.0
 
 双击 XidLens.exe 打开软件，关闭窗口退出。
+升级时先退出软件，用新版 EXE 替换原文件，保留同目录 runtime 文件夹。
 点击“导入日志”选择文件；多份报告可在顶部切换。
 
 支持 nvidia-bug-report、dmesg / journal、nvidia-smi -q 文本，以及 GZ、ZIP、TAR。
@@ -10,6 +11,9 @@ XidLens · Windows x64 v0.6.0-preview.1
 点击对比字段查看两份原文；缺失字段和多个采集值不计为变化。
 “报告管理”支持搜索、筛选、多选重新解析和删除报告。
 重新解析时，缺少原日志可重新选择；文件内容须与原报告一致。失败或取消保留旧结果。
+
+“规则与资料”支持导入 XLSX 或规则 JSON、查看当前规则与来源，并打开官方文档。
+新规则用于新导入和重新解析的报告。
 
 日志在本机解析，结果保存在同目录 runtime/results，原日志副本保存在 runtime/sources。
 删除报告会清理不再使用的副本，不修改原始文件。

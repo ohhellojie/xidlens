@@ -2,6 +2,14 @@
 
 默认显示 Xid 编号、原文和官方链接。导入自己的 Xid 表格后，可查看离线说明和建议。
 
+在“规则与资料”点击“导入规则”，选择 XLSX 表格或规则 JSON（最大 10 MB）。导入成功后显示文件名、数量、来源和校验值，可搜索查看规则。导入失败保留原规则。
+
+新规则用于之后导入和重新解析的报告，已有报告保留原来的说明与来源。导入配置保存在 `runtime/rules`，重启后继续使用；“恢复默认”停止使用已导入的规则。
+
+XLSX 需包含 `Xids` 和 `Resolution Buckets` 工作表，沿用官方表格的列次序。JSON 使用本工具生成的规则格式。
+
+### 从命令行生成规则
+
 如果已有兼容的 Xid 工作簿，可在本机生成规则：
 
 ```sh
@@ -9,7 +17,7 @@ python -m pip install openpyxl==3.1.5
 python tools/import_catalog.py your-catalog.xlsx --output app/xid_catalog.local.json
 ```
 
-生成的文件放在源码的 `app` 目录中，或放在 `XidLens.exe` 旁，重新启动程序即可自动载入。
+生成的文件放在源码的 `app` 目录中，或放在 `XidLens.exe` 旁，未在界面导入规则时，重新启动程序即可自动载入。界面保存的配置优先生效。
 
 需要指定其他位置时，在 PowerShell 中启动：
 

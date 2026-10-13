@@ -27,6 +27,7 @@ def main():
                '--hidden-import', 'webview.platforms.edgechromium',
                '--exclude-module', 'webview.platforms.qt',
                '--exclude-module', 'webview.platforms.cef',
+               '--exclude-module', 'numpy', '--exclude-module', 'lxml',
                '--exclude-module', 'PyQt5', '--exclude-module', 'PySide6']
     for name in ('index.html', 'app.js', 'analysis.js', 'logo.png'):
         command += ['--add-data', f'{root/"app"/name}:.']

@@ -11,7 +11,8 @@
 - 整理 Xid、初始化失败、PCIe/AER 等记录，查看日志原文。
 - 按设备和错误类型聚合记录，查看条数和首末记录。
 - 按 SN / UUID 对比设备字段、驱动、链路、ECC 及错误记录，查看两份原文。
-- 报告列表支持按文件名、服务器 SN、GPU SN / UUID 搜索、筛选排序和批量删除。
+- 报告列表支持搜索、筛选排序、多选重新解析和删除。
+- 导入 Xid 规则，查看当前规则与来源，打开 NVIDIA 官方资料。
 - 查看 PCIe 路径与槽位参考，追溯字段来源。
 
 支持 nvidia-bug-report、dmesg / journal、nvidia-smi -q 文本，以及 GZ、ZIP、TAR。每份报告独立查看，日志在本机处理。
@@ -39,7 +40,7 @@ python app/main.py
 
 ## Xid 说明
 
-默认显示 Xid 编号、原始记录及[官方手册入口](https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html)。可以用自己的表格[生成离线规则数据](docs/catalog.md)，查看中文说明和手册建议。
+默认显示 Xid 编号、原始记录及[官方手册入口](https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html)。在“规则与资料”导入兼容的 XLSX 或 JSON，查看离线说明与建议。格式见[规则说明](docs/catalog.md)。
 
 说明和建议来自匹配的规则，故障原因需进一步核实。SN 缺失时留空，字段冲突保留原值；槽位需核对机箱或模组位置。
 
