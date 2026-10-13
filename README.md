@@ -4,12 +4,10 @@
 
 [English](README.en.md) · [使用说明](docs/usage.md)
 
-导入日志，按 SN 或 PCI 地址查看设备、错误记录和 PCIe 路径。
-
 ## 目前能做什么
 
 - 查看服务器 SN、GPU 型号、SN、UUID 和采集状态。
-- 按 SN 或 PCI 地址搜索，复制到 Excel，导出设备清单与日志摘要。
+- 按 SN、UUID 或 PCI 地址搜索，复制到 Excel，导出设备清单与日志摘要。
 - 整理 Xid、初始化失败、PCIe/AER 等记录，查看日志原文。
 - 查看 PCIe 路径与槽位参考，追溯字段来源。
 
@@ -19,19 +17,20 @@
 
 ## 开始使用
 
-Windows 用户[下载试用包](https://github.com/ohhellojie/xidlens/releases/download/v0.1.0/XidLens_v0.1.0_Windows_x64.zip)，解压后双击 `XidLens.exe`。版本说明见 [Releases](https://github.com/ohhellojie/xidlens/releases)。
+在 [Releases](https://github.com/ohhellojie/xidlens/releases) 下载 Windows 试用包，解压后双击 `XidLens.exe`。
 
 ### 从源码运行
 
-需要 Python 3.12 或更高版本。核心运行只使用标准库。
+需要 Windows、Python 3.12 或更高版本，以及 Microsoft Edge WebView2 Runtime。
 
 ```sh
 git clone https://github.com/ohhellojie/xidlens.git
 cd xidlens
+python -m pip install -r requirements-desktop.txt
 python app/main.py
 ```
 
-程序在默认浏览器打开。点击“导入日志”选择文件，退出时点右上角“退出”。关闭标签页后，再次双击 EXE 可回到界面。
+程序打开独立窗口。点击“导入日志”选择文件，关闭窗口结束程序。
 
 解析结果保存在程序目录的 `runtime/results`。
 

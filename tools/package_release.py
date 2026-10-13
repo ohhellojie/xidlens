@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import zipfile
 
-VERSION = '0.1.0'
+VERSION = '0.1.5'
 
 def main():
     root = Path(__file__).resolve().parent.parent
@@ -34,6 +34,11 @@ def main():
         if str(item).endswith('COPYING.txt'):
             files['licenses/PYINSTALLER-COPYING.txt'] = Path(distribution.locate_file(item))
             break
+    for project in ('pywebview','pythonnet','clr_loader','cffi','pycparser','typing_extensions','bottle','proxy_tools'):
+        distribution=importlib.metadata.distribution(project)
+        for item in distribution.files or []:
+            if Path(str(item)).name.lower().startswith(('license','copying','authors')):
+                files['licenses/'+project+'/'+Path(str(item)).name]=Path(distribution.locate_file(item))
     archive = out/f'XidLens_v{VERSION}_Windows_x64.zip'
     with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
         for name, source in files.items():

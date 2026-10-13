@@ -4,12 +4,12 @@ Offline NVIDIA GPU log triage: device inventory, PCIe topology, and error eviden
 
 [简体中文](README.md) · [Usage](docs/usage.md)
 
-Import a report, find a GPU by serial number or PCI address, and follow its errors and upstream path. Original lines and field sources stay available for verification.
+Import a report, find a GPU by serial number, UUID, or PCI address, and follow its errors and upstream path. Original lines and field sources stay available for verification.
 
 ## Features
 
 - Server and GPU serial numbers, UUIDs, models, and reported metrics.
-- Search by serial number or PCI address; copy inventory to Excel.
+- Search by serial number, UUID, or PCI address; copy inventory to Excel.
 - Xid, initialization, and PCIe/AER records with original log text.
 - PCIe paths and system-reported slot references.
 - TSV inventory, text summaries, and JSON evidence export.
@@ -20,19 +20,20 @@ This is a Windows preview with a Chinese interface.
 
 ## Run
 
-Windows users can [download the preview ZIP](https://github.com/ohhellojie/xidlens/releases/download/v0.1.0/XidLens_v0.1.0_Windows_x64.zip), extract it, and open `XidLens.exe`. See [Releases](https://github.com/ohhellojie/xidlens/releases) for version notes.
+Download a Windows preview ZIP from [Releases](https://github.com/ohhellojie/xidlens/releases), extract it, and open `XidLens.exe`.
 
 ### From source
 
-Python 3.12+; standard library only at runtime.
+Windows, Python 3.12+, and Microsoft Edge WebView2 Runtime.
 
 ```sh
 git clone https://github.com/ohhellojie/xidlens.git
 cd xidlens
+python -m pip install -r requirements-desktop.txt
 python app/main.py
 ```
 
-The interface opens in your default browser. Import a log and use **退出** to stop the application. Closing the tab leaves it running.
+The interface opens in its own window. Close the window to exit the application.
 
 Results are stored in `runtime/results` beside the application.
 

@@ -12,3 +12,5 @@ NVIDIA 名称及其商标属于对应权利人。
 仓库不包含 NVIDIA 完整手册、原始工作簿或中文译本。用户导入的第三方规则资料保留其原有权利，不适用本项目代码的 MIT 授权。
 
 Windows 打包使用 [PyInstaller](https://pyinstaller.org/)，其许可证及引导程序例外见官方项目。构建使用的 Python 及依赖保留各自许可证。
+
+桌面窗口使用 [pywebview](https://pywebview.flowrl.com/) 和 Microsoft Edge WebView2。第三方许可证随下载包提供。

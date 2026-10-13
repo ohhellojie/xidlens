@@ -6,8 +6,14 @@ from pathlib import Path
 
 if __name__ == '__main__':
     try:
-        import server
-        server.main()
+        from multiprocessing import freeze_support
+        freeze_support()
+        if '--no-browser' in sys.argv:
+            import server
+            server.main()
+        else:
+            import desktop
+            desktop.main()
     except Exception:
         app_home = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
         log = Path(os.environ.get('GPU_LOG_DATA_DIR', str(app_home / 'runtime'))) / 'startup-error.log'

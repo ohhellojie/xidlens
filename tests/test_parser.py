@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import unittest
 import zipfile
 
@@ -45,16 +46,53 @@ def parse(text):
     return parser.convert(parser.Parser('synthetic.txt').parse(io.BytesIO(text.encode())))
 
 class ParserTests(unittest.TestCase):
+    def test_cancellation_stops_active_read(self):
+        cancelled=threading.Event()
+        class Stream(io.BytesIO):
+            def readline(self,*args):
+                cancelled.set()
+                return super().readline(*args)
+        stream=Stream(SAMPLE.encode())
+        with self.assertRaises(parser.core.AnalysisCancelled):
+            parser.Parser('cancelled.log',cancel_event=cancelled).parse(stream)
+        self.assertLess(stream.tell(),len(SAMPLE.encode()))
+
     def test_identity_and_slot_sources(self):
         c = parse(SAMPLE)
         self.assertEqual(c['server']['sn'], 'DEMO-SERVER-001')
         g = c['gpus'][0]
         self.assertEqual(g['sn'], 'DEMO-GPU-001')
+        self.assertEqual(g['uuid'], 'GPU-DEMO-001')
         self.assertEqual(g['slot'], 'DEMO_SLOT_A')
         self.assertNotIn('DEMO_NIC_SLOT', g['slotRaw'])
         self.assertEqual(g['parent'], '0000:00:01.0')
         self.assertEqual(g['numa'], '0')
         self.assertEqual(g['index'], '')
+
+    def test_consumer_csv_keeps_uuid_without_serial(self):
+        c=parse('index, name, serial, uuid, pci.bus_id\n0, NVIDIA GeForce RTX 4090, N/A, GPU-11111111-2222-3333-4444-555555555555, 00000000:41:00.0\n1, NVIDIA GeForce RTX 5090, N/A, GPU-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee, 00000000:61:00.1\n')
+        self.assertEqual(len(c['gpus']),2)
+        first,second=c['gpus']
+        self.assertEqual(first['sn'],'')
+        self.assertEqual(first['uuid'],'GPU-11111111-2222-3333-4444-555555555555')
+        self.assertEqual(first['index'],'0')
+        self.assertEqual(second['pci'],'0000:61:00.1')
+        self.assertEqual(second['uuid'],'GPU-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
+        self.assertEqual(second['fields']['uuid'][0]['evidence']['line'],3)
+
+    def test_uuid_conflict_is_not_silently_selected(self):
+        c=parse(SAMPLE+'\n*** /proc/driver/nvidia/gpus/0000:41:00.0/information\nGPU UUID: GPU-OTHER\n')
+        self.assertEqual(c['gpus'][0]['uuid'],'冲突')
+        self.assertEqual(len(c['gpus'][0]['fields']['uuid']),2)
+
+    def test_smi_identity_stays_with_explicit_gpu_address(self):
+        c=parse('Attached GPUs : 2\nGPU 00000000:41:00.0\n    Product Name : NVIDIA A800\n    Serial Number : 001234\n    GPU UUID : GPU-FIRST\nGPU 00000000:61:00.0\n    Product Name : NVIDIA GeForce RTX 4090\n    Serial Number : N/A\n    GPU UUID : GPU-SECOND\n')
+        self.assertEqual([(g['sn'],g['uuid']) for g in c['gpus']],[('001234','GPU-FIRST'),('','GPU-SECOND')])
+
+    def test_system_uuid_never_becomes_gpu_uuid(self):
+        c=parse(SAMPLE.replace('GPU UUID: GPU-DEMO-001','').replace('    Product Name: Demo Server','    UUID: SERVER-UUID\n    Product Name: Demo Server'))
+        self.assertEqual(c['server']['uuid'],'SERVER-UUID')
+        self.assertEqual(c['gpus'][0]['uuid'],'')
 
     def test_conflicting_serials_are_preserved(self):
         c = parse(SAMPLE + '\n*** /proc/driver/nvidia/gpus/0000:41:00.0/information\nSerial Number: DEMO-GPU-OTHER\n')

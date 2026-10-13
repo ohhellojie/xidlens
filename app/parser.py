@@ -1,6 +1,6 @@
 """本地日志解析适配层。设备与事件适配层；字段保留原文证据。"""
 from __future__ import annotations
-import hashlib, json, os, re, sys
+import csv, hashlib, json, os, re, sys
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -25,6 +25,11 @@ class Parser(BaseParser):
         self.r.update(server_fields={}, pci_nodes={}, metrics={}, gpu_indices={}, event_records=[])
         self.dmi_type=None;self.pci_node=None;self.os_block=False;self.smi_scope='';self.in_sysfs=None;self.dmi_slot={}
         self.r['dmi_slots']=[]
+        self.csv_columns=None
+
+    def field(self,address,key,value,n,line,origin):
+        if not valid(value):return
+        super().field(address,key,str(value).strip(),n,line,origin)
 
     def evidence(self,n,line):
         ev=super().evidence(n,line);ev['text']=line[:32768];ev['truncated']=len(line)>32768
@@ -55,8 +60,30 @@ class Parser(BaseParser):
         if boundary:
             self.flush_slot()
             self.dmi_type=None;self.pci_node=None;self.os_block=False;self.smi_scope='';self.in_sysfs=None
+            self.csv_columns=None
         super().consume(line,n)
         if 'NVRM:' in line or line.startswith('['):return
+        # Explicit nvidia-smi CSV headers establish the BDF/identity mapping.
+        if ',' in s:
+            values=next(csv.reader([s]))
+            labels=[re.sub(r'\s*\[.*?\]\s*','',v).strip().lower() for v in values]
+            aliases={'pci.bus_id':'pci','pci bus id':'pci','bus id':'pci','uuid':'uuid','gpu uuid':'uuid','serial':'serial','serial number':'serial','name':'model','gpu name':'model','index':'index'}
+            columns={aliases[label]:i for i,label in enumerate(labels) if label in aliases}
+            if 'pci' in columns and any(k in columns for k in ('uuid','serial','model')):
+                self.csv_columns=columns
+                return
+            if self.csv_columns and len(values)>max(self.csv_columns.values()):
+                address=values[self.csv_columns['pci']].strip()
+                if re.fullmatch(core.BDF,address):
+                    address=core.bdf(address)
+                    for key,i in self.csv_columns.items():
+                        value=values[i].strip()
+                        if key=='index' and re.fullmatch(r'\d+',value):self.put(self.r['gpu_indices'].setdefault(address,{}),'index',value,n,line,'nvidia-smi CSV')
+                        elif key in ('uuid','serial','model'):self.field(address,key,value,n,line,'nvidia-smi CSV')
+                    self.r['recognized']=True
+                    return
+        elif s:
+            self.csv_columns=None
         if n<=150:
             m=re.match(r'^uname:\s+Linux\s+(\S+)',line)
             if m:self.put(self.r['server_fields'],'host',m[1],n,line,'report uname')
@@ -128,11 +155,12 @@ def one(fields,key):
 
 def refs(fields,key):return fields.get(key,[])
 
-def convert(r,container_warnings=()):
+def convert(r,container_warnings=(),cancel_event=None):
     inventory=r['gpu_inventory'];nodes=r['pci_nodes']
     addresses=sorted(set(inventory)|set(r['pci_gpu_addresses'])|{e['address'] for e in r['event_records'] if e['address'] and e['kind'] in {'xid','init','fallen','channel','ecc','smi_error'}})
     gpus=[]
     for i,address in enumerate(addresses):
+        core.check_cancel(cancel_event)
         fields=inventory.get(address,{}).get('fields',{});nf=nodes.get(address,{}).get('fields',{});mf=r['metrics'].get(address,{})
         for ds in r['dmi_slots']:
             if ds['address']==address:
@@ -148,6 +176,7 @@ def convert(r,container_warnings=()):
         gpus.append({'id':i,'index':index,'label':f'GPU {index}' if index not in ('','冲突') else f'GPU · {address[5:]}','pci':address,'model':one(fields,'model') or one(nf,'pci_model'),'sn':sn,'uuid':one(fields,'uuid'),'slot':slot,'slotSource':'; '.join(x['origin'] for x in slot_refs),'slotRaw':'\n\n'.join(f"{r['source']} · 第 {v['evidence']['line']} 行\n{v['evidence']['text']}" for v in slot_refs),'status':'有冲突' if '冲突' in [sn,slot,one(fields,'uuid')] else ('已读取' if inventory.get(address) else '仅 PCI / 错误记录'),'temp':one(mf,'temp'),'power':one(mf,'power') or (one(mf,'power_average')+'（平均）' if one(mf,'power_average') else ''),'memory':' / '.join(filter(None,[one(mf,'memory_used'),one(mf,'memory_total')])),'ecc':one(mf,'ecc_dram_volatile'),'numa':one(nf,'numa'),'cpuAffinity':one(nf,'cpu_affinity'),'parent':parent,'link':one(nf,'link'),'linkMax':one(nf,'link_max'),'fields':fields,'pciFields':nf,'metrics':mf,'errors':0})
     ids={g['pci']:g['id'] for g in gpus};events=[]
     for i,e in enumerate(r['event_records']):
+        core.check_cancel(cancel_event)
         ev=e['evidence'];item=CATALOG['codes'].get(e['code']) if e['kind']=='xid' else None
         title=item['title'] if item else (f"未收录 Xid {e['code']}" if e['kind']=='xid' else core.LABELS.get(e['kind'],e['kind']))
         row={'id':f'e{i}','gpu':ids.get(e['address']),'address':e['address'] or '', 'kind':e['kind'],'code':e['code'],'time':ev['time']['raw'] or '—','title':title,'description':item['description'] if item else '', 'actions':item['actions'] if item else [],'line':ev['line'],'raw':ev['text'],'section':ev['section'],'boot':ev['boot_marker'],'manual':item,'source':r['source']}
@@ -161,9 +190,9 @@ def convert(r,container_warnings=()):
     if any(g['status']=='有冲突' for g in gpus):warnings.append('设备字段存在冲突，可在来源中核对。')
     return {'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{'file':CATALOG['file'],'sha256':CATALOG['sha256']},'contentSha256':r['sha256_content']}
 
-def analyze(path):
-    result=core.analyze_path(path)
-    cases=[convert(r,result['warnings']) for r in result['reports']]
+def analyze(path,cancel_event=None):
+    result=core.analyze_path(path,cancel_event=cancel_event)
+    cases=[convert(r,result['warnings'],cancel_event) for r in result['reports']]
     for case in cases:
         case['complete']=case['complete'] and result['complete']
     return cases

@@ -34,6 +34,15 @@ LABELS = {'xid': 'Xid', 'init': '初始化失败', 'aer': 'PCIe/AER 记录',
 TEXT_EXT = {'.log', '.txt', '.out', '.xml', '.csv', '.json'}
 
 
+class AnalysisCancelled(Exception):
+    pass
+
+
+def check_cancel(cancel_event):
+    if cancel_event is not None and cancel_event.is_set():
+        raise AnalysisCancelled()
+
+
 def bdf(value):
     parts = value.lower().split(':')
     if len(parts) == 2:
@@ -63,7 +72,8 @@ def timestamp(line):
 
 
 class Parser:
-    def __init__(self, source, max_bytes=512*1024*1024, max_groups=2000):
+    def __init__(self, source, max_bytes=512*1024*1024, max_groups=2000, cancel_event=None):
+        self.cancel_event = cancel_event
         self.r = {'source': source, 'complete': True, 'bytes_read': 0, 'lines_read': 0,
                   'sha256_content': None, 'warnings': [], 'collection_time': [],
                   'driver_versions': [], 'gpu_inventory': {}, 'pci_gpu_addresses': [],
@@ -239,6 +249,7 @@ class Parser:
         digest = hashlib.sha256()
         try:
             while True:
+                check_cancel(self.cancel_event)
                 raw = stream.readline(min(1024*1024, self.max_bytes-self.r['bytes_read']+1))
                 if not raw:
                     break
@@ -288,10 +299,12 @@ def log_member(name):
 
 class ReadBudget:
     """限制 tar 容器解压量，包括跳过的非文本成员。"""
-    def __init__(self, stream, limit):
+    def __init__(self, stream, limit, cancel_event=None):
         self.stream, self.remaining = stream, limit
+        self.cancel_event = cancel_event
 
     def read(self, size=-1):
+        check_cancel(self.cancel_event)
         size = self.remaining + 1 if size < 0 else min(size, self.remaining + 1)
         data = self.stream.read(size)
         self.remaining -= len(data)
@@ -300,19 +313,21 @@ class ReadBudget:
         return data
 
 
-def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes=2*1024*1024*1024):
+def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes=2*1024*1024*1024, cancel_event=None):
+    check_cancel(cancel_event)
     path = Path(path).resolve()
     result = {'path': str(path), 'reports': [], 'warnings': [], 'complete': True}
     used = 0
 
     def read(stream, label, gz=False):
         nonlocal used
+        check_cancel(cancel_event)
         remaining = max_total_bytes - used
         if remaining <= 0:
             result['complete'] = False
             result['warnings'].append('压缩包总读取量达到上限，剩余成员未读。')
             return
-        parser = Parser(label, min(max_bytes, remaining))
+        parser = Parser(label, min(max_bytes, remaining), cancel_event=cancel_event)
         if gz:
             with gzip.GzipFile(fileobj=stream) as inner:
                 report = parser.parse(inner)
@@ -332,6 +347,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                 if skipped:
                     result['warnings'].append(f'{skipped} 个非支持文本成员未解析（包括嵌套压缩包）。')
                 for m in selected[:max_members]:
+                    check_cancel(cancel_event)
                     if used >= max_total_bytes:
                         result['complete'] = False
                         result['warnings'].append('压缩包总读取量达到上限，剩余成员未读。')
@@ -347,10 +363,11 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                     result['warnings'].append('成员数量达到上限，剩余日志未读。')
         elif lower.endswith(('.tar.gz', '.tgz', '.tar')):
             opener = gzip.open if lower.endswith(('.tar.gz', '.tgz')) else open
-            with opener(path, 'rb') as container, tarfile.open(fileobj=ReadBudget(container, max_total_bytes), mode='r|') as archive:
+            with opener(path, 'rb') as container, tarfile.open(fileobj=ReadBudget(container, max_total_bytes, cancel_event), mode='r|') as archive:
                 count = 0
                 skipped = 0
                 for m in archive:
+                    check_cancel(cancel_event)
                     if m.isdir():
                         continue
                     if not m.isfile() or not log_member(m.name):
