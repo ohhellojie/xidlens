@@ -1,0 +1,15 @@
+{
+  "name": "xidlens-knowledge",
+  "version": "0.9.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vite": "6.4.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "@vitejs/plugin-react": "5.0.4"
+  }
+}

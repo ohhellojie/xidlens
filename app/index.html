@@ -56,6 +56,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 
 .resource-tabs{display:flex;gap:8px;flex-shrink:0;border-bottom:1px solid var(--line);margin-bottom:16px;padding-bottom:12px}.resource-tabs .active{color:var(--accent);background:var(--selected)}.resources-page{overflow:auto;min-height:0;padding-right:12px;scrollbar-gutter:stable}.resource-heading{flex-wrap:wrap}.resource-section{max-width:900px}.guide-list{border-top:1px solid var(--line);margin-top:20px}.guide-item{border-bottom:1px solid var(--line)}.guide-item>summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:18px 0;gap:16px;list-style:none}.guide-item summary strong{font-weight:500;font-size:14px}.guide-item summary small{display:block;color:var(--muted);margin-top:5px;font-size:12px}.guide-item[open]>summary>.icon{transform:rotate(90deg)}.guide-body{padding:0 0 20px 0;max-width:760px}.guide-body ol{padding-left:22px;margin:0 0 16px;line-height:1.9;font-size:13px}.guide-body li+li{margin-top:8px}.guide-body .link-btn,.online-source{display:inline-flex;align-items:center;gap:5px}.online-status{font-size:13px;margin:16px 0;line-height:1.7;overflow-wrap:anywhere}.online-source{margin-left:12px;font-size:12px}.update-notes{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.9;max-height:280px;overflow:auto;margin:16px 0;border-left:2px solid var(--line);padding-left:16px}.online-option{display:flex;align-items:center;gap:8px;font-size:13px}.online-option input{accent-color:var(--accent)}.update-progress{width:100%;height:6px;accent-color:var(--accent)}button.prototype-tag{border:0;background:transparent;text-align:left;color:var(--muted);cursor:pointer;width:100%}button.prototype-tag:hover{color:var(--accent)}.update-available:after{content:' · 有更新';color:var(--accent)}.dialog[data-kind=online]{width:480px}.dialog[data-kind=online] p{line-height:1.8;overflow-wrap:anywhere}
 .content:has(.resources-page){display:flex;flex-direction:column;overflow:hidden}.resources-page{flex:1;width:100%}
+
+.knowledge-content{overflow:hidden!important;display:flex;flex-direction:column}#knowledge-host{flex:1;min-height:0;height:100%}.sidebar nav{overflow-y:auto;min-height:0}.sidebar-foot{flex-shrink:0}.side-version{font-size:10px;color:var(--muted);margin-top:9px}.prototype-tag[aria-current=page]{color:var(--accent)}
+button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 0}@media(max-width:1060px){button.prototype-tag{display:flex;justify-content:center}.prototype-tag .update-label,.side-version{display:none}.update-available:after{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);position:absolute;margin-left:25px}}
 </style>
 <link rel="icon" type="image/png" href="/logo.png">
 </head>
@@ -65,7 +68,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
   <div class="brand"><span class="brand-mark" id="brand-mark" aria-hidden="true"><img src="/logo.png" alt=""></span><span class="brand-text">XidLens</span></div>
   <div class="nav-caption">日志分析</div>
   <nav id="navigation"></nav>
-  <div class="sidebar-foot"><button class="manual-link" data-page="resources" aria-label="规则与资料" id="manual"></button><button class="prototype-tag" type="button" aria-label="软件更新">v0.8.0</button></div>
+  <div class="sidebar-foot"><button class="manual-link" data-page="resources" aria-label="解析规则" id="manual"></button><button class="prototype-tag" type="button" aria-label="软件更新">软件更新</button><div class="side-version">v0.9.0</div></div>
  </aside>
  <div class="workspace">
   <header class="topbar">
@@ -81,6 +84,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
  <div class="toast" id="toast" role="status" hidden></div>
 </div>
 <script src="/analysis.js" defer></script>
+<script src="/knowledge.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

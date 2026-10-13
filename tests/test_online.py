@@ -13,13 +13,13 @@ class OnlineTests(unittest.TestCase):
  def test_version_order_and_asset_origin(self):
   self.assertLess(online.version_key('0.9.0-preview.9'),online.version_key('0.9.0'))
   self.assertGreater(online.version_key('0.10.0'),online.version_key('0.9.9'))
-  self.assertIsNone(online.select_release([release('v0.7.0')]))
-  self.assertIsNone(online.select_release([release(draft=True)]))
-  self.assertEqual(online.select_release([release('v0.9.0'),release('v0.10.0')])['version'],'v0.10.0')
+  self.assertIsNone(online.select_release([release('v0.7.0')],current='0.8.0'))
+  self.assertIsNone(online.select_release([release(draft=True)],current='0.8.0'))
+  self.assertEqual(online.select_release([release('v0.9.0'),release('v0.10.0')],current='0.8.0')['version'],'v0.10.0')
   bad=release();bad['assets'][0]['browser_download_url']='https://github.com/someone/other/tool.exe'
-  self.assertIsNone(online.select_release([bad]))
+  self.assertIsNone(online.select_release([bad],current='0.8.0'))
   bad=release();bad['assets'][0]['digest']=''
-  self.assertIsNone(online.select_release([bad]))
+  self.assertIsNone(online.select_release([bad],current='0.8.0'))
  def test_https_redirect_allowlist(self):
   for url in ['http://docs.nvidia.com/x','https://evil.test/x','https://github.com@evil.test/x','https://github.com:8080/x']:
    with self.assertRaises(ValueError):online.safe_url(url)
@@ -43,7 +43,7 @@ class OnlineTests(unittest.TestCase):
    self.assertEqual(catalog.CatalogStore(folder).info(),store.info())
  def test_download_verification_cancellation_and_retry(self):
   with tempfile.TemporaryDirectory() as folder:
-   updates=online.OnlineUpdates(folder,catalog.CatalogStore(folder));updates.release=online.select_release([release()])
+   updates=online.OnlineUpdates(folder,catalog.CatalogStore(folder));updates.release=online.select_release([release()],current='0.8.0')
    for raw in (b'MZwrong',b'garbage'):
     with patch('online.download',return_value=raw):updates.run('download-app','app')
     self.assertIsNone(updates.ready);self.assertEqual(updates.snapshot()['app']['state'],'error')

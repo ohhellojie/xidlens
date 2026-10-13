@@ -1,6 +1,4053 @@
 {
-  "file": "official-reference-links",
-  "sha256": "",
-  "codes": {},
-  "reference": "https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html"
+  "file": "NVIDIA_Xid_Catalog_2026-09-09_中文译本.xlsx",
+  "sha256": "4c08b39f3c080d26c01140af846a5b711826de544e93667fd5c42617fc7a4334",
+  "codes": {
+    "1": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_FIFO_METHOD",
+      "sheet": "Xids",
+      "row": 2,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "2": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_SW_METHOD",
+      "sheet": "Xids",
+      "row": 3,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "3": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_UNK_METHOD",
+      "sheet": "Xids",
+      "row": 4,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "4": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_CHANNEL_BUSY",
+      "sheet": "Xids",
+      "row": 5,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "5": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_RUNOUT_OVERFLOW",
+      "sheet": "Xids",
+      "row": 6,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "6": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_PARSE_ERR",
+      "sheet": "Xids",
+      "row": 7,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "7": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_PTE_ERR",
+      "sheet": "Xids",
+      "row": 8,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "8": {
+      "title": "GPU 已停止处理任务",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_IDLE_TIMEOUT",
+      "sheet": "Xids",
+      "row": 9,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "9": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_ERROR_INSTANCE",
+      "sheet": "Xids",
+      "row": 10,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "10": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_ERROR_SINGLE_STEP",
+      "sheet": "Xids",
+      "row": 11,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "11": {
+      "title": "命令提交缓冲区（push buffer）中的指令流无效或已损坏",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CHECK_APP/CUDA",
+          "label": "CHECK_APP/CUDA\n（检查应用程序／CUDA）",
+          "text": "问题很可能由应用程序在与 GPU 通信时传入错误数据或采用不正确的方法引起。某些错误包含进程标识符（PID），可用于定位问题来源。\n\n如果确定为驱动问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_ERROR_MISSING_HW",
+      "sheet": "Xids",
+      "row": 12,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "12": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_ERROR_SW_METHOD",
+      "sheet": "Xids",
+      "row": 13,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "13": {
+      "title": "图形引擎异常",
+      "description": "用户应用程序发生一般性错误时，会记录此事件。常见原因是越界访问，例如访问超出数组末尾的位置；也可能是非法指令、非法寄存器或其他情况。\n\n少数情况下，硬件故障或系统软件缺陷也可能表现为 Xid 13。\n\n记录此事件后，NVIDIA 建议采用以下方式排查：\n1. 在 cuda-gdb 中运行应用程序，或使用 Compute Sanitizer 的 memcheck 工具检查应用程序；或\n2. 设置 CUDA_DEVICE_WAITS_ON_EXCEPTION=1 后运行应用程序，再使用 cuda-gdb 附加到该进程；或\n3. 如果前两种方式仍无法得出明确结论，提交缺陷报告，以排查潜在的 NVIDIA 驱动或硬件问题。\n\n注：Compute Sanitizer 的 memcheck 工具会对运行中的应用程序进行插桩，并报告执行非法读取的代码行。",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "WORKFLOW_XID_13",
+          "label": "WORKFLOW_XID_13\n（按 Xid 13 流程处理）",
+          "text": "错误反复出现在相同 TPC 和 GPC、但涉及不同 SM：RUN_DCGMEUD（运行 DCGM EUD 诊断，可能存在硬件问题）；若诊断通过，继续 RUN_FIELDDIAGS（运行现场诊断）。\n错误反复出现在相同 TPC 和 GPC、且仅涉及一个 SM：RUN_DCGMEUD（运行 DCGM EUD 诊断，可能存在硬件问题）；若诊断通过，继续 RUN_FIELDDIAGS（运行现场诊断）。\n单独出现且没有集中爆发：CHECK_APP/CUDA（检查应用程序／CUDA）。\n错误并未反复出现在相同 TPC 和 GPC：CHECK_APP/CUDA（检查应用程序／CUDA）。\n非生产环境：CHECK_APP/CUDA（检查应用程序／CUDA）。\n应用程序已确认正常，且该错误单独出现：REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_EXCEPTION /\nROBUST_CHANNEL_GR_ERROR_SW_NOTIFY",
+      "sheet": "Xids",
+      "row": 14,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "14": {
+      "title": "未使用",
+      "description": "来自用户空间的模拟错误或注入错误",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FAKE_ERROR",
+      "sheet": "Xids",
+      "row": 15,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "15": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_SCANLINE_TIMEOUT",
+      "sheet": "Xids",
+      "row": 16,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "16": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_VBLANK_CALLBACK_TIMEOUT",
+      "sheet": "Xids",
+      "row": 17,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "17": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_PARAMETER_ERROR",
+      "sheet": "Xids",
+      "row": 18,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "18": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_BUS_MASTER_TIMEOUT_ERROR",
+      "sheet": "Xids",
+      "row": 19,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "19": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_DISP_MISSED_NOTIFIER",
+      "sheet": "Xids",
+      "row": 20,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "20": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_MPEG_ERROR_SW_METHOD",
+      "sheet": "Xids",
+      "row": 21,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "21": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_ME_ERROR_SW_METHOD",
+      "sheet": "Xids",
+      "row": 22,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "22": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_VP_ERROR_SW_METHOD",
+      "sheet": "Xids",
+      "row": 23,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "23": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_RC_LOGGING_ENABLED",
+      "sheet": "Xids",
+      "row": 24,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "24": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_SEMAPHORE_TIMEOUT",
+      "sheet": "Xids",
+      "row": 25,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "25": {
+      "title": "命令提交缓冲区（push buffer）中的指令流无效或不合法",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CHECK_APP/CUDA",
+          "label": "CHECK_APP/CUDA\n（检查应用程序／CUDA）",
+          "text": "问题很可能由应用程序在与 GPU 通信时传入错误数据或采用不正确的方法引起。某些错误包含进程标识符（PID），可用于定位问题来源。\n\n如果确定为驱动问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_ILLEGAL_NOTIFY",
+      "sheet": "Xids",
+      "row": 26,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "26": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_FBISTATE_TIMEOUT",
+      "sheet": "Xids",
+      "row": 27,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "27": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_VP_ERROR",
+      "sheet": "Xids",
+      "row": 28,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "28": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_VP2_ERROR",
+      "sheet": "Xids",
+      "row": 29,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "29": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_BSP_ERROR",
+      "sheet": "Xids",
+      "row": 30,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "30": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_BAD_ADDR_ACCESS",
+      "sheet": "Xids",
+      "row": 31,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "31": {
+      "title": "GPU 内存页访问异常",
+      "description": "内存管理单元（MMU）报告故障时，会记录此事件，例如芯片上的相关单元访问了非法地址。此类问题通常源于应用程序缺陷，也可能源于驱动或硬件缺陷。\n\n记录此事件后，NVIDIA 建议采用以下方式排查：\n1. 在 cuda-gdb 中运行应用程序，或使用 Compute Sanitizer 的 memcheck 工具检查应用程序；或\n2. 设置 CUDA_DEVICE_WAITS_ON_EXCEPTION=1 后运行应用程序，再使用 cuda-gdb 附加到该进程；或\n3. 如果前两种方式仍无法得出明确结论，提交缺陷报告，以排查潜在的 NVIDIA 驱动或硬件问题。\n\n注：Compute Sanitizer 的 memcheck 工具会对运行中的应用程序进行插桩，并报告执行非法读取的代码行。",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "WORKFLOW_XID_31",
+          "label": "WORKFLOW_XID_31\n（按 Xid 31 流程处理）",
+          "text": "需要运行多次，才能确定错误出现的规律。\n通过 PCI-ID 确认，MMU 故障反复发生在同一块 GPU 上：RUN_DCGMEUD（运行 DCGM EUD 诊断，可能存在硬件问题）；若诊断通过，继续 RUN_FIELDDIAGS（运行现场诊断）。\n通过 PCI-ID 确认，MMU 故障反复发生在不同 GPU 上：CHECK_APP/CUDA（检查应用程序／CUDA）。\n单独出现且没有集中爆发：CHECK_APP/CUDA（检查应用程序／CUDA）。\n应用程序已确认正常：REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FIFO_ERROR_MMU_ERR_FLT",
+      "sheet": "Xids",
+      "row": 32,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "32": {
+      "title": "命令提交缓冲区（push buffer）中的指令流无效或已损坏",
+      "description": "直接内存访问（DMA）控制器报告故障时，会记录此事件。该控制器负责管理 NVIDIA 驱动与 GPU 之间经 PCIe 总线传输的通信流。此类故障主要涉及 PCI 总线的传输质量问题，通常不是由用户应用程序的操作引起的。",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CHECK_APP/CUDA",
+          "label": "CHECK_APP/CUDA\n（检查应用程序／CUDA）",
+          "text": "问题很可能由应用程序在与 GPU 通信时传入错误数据或采用不正确的方法引起。某些错误包含进程标识符（PID），可用于定位问题来源。\n\n如果确定为驱动问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_PBDMA_ERROR",
+      "sheet": "Xids",
+      "row": 33,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "33": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_SEC_ERROR",
+      "sheet": "Xids",
+      "row": 34,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "34": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_MSVLD_ERROR",
+      "sheet": "Xids",
+      "row": 35,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "35": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_MSPDEC_ERROR",
+      "sheet": "Xids",
+      "row": 36,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "36": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_MSPPP_ERROR",
+      "sheet": "Xids",
+      "row": 37,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "37": {
+      "title": "驱动固件错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CHECK_APP/CUDA",
+          "label": "CHECK_APP/CUDA\n（检查应用程序／CUDA）",
+          "text": "问题很可能由应用程序在与 GPU 通信时传入错误数据或采用不正确的方法引起。某些错误包含进程标识符（PID），可用于定位问题来源。\n\n如果确定为驱动问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FECS_ERR_UNIMP_FIRMWARE_METHOD",
+      "sheet": "Xids",
+      "row": 38,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "38": {
+      "title": "驱动固件错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FECS_ERR_WATCHDOG_TIMEOUT",
+      "sheet": "Xids",
+      "row": 39,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "39": {
+      "title": "复制引擎异常",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE0_ERROR",
+      "sheet": "Xids",
+      "row": 40,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "40": {
+      "title": "复制引擎异常",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE1_ERROR",
+      "sheet": "Xids",
+      "row": 41,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "41": {
+      "title": "复制引擎异常",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE2_ERROR",
+      "sheet": "Xids",
+      "row": 42,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "42": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_VIC_ERROR",
+      "sheet": "Xids",
+      "row": 43,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "43": {
+      "title": "GPU 已停止处理任务",
+      "description": "用户应用程序遇到软件引起的故障、必须终止时，会记录此事件。此时 GPU 仍处于正常状态。\n\n多数情况下，这一事件表示用户应用程序错误，而非驱动缺陷。",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_RESETCHANNEL_VERIF_ERROR",
+      "sheet": "Xids",
+      "row": 44,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "44": {
+      "title": "上下文切换期间发生图形引擎故障",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_FAULT_DURING_CTXSW",
+      "sheet": "Xids",
+      "row": 45,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "45": {
+      "title": "因先前错误而提前清理应用程序；最常见于同时运行多个 CUDA 应用程序并遇到双比特错误（DBE）时",
+      "description": "用户应用程序异常终止、内核驱动清理 GPU 上运行的应用程序时，会记录此事件。Ctrl+C、GPU 复位和 SIGKILL 都可能终止应用程序，从而产生此事件。\n\n多数情况下，这一事件由用户操作或系统行为引起，并不表示存在软件缺陷。",
+      "actions": [
+        {
+          "key": "WORKFLOW_XID_45",
+          "label": "WORKFLOW_XID_45\n（按 Xid 45 流程处理）",
+          "text": "单独出现：RESTART_FM（重启 Fabric Manager）\n伴随其他 Xid：IGNORE（忽略本事件，按其他 Xid 的指引处理）"
+        },
+        {
+          "key": "单独出现：RESTART_FM（重启 Fabric Manager）",
+          "label": "单独出现：RESTART_FM（重启 Fabric Manager）\n伴随其他 Xid：IGNORE（忽略本事件，按其他 Xid 的指引处理）",
+          "text": "单独出现：RESTART_FM（重启 Fabric Manager）\n伴随其他 Xid：IGNORE（忽略本事件，按其他 Xid 的指引处理）"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_PREEMPTIVE_REMOVAL",
+      "sheet": "Xids",
+      "row": 46,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "46": {
+      "title": "GPU 已停止处理任务",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GPU_TIMEOUT_ERROR",
+      "sheet": "Xids",
+      "row": 47,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "47": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVENC0_ERROR",
+      "sheet": "Xids",
+      "row": 48,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "48": {
+      "title": "纠错码（ECC）双比特错误",
+      "description": "GPU 检测到不可纠正错误时，会记录此事件，同时向用户应用程序报告该错误。需要复位 GPU 或重启节点才能清除此错误。\n\nnvidia-smi 可提供 ECC 错误汇总。\n\n如果 ECC 错误发生在静态随机存取存储器（SRAM，不包括帧缓冲区／显存），应检查 SRAM 双比特错误（DBE）阈值；超过阈值时，按返修／退换货授权（RMA）流程处理。可检查 nvidia-smi 的 <sram_threshold_exceeded> 标志，或 NSM 消息类型 0x3、命令码 0x7D 的 bit 0。若该标志已置位，运行现场诊断（Field Diagnostics）。",
+      "actions": [
+        {
+          "key": "WORKFLOW_XID_48",
+          "label": "WORKFLOW_XID_48\n（按 Xid 48 流程处理）",
+          "text": "数据中心恢复操作：\n单独出现：RESET_GPU（复位 GPU）\n伴随 Xid 63 或 64：DRAIN_AND_RESET（排空任务后复位）\n\n调查操作：\n单独出现：RUN_FIELDDIAG（运行现场诊断）\n伴随其他错误：错误字符串会指出受影响的单元。\nFB（帧缓冲区／显存）：按 Xid 63/64 的指引处理。\n其他所有 SRAM：检查 SRAM 错误阈值标志，即 nvidia-smi 的 <sram_threshold_exceeded>，或 NSM 消息类型 0x3、命令码 0x7D 的 bit 0；若标志已置位，执行 RUN_FIELDDIAG（运行现场诊断）。"
+        },
+        {
+          "key": "WORKFLOW_XID_48",
+          "label": "WORKFLOW_XID_48\n（按 Xid 48 流程处理）",
+          "text": "数据中心恢复操作：\n单独出现：RESET_GPU（复位 GPU）\n伴随 Xid 63 或 64：DRAIN_AND_RESET（排空任务后复位）\n\n调查操作：\n单独出现：RUN_FIELDDIAG（运行现场诊断）\n伴随其他错误：错误字符串会指出受影响的单元。\nFB（帧缓冲区／显存）：按 Xid 63/64 的指引处理。\n其他所有 SRAM：检查 SRAM 错误阈值标志，即 nvidia-smi 的 <sram_threshold_exceeded>，或 NSM 消息类型 0x3、命令码 0x7D 的 bit 0；若标志已置位，执行 RUN_FIELDDIAG（运行现场诊断）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GPU_ECC_DBE",
+      "sheet": "Xids",
+      "row": 49,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "49": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SILENT_RUNNING_CONSTANT_LEVEL_SET_BY_REGISTRY",
+      "sheet": "Xids",
+      "row": 50,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "50": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SILENT_RUNNING_LEVEL_TRANSITION_DUE_TO_RC_ERROR",
+      "sheet": "Xids",
+      "row": 51,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "51": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SILENT_RUNNING_STRESS_TEST_FAILURE",
+      "sheet": "Xids",
+      "row": 52,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "52": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SILENT_RUNNING_LEVEL_TRANS_DUE_TO_TEMP_RISE",
+      "sheet": "Xids",
+      "row": 53,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "53": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SILENT_RUNNING_TEMP_REDUCED_CLOCKING",
+      "sheet": "Xids",
+      "row": 54,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "54": {
+      "title": "GPU 板卡未连接辅助供电",
+      "description": "",
+      "actions": [
+        {
+          "key": "CHECK_MECHANICALS",
+          "label": "CHECK_MECHANICALS\n（检查安装及物理连接）",
+          "text": "检查设备是否安装到位，并确认与设备有关的所有连接均牢固。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SILENT_RUNNING_PWR_REDUCED_CLOCKING",
+      "sheet": "Xids",
+      "row": 55,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "否"
+      }
+    },
+    "55": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SILENT_RUNNING_TEMPERATURE_READ_ERROR",
+      "sheet": "Xids",
+      "row": 56,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "56": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "DISPLAY_CHANNEL_EXCEPTION",
+      "sheet": "Xids",
+      "row": 57,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "57": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "FB_LINK_TRAINING_FAILURE_ERROR",
+      "sheet": "Xids",
+      "row": 58,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "58": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "FB_MEMORY_ERROR",
+      "sheet": "Xids",
+      "row": 59,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "59": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "PMU_ERROR",
+      "sheet": "Xids",
+      "row": 60,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "60": {
+      "title": "视频处理器异常",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "INVESTIGATE_SW",
+          "label": "INVESTIGATE_SW\n（调查软件问题）",
+          "text": "用户软件或 NVIDIA 软件存在需要进一步调查的问题。很多情况下，用户软件可能访问了非法区域、发送了结构不当的命令，或存在其他问题。\n\n问题也可能源于 NVIDIA 软件；此时应报告问题。\n\n很多情况下，可以根据进程标识符（PID）追溯到最初引发问题的进程或实体。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_SEC2_ERROR",
+      "sheet": "Xids",
+      "row": 61,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "61": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "PMU_BREAKPOINT",
+      "sheet": "Xids",
+      "row": 62,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "62": {
+      "title": "内部微控制器停止运行\n（较新驱动）",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "PMU_HALT_ERROR",
+      "sheet": "Xids",
+      "row": 63,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "63": {
+      "title": "GPU 内存重映射事件",
+      "description": "GPU 处理 ECC 内存错误时，会记录这些事件。\n\n从 NVIDIA Ampere 架构开始，在支持行重映射（row remapping）的 GPU 上，这些事件会提供行重映射操作的详细信息。有关行重映射相关 Xid 的更多信息，请参阅：\nhttps://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/index.html#row-remapping\n\n在更早、支持动态页退役（dynamic page retirement）的 GPU 上，这些事件会提供动态页退役操作的详细信息。有关动态页退役相关 Xid 的更多信息，请参阅：\nhttps://docs.nvidia.com/deploy/dynamic-page-retirement/index.html",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        }
+      ],
+      "symbol": "INFOROM_DRAM_RETIREMENT_EVENT",
+      "sheet": "Xids",
+      "row": 64,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "64": {
+      "title": "GPU 内存重映射失败",
+      "description": "GPU 处理 ECC 内存错误时，会记录这些事件。\n\n从 NVIDIA Ampere 架构开始，在支持行重映射（row remapping）的 GPU 上，这些事件会提供行重映射操作的详细信息。有关行重映射相关 Xid 的更多信息，请参阅：\nhttps://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/index.html#row-remapping\n\n在更早、支持动态页退役（dynamic page retirement）的 GPU 上，这些事件会提供动态页退役操作的详细信息。有关动态页退役相关 Xid 的更多信息，请参阅：\nhttps://docs.nvidia.com/deploy/dynamic-page-retirement/index.html",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "INFOROM_DRAM_RETIREMENT_FAILURE",
+      "sheet": "Xids",
+      "row": 65,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "65": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVENC1_ERROR",
+      "sheet": "Xids",
+      "row": 66,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "66": {
+      "title": "驱动进行非法访问",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "INVESTIGATE_SW",
+          "label": "INVESTIGATE_SW\n（调查软件问题）",
+          "text": "用户软件或 NVIDIA 软件存在需要进一步调查的问题。很多情况下，用户软件可能访问了非法区域、发送了结构不当的命令，或存在其他问题。\n\n问题也可能源于 NVIDIA 软件；此时应报告问题。\n\n很多情况下，可以根据进程标识符（PID）追溯到最初引发问题的进程或实体。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FECS_ERR_REG_ACCESS_VIOLATION",
+      "sheet": "Xids",
+      "row": 67,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "67": {
+      "title": "驱动进行非法访问",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FECS_ERR_VERIF_VIOLATION",
+      "sheet": "Xids",
+      "row": 68,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "68": {
+      "title": "NVDEC0 视频解码引擎异常",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC0_ERROR",
+      "sheet": "Xids",
+      "row": 69,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "69": {
+      "title": "图形引擎类错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CHECK_APP/CUDA",
+          "label": "CHECK_APP/CUDA\n（检查应用程序／CUDA）",
+          "text": "问题很可能由应用程序在与 GPU 通信时传入错误数据或采用不正确的方法引起。某些错误包含进程标识符（PID），可用于定位问题来源。\n\n如果确定为驱动问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GR_CLASS_ERROR",
+      "sheet": "Xids",
+      "row": 70,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "70": {
+      "title": "CE3 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE3_ERROR",
+      "sheet": "Xids",
+      "row": 71,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "71": {
+      "title": "CE4 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE4_ERROR",
+      "sheet": "Xids",
+      "row": 72,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "72": {
+      "title": "CE5 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE5_ERROR",
+      "sheet": "Xids",
+      "row": 73,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "73": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVENC2_ERROR",
+      "sheet": "Xids",
+      "row": 74,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "74": {
+      "title": "NVLink 错误",
+      "description": "GPU 检测到自身与其他 GPU 或 NVSwitch 之间的 NVLink 连接存在问题时，会记录此事件。需要复位 GPU 或重启节点才能清除此错误。\n\n该事件可能表示链路本身发生硬件故障，也可能表示链路远端设备存在问题。例如，一块 GPU 发生故障后，与其通过 NVLink 相连的另一块 GPU 可能仅因链路随之断开而报告 Xid 74。\n\nnvidia-smi nvlink 命令可提供 NVLink 错误的更多细节，以及链路连接信息。\n\n如果此错误反复出现，并且复位 GPU 或重启节点后仍无法消除，请联系硬件供应商寻求支持。",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK_ERR",
+          "label": "WORKFLOW_NVLINK_ERR\n（按 NVLink 错误流程处理）",
+          "text": "从 Xid 错误消息中提取十六进制字符串。Xid 中应有 7 个字段；未使用的字段应为 0x0，而非以完整 DWORD 宽度表示的全零值。第 1、第 3、第 4 和第 5 个寄存器对基于 Hopper 架构的产品有效。\n\n评估包含有效内容的寄存器。如果观察到下方未明确列出的其他位，请提交缺陷报告。\n\n第 1 个寄存器：\nbit 0、23、30：可安全忽略。\nbit 1、20：通常属于伴随错误或次生错误。若与其他置位位或其他 Xid／SXid 同时出现，应按那些错误的指引处理；若单独出现，应提交缺陷报告。\nbit 4 或 5：很可能是涉及 ECC／奇偶校验的硬件问题；若同一链路上出现超过 2 次，应提交缺陷报告。\nbit 8、9、12、16、17、24、28：可能是硬件问题。检查链路的物理连接；若需现场处理，重新插拔并安装到位。问题持续时，运行诊断；若诊断通过但问题仍存在，应提交缺陷报告。\nbit 21 或 22：通道信号完整性（SI）处于临界状态。若同时存在其他错误，应先按那些错误的指引处理；否则，检查链路的物理连接。运行现场诊断，并提交缺陷报告。\nbit 27、29：若反复出现，应提交缺陷报告。\n\n第 3 个寄存器：\nbit 0、1、2、6：很可能是涉及 ECC／奇偶校验的硬件问题；若同一链路上出现超过 2 次，应提交缺陷报告。\nbit 13：生产环境中不应出现；若出现，应提交缺陷报告。\nbit 16、19：若反复出现，应运行现场诊断并提交缺陷报告。\nbit 17、18：若反复出现，应提交缺陷报告。\n\n第 4 个寄存器：\nbit 16、17：通常属于伴随错误或次生错误。若与其他置位位或其他 Xid／SXid 同时出现，应按那些错误的指引处理；若单独出现，应提交缺陷报告。\nbit 18：通常属于伴随错误或次生错误，但需要复位互连网络（fabric）。若与其他置位位或其他 Xid／SXid 同时出现，应按那些错误的指引处理；若单独出现，应提交缺陷报告。\n\n第 5 个寄存器：\nbit 18、19、21、22、24、25、27、28：很可能是涉及 ECC／奇偶校验的硬件问题；若同一链路上出现超过 2 次，应提交缺陷报告。\nbit 20、23、26、29：表示 ECC 错误数已超过阈值；此时并未出现不可纠正错误。可继续运行；如有需要，可以运行现场诊断检查链路完整性。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "NVLINK_ERROR",
+      "sheet": "Xids",
+      "row": 75,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "75": {
+      "title": "CE6 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE6_ERROR",
+      "sheet": "Xids",
+      "row": 76,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "76": {
+      "title": "CE7 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE7_ERROR",
+      "sheet": "Xids",
+      "row": 77,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "77": {
+      "title": "CE8 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE8_ERROR",
+      "sheet": "Xids",
+      "row": 78,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "78": {
+      "title": "虚拟 GPU（vGPU）启动错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "UPDATE_SWFW",
+          "label": "UPDATE_SWFW\n（更新软件和固件）",
+          "text": "将固件和软件更新到最新版本。\n\nXid 78：以下基础问题会阻止 vGPU 功能正常运行，必须解决后才能继续。\n1. 虚拟机驱动版本与宿主机驱动不兼容。\n此时错误字符串应为：Guest driver is incompatible with host driver（虚拟机驱动与宿主机驱动不兼容）。\n2. 该 vGPU 类型与虚拟机操作系统类型或 GPU 类型不兼容。例如，在 Windows 虚拟机中，尝试在较早的 Maxwell GPU 上使用计算配置文件。\n此时错误字符串应为：vGPU type is not supported（不支持该 vGPU 类型）。"
+        },
+        {
+          "key": "UPDATE_SWFW",
+          "label": "UPDATE_SWFW\n（更新软件和固件）",
+          "text": "将固件和软件更新到最新版本。\n\nXid 78：以下基础问题会阻止 vGPU 功能正常运行，必须解决后才能继续。\n1. 虚拟机驱动版本与宿主机驱动不兼容。\n此时错误字符串应为：Guest driver is incompatible with host driver（虚拟机驱动与宿主机驱动不兼容）。\n2. 该 vGPU 类型与虚拟机操作系统类型或 GPU 类型不兼容。例如，在 Windows 虚拟机中，尝试在较早的 Maxwell GPU 上使用计算配置文件。\n此时错误字符串应为：vGPU type is not supported（不支持该 vGPU 类型）。"
+        }
+      ],
+      "symbol": "VGPU_START_ERROR",
+      "sheet": "Xids",
+      "row": 79,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "79": {
+      "title": "GPU 已从总线掉线",
+      "description": "GPU 驱动尝试经 PCI Express 连接访问 GPU，却发现 GPU 无法访问时，会记录此事件。\n\n常见原因是 PCIe 链路发生硬件故障，导致链路断开，GPU 因而无法访问。检查系统事件日志和内核中的 PCI 事件日志，可能获得链路故障来源的更多线索。\n\n此事件也可能由 GPU 硬件故障或其他驱动问题引起。",
+      "actions": [
+        {
+          "key": "RESTART_BM",
+          "label": "RESTART_BM\n（重启物理主机）",
+          "text": "重启裸金属服务器，即重启物理主机。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_GPU_HAS_FALLEN_OFF_THE_BUS",
+      "sheet": "Xids",
+      "row": 80,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "80": {
+      "title": "发送至 GPU 的数据已损坏",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CHECK_APP/CUDA",
+          "label": "CHECK_APP/CUDA\n（检查应用程序／CUDA）",
+          "text": "问题很可能由应用程序在与 GPU 通信时传入错误数据或采用不正确的方法引起。某些错误包含进程标识符（PID），可用于定位问题来源。\n\n如果确定为驱动问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "PBDMA_PUSHBUFFER_CRC_MISMATCH",
+      "sheet": "Xids",
+      "row": 81,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "81": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_VGA_SUBSYSTEM_ERROR",
+      "sheet": "Xids",
+      "row": 82,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "82": {
+      "title": "NVJPG0 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG0_ERROR",
+      "sheet": "Xids",
+      "row": 83,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "83": {
+      "title": "NVDEC1 视频解码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC1_ERROR",
+      "sheet": "Xids",
+      "row": 84,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "84": {
+      "title": "NVDEC2 视频解码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC2_ERROR",
+      "sheet": "Xids",
+      "row": 85,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "85": {
+      "title": "CE9 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE9_ERROR",
+      "sheet": "Xids",
+      "row": 86,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "86": {
+      "title": "光流加速器（OFA）异常",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_OFA0_ERROR",
+      "sheet": "Xids",
+      "row": 87,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "87": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "NVTELEMETRY_DRIVER_REPORT",
+      "sheet": "Xids",
+      "row": 88,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "88": {
+      "title": "NVDEC3 视频解码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC3_ERROR",
+      "sheet": "Xids",
+      "row": 89,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "89": {
+      "title": "NVDEC4 视频解码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC4_ERROR",
+      "sheet": "Xids",
+      "row": 90,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "90": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "LTC_ERROR",
+      "sheet": "Xids",
+      "row": 91,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "91": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "RESERVED_XID",
+      "sheet": "Xids",
+      "row": 92,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "92": {
+      "title": "单比特 ECC 错误发生率过高",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "EXCESSIVE_SBE_INTERRUPTS",
+      "sheet": "Xids",
+      "row": 93,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "93": {
+      "title": "超过预设的 InfoROM 磨损限制，属于非致命事件",
+      "description": "GPU 驱动更新 InfoROM 时，如果超过了使用 NVFlash（nvflash --=elsessionstart）为该 GPU 设置的 InfoROM 磨损限制，更新会失败，并记录此事件。\n\n多数情况下，这并不表示驱动或闪存故障，而是 NVFlash 设置的 InfoROM 磨损保护功能按预期生效。\n\n恢复步骤：\n使用 ./nvflash –-elsessionclear 清除 InfoROM 擦除限制，可使 GPU 从 Xid 93 状态恢复。如果清除限制后仍无改善，请向 NVIDIA 报告问题。\n\n译注：以上两条 NVFlash 命令保留了原文写法；其中的符号疑似存在排版问题，执行前应核对 NVFlash 文档。",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "INFOROM_ERASE_LIMIT_EXCEEDED",
+      "sheet": "Xids",
+      "row": 94,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "94": {
+      "title": "影响已被限制在局部的内存错误",
+      "description": "从 NVIDIA A100 开始，在支持错误隔离（error containment）的 GPU 上，驱动处理错误时会记录这些事件（94/95）。\n\n对于 Xid 94，错误影响被限制在一个应用程序内；遇到该错误的应用程序必须重启。Xid 出现时正在运行的其他应用程序不受影响。建议在方便的时机复位 GPU；在能够执行复位之前，仍可继续运行应用程序。\n\n此类隔离错误的一种可能原因是对 ECC 内存错误的处理。有关 ECC 引起的隔离错误，请参阅《NVIDIA GPU 内存错误管理》：\nhttps://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/index.html#row-remapping\n\n与该错误相关的 Xid 45 也会出现。",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "IGNORE（伴随错误）",
+          "label": "IGNORE（伴随错误）",
+          "text": "这是预计会伴随其他异常出现的伴随错误。应先按其他错误的指引处理；如果此错误单独出现，或其他所有处理措施仍不足以解决问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CONTAINED_ERROR",
+      "sheet": "Xids",
+      "row": 95,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "95": {
+      "title": "影响未被限制在局部的内存错误",
+      "description": "从 NVIDIA A100 开始，在支持错误隔离（error containment）的 GPU 上，驱动处理错误时会记录这些事件（94/95）。\n\n对于 Xid 95，错误影响多个应用程序；必须先复位受影响的 GPU，应用程序才能重新启动。有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n此类隔离错误的一种可能原因是对 ECC 内存错误的处理。有关 ECC 引起的隔离错误，请参阅《NVIDIA GPU 内存错误管理》：\nhttps://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/index.html#row-remapping\n\n与该错误相关的 Xid 45 也会出现。",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "IGNORE（伴随错误）",
+          "label": "IGNORE（伴随错误）",
+          "text": "这是预计会伴随其他异常出现的伴随错误。应先按其他错误的指引处理；如果此错误单独出现，或其他所有处理措施仍不足以解决问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_UNCONTAINED_ERROR",
+      "sheet": "Xids",
+      "row": 96,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "96": {
+      "title": "NVDEC5 视频解码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC5_ERROR",
+      "sheet": "Xids",
+      "row": 97,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "97": {
+      "title": "NVDEC6 视频解码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC6_ERROR",
+      "sheet": "Xids",
+      "row": 98,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "98": {
+      "title": "NVDEC7 视频解码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVDEC7_ERROR",
+      "sheet": "Xids",
+      "row": 99,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "99": {
+      "title": "NVJPG1 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG1_ERROR",
+      "sheet": "Xids",
+      "row": 100,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "100": {
+      "title": "NVJPG2 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG2_ERROR",
+      "sheet": "Xids",
+      "row": 101,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "101": {
+      "title": "NVJPG3 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG3_ERROR",
+      "sheet": "Xids",
+      "row": 102,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "102": {
+      "title": "NVJPG4 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG4_ERROR",
+      "sheet": "Xids",
+      "row": 103,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "103": {
+      "title": "NVJPG5 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG5_ERROR",
+      "sheet": "Xids",
+      "row": 104,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "104": {
+      "title": "NVJPG6 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG6_ERROR",
+      "sheet": "Xids",
+      "row": 105,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "105": {
+      "title": "NVJPG7 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVJPG7_ERROR",
+      "sheet": "Xids",
+      "row": 106,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "106": {
+      "title": "SMBPBI 测试消息",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        }
+      ],
+      "symbol": "SMBPBI_TEST_MESSAGE",
+      "sheet": "Xids",
+      "row": 107,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "107": {
+      "title": "SMBPBI 静默测试消息",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        }
+      ],
+      "symbol": "SMBPBI_TEST_MESSAGE_SILENT",
+      "sheet": "Xids",
+      "row": 108,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "108": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "XID_137_FLOW",
+          "label": "XID_137_FLOW\n（按 Xid 137 流程处理）",
+          "text": "远端内存管理单元（MMU）报告故障时，会记录此事件，例如芯片上的相关单元进行了非法的 NVLink 点对点访问。此类问题通常源于应用程序缺陷。\n\n记录此事件后，NVIDIA 建议：\n在 cuda-gdb 中运行应用程序，或使用 cuda-memcheck 检查应用程序；注：cuda-memcheck 会对运行中的应用程序进行插桩，并报告执行非法读取的代码行。\n或设置 CUDA_DEVICE_WAITS_ON_EXCEPTION=1 后运行应用程序，再使用 cuda-gdb 附加到该进程。\n如果前两种方式仍无法得出明确结论，应提交缺陷报告，以排查其他可能原因。"
+        }
+      ],
+      "symbol": "NVLINK_REMOTE_TRANSLATION_ERROR",
+      "sheet": "Xids",
+      "row": 109,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "109": {
+      "title": "上下文切换超时错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CTXSW_TIMEOUT_ERROR",
+      "sheet": "Xids",
+      "row": 110,
+      "association154": "CUDA 12.7；GPU 驱动 R570",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "110": {
+      "title": "安全故障错误",
+      "description": "除非发生硬件故障，否则此事件应很少出现。恢复时，撤销近期对系统硬件所做的更改，并对系统执行冷复位。如果问题仍未解决，请联系硬件供应商寻求协助。",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "INVESTIGATE_SW",
+          "label": "INVESTIGATE_SW\n（调查软件问题）",
+          "text": "用户软件或 NVIDIA 软件存在需要进一步调查的问题。很多情况下，用户软件可能访问了非法区域、发送了结构不当的命令，或存在其他问题。\n\n问题也可能源于 NVIDIA 软件；此时应报告问题。\n\n很多情况下，可以根据进程标识符（PID）追溯到最初引发问题的进程或实体。"
+        }
+      ],
+      "symbol": "SEC_FAULT_ERROR",
+      "sheet": "Xids",
+      "row": 111,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "111": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "BUNDLE_ERROR_EVENT",
+      "sheet": "Xids",
+      "row": 112,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "112": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "DISP_SUPERVISOR_ERROR",
+      "sheet": "Xids",
+      "row": 113,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "113": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "DP_LT_FAILURE",
+      "sheet": "Xids",
+      "row": 114,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "114": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "HEAD_RG_UNDERFLOW",
+      "sheet": "Xids",
+      "row": 115,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "115": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "CORE_CHANNEL_REGS",
+      "sheet": "Xids",
+      "row": 116,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "116": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "WINDOW_CHANNEL_REGS",
+      "sheet": "Xids",
+      "row": 117,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "117": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "CURSOR_CHANNEL_REGS",
+      "sheet": "Xids",
+      "row": 118,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "118": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "HEAD_REGS",
+      "sheet": "Xids",
+      "row": 119,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "119": {
+      "title": "GPU 系统处理器（GSP）的远程过程调用（RPC）超时",
+      "description": "GPU 的 GSP 核心上运行的代码发生错误，或等待 GSP 核心响应 RPC 消息超时时，可能记录这些事件（119/120）；两种情况也可能同时发生。如果错误持续存在，可能需要复位 GPU 或对节点断电后重新上电。若断电重上电后问题再次出现，请按《NVIDIA GPU 调试指南》继续排查。",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "INVESTIGATE_SW",
+          "label": "INVESTIGATE_SW\n（调查软件问题）",
+          "text": "用户软件或 NVIDIA 软件存在需要进一步调查的问题。很多情况下，用户软件可能访问了非法区域、发送了结构不当的命令，或存在其他问题。\n\n问题也可能源于 NVIDIA 软件；此时应报告问题。\n\n很多情况下，可以根据进程标识符（PID）追溯到最初引发问题的进程或实体。"
+        }
+      ],
+      "symbol": "GSP_RPC_TIMEOUT",
+      "sheet": "Xids",
+      "row": 120,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "120": {
+      "title": "GPU 系统处理器（GSP）错误",
+      "description": "GPU 的 GSP 核心上运行的代码发生错误，或等待 GSP 核心响应 RPC 消息超时时，可能记录这些事件（119/120）；两种情况也可能同时发生。如果错误持续存在，可能需要复位 GPU 或对节点断电后重新上电。若断电重上电后问题再次出现，请按《NVIDIA GPU 调试指南》继续排查。",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "INVESTIGATE_SW",
+          "label": "INVESTIGATE_SW\n（调查软件问题）",
+          "text": "用户软件或 NVIDIA 软件存在需要进一步调查的问题。很多情况下，用户软件可能访问了非法区域、发送了结构不当的命令，或存在其他问题。\n\n问题也可能源于 NVIDIA 软件；此时应报告问题。\n\n很多情况下，可以根据进程标识符（PID）追溯到最初引发问题的进程或实体。"
+        }
+      ],
+      "symbol": "GSP_ERROR",
+      "sheet": "Xids",
+      "row": 121,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "121": {
+      "title": "芯片间互连（C2C）错误",
+      "description": "GPU 驱动在与 Grace CPU 相连的 C2C NVLink 连接上观察到已纠正错误时，可能出现此事件。这些错误已由系统纠正，不影响运行。在可用的维护窗口内复位 GPU，可使 GPU 重新训练该链路。\n\n注：可能反复报告此类错误；VBIOS 97.00.90.00.00 可能在一定程度上缓解这一情况。",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "C2C_ERROR",
+      "sheet": "Xids",
+      "row": 122,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "是"
+      }
+    },
+    "122": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SPI_PMU_RPC_READ_FAIL",
+      "sheet": "Xids",
+      "row": 123,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "123": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SPI_PMU_RPC_WRITE_FAIL",
+      "sheet": "Xids",
+      "row": 124,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "124": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "SPI_PMU_RPC_ERASE_FAIL",
+      "sheet": "Xids",
+      "row": 125,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "125": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "INFOROM_FS_ERROR",
+      "sheet": "Xids",
+      "row": 126,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "126": {
+      "title": "CE10 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE10_ERROR",
+      "sheet": "Xids",
+      "row": 127,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "127": {
+      "title": "CE11 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE11_ERROR",
+      "sheet": "Xids",
+      "row": 128,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "128": {
+      "title": "CE12 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE12_ERROR",
+      "sheet": "Xids",
+      "row": 129,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "129": {
+      "title": "CE13 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE13_ERROR",
+      "sheet": "Xids",
+      "row": 130,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "130": {
+      "title": "CE14 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE14_ERROR",
+      "sheet": "Xids",
+      "row": 131,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "131": {
+      "title": "CE15 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE15_ERROR",
+      "sheet": "Xids",
+      "row": 132,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "132": {
+      "title": "CE16 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE16_ERROR",
+      "sheet": "Xids",
+      "row": 133,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "133": {
+      "title": "CE17 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE17_ERROR",
+      "sheet": "Xids",
+      "row": 134,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "134": {
+      "title": "CE18 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE18_ERROR",
+      "sheet": "Xids",
+      "row": 135,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "135": {
+      "title": "CE19 复制引擎：未知错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CE19_ERROR",
+      "sheet": "Xids",
+      "row": 136,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "136": {
+      "title": "链路训练失败",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "INVESTIGATE_LINK_SI",
+          "label": "INVESTIGATE_LINK_SI\n（调查链路信号完整性）",
+          "text": "请参阅 GB200 Resiliency Service Flow（GB200 故障恢复服务流程），了解适用的 Access（接入）或 Trunk（主干）链路遥测和调查方法。"
+        }
+      ],
+      "symbol": "ALI_TRAINING_FAIL",
+      "sheet": "Xids",
+      "row": 137,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "137": {
+      "title": "NVLink 权限错误",
+      "description": "远端内存管理单元（MMU）报告故障时，会记录此事件，例如芯片上的相关单元进行了非法的 NVLink 点对点访问。此类问题通常源于应用程序缺陷，也可能源于驱动或硬件缺陷。\n\n记录此事件后，NVIDIA 建议采用以下方式排查：\n1. 在 cuda-gdb 中运行应用程序，或使用 Compute Sanitizer 的 memcheck 工具检查应用程序；或\n2. 设置 CUDA_DEVICE_WAITS_ON_EXCEPTION=1 后运行应用程序，再使用 cuda-gdb 附加到该进程；或\n3. 如果前两种方式仍无法得出明确结论，提交缺陷报告，以排查潜在的 NVIDIA 驱动或硬件问题。",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "XID_137_FLOW",
+          "label": "XID_137_FLOW\n（按 Xid 137 流程处理）",
+          "text": "远端内存管理单元（MMU）报告故障时，会记录此事件，例如芯片上的相关单元进行了非法的 NVLink 点对点访问。此类问题通常源于应用程序缺陷。\n\n记录此事件后，NVIDIA 建议：\n在 cuda-gdb 中运行应用程序，或使用 cuda-memcheck 检查应用程序；注：cuda-memcheck 会对运行中的应用程序进行插桩，并报告执行非法读取的代码行。\n或设置 CUDA_DEVICE_WAITS_ON_EXCEPTION=1 后运行应用程序，再使用 cuda-gdb 附加到该进程。\n如果前两种方式仍无法得出明确结论，应提交缺陷报告，以排查其他可能原因。"
+        }
+      ],
+      "symbol": "NVLINK_PRIV_ERR",
+      "sheet": "Xids",
+      "row": 138,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "138": {
+      "title": "未使用",
+      "description": "不适用；未使用",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_DLA_ERROR",
+      "sheet": "Xids",
+      "row": 139,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "139": {
+      "title": "OFA1 光流加速器错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_APP",
+          "label": "RESTART_APP\n（重启应用程序）",
+          "text": "应重启应用程序。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_OFA1_ERROR",
+      "sheet": "Xids",
+      "row": 140,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "140": {
+      "title": "ECC 错误未能恢复",
+      "description": "GPU 驱动观察到 GPU 内存中的不可纠正错误，并且这些错误妨碍驱动将相关页标记为动态下线或进行行重映射时，可能出现此事件。复位 GPU；如果问题仍然存在，请联系硬件供应商寻求支持。",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "UNRECOVERABLE_ECC_ERROR_ESCAPE",
+      "sheet": "Xids",
+      "row": 141,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "141": {
+      "title": "CUDA 快速路径错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_FAST_PATH_ERROR",
+      "sheet": "Xids",
+      "row": 142,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "142": {
+      "title": "NVENC3 视频编码引擎错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_NVENC3_ERROR",
+      "sheet": "Xids",
+      "row": 143,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "是"
+      }
+    },
+    "143": {
+      "title": "GPU 初始化错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "GPU_INIT_ERROR",
+      "sheet": "Xids",
+      "row": 144,
+      "association154": "CUDA 12.9；GPU 驱动 R575",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "144": {
+      "title": "NVLink：SAW 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        },
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        }
+      ],
+      "symbol": "NVLINK_SAW_ERROR",
+      "sheet": "Xids",
+      "row": 145,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "145": {
+      "title": "NVLink：RLW 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        },
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        }
+      ],
+      "symbol": "NVLINK_RLW_ERROR",
+      "sheet": "Xids",
+      "row": 146,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "146": {
+      "title": "NVLink：TLW 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        },
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        }
+      ],
+      "symbol": "NVLINK_TLW_ERROR",
+      "sheet": "Xids",
+      "row": 147,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "147": {
+      "title": "NVLink：TREX 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        },
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        }
+      ],
+      "symbol": "NVLINK_TREX_ERROR",
+      "sheet": "Xids",
+      "row": 148,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "148": {
+      "title": "NVLink：NVLPW_CTRL 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        },
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        }
+      ],
+      "symbol": "NVLINK_NVLPW_CTRL_ERROR",
+      "sheet": "Xids",
+      "row": 149,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "149": {
+      "title": "NVLink：NETIR 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        },
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        }
+      ],
+      "symbol": "NVLINK_NETIR_ERROR",
+      "sheet": "Xids",
+      "row": 150,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "150": {
+      "title": "NVLink：MSE 错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        },
+        {
+          "key": "WORKFLOW_NVLINK5_ERR",
+          "label": "WORKFLOW_NVLINK5_ERR\n（按 NVLink 5 错误流程处理）",
+          "text": "请参阅 Xid 144-150 Decode 工作表（原名 Customer Doc 144-150），了解如何评估这些 Xid。需要按以下方式解码 Xid 日志，才能确定处理操作。\n\nXid 错误消息格式：\nXid (PCI:0000:BB:DF): <Xid Number> <sub component> <fatal vs nonfatal> <Crosscontain> <injected> <link> (<intrInfo> <errorStatus> <errorDebugData[0]> <errorDebugData[1]> <errorDebugData[2]> <errorDebugData[3]> <errorDebugData[4]>)\n\n依次表示：Xid 编号、子组件、致命／非致命、跨设备错误隔离、是否注入、链路，以及括号中的各寄存器字段。\n\n必须使用 Xid 144-150 Decode 工作表解码并评估 <intrInfo> 和 <errorStatus>，才能得出最终处理操作。"
+        }
+      ],
+      "symbol": "NVLINK_MSE_ERROR",
+      "sheet": "Xids",
+      "row": 151,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "151": {
+      "title": "密钥轮换错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESTART_VM",
+          "label": "RESTART_VM\n（重启虚拟机）",
+          "text": "必须重启占用受影响 GPU 的虚拟机。\n\n无需复位 GPU（RESET_GPU）或重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_KEY_ROTATION_ERROR",
+      "sheet": "Xids",
+      "row": 152,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "152": {
+      "title": "深度学习加速器（DLA）的系统内存管理单元（SMMU）错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_DLA_SMMU_ERROR",
+      "sheet": "Xids",
+      "row": 153,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "153": {
+      "title": "深度学习加速器（DLA）超时错误",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_DLA_TIMEOUT",
+      "sheet": "Xids",
+      "row": 154,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "否",
+        "GB200": "否"
+      }
+    },
+    "154": {
+      "title": "GPU 恢复操作已变更",
+      "description": "Xid 154 会与其他 Xid 一同出现，用于汇总这些 Xid 所需的恢复操作。\n\n日志字符串类似于：\nXid 154 GPU recovery action changed from 0x0 (None) to 0x2 (Node Reboot Required)\n即：GPU 恢复操作从 0x0（无需操作）变为 0x2（需要重启节点）。\n\n可能出现的文本值如下：\nNone：无需操作\nDrain P2P：排空点对点（P2P）活动\nDrain and Reset：排空任务后复位\nGPU Reset Required：需要复位 GPU\nNode Reboot Required：需要重启节点",
+      "actions": [
+        {
+          "key": "XID_154",
+          "label": "XID_154\n（按 Xid 154 指引处理）",
+          "text": "按 Xid 154 报告的指引处理。"
+        },
+        {
+          "key": "不适用；仅提供与另一条 Xid 相关的信息",
+          "label": "不适用；仅提供与另一条 Xid 相关的信息",
+          "text": "需要处理其他问题。此 Xid 仅提供信息，预计始终会伴随另一条需要恢复操作的 Xid 出现。"
+        }
+      ],
+      "symbol": "GPU_RECOVERY_ACTION_CHANGED",
+      "sheet": "Xids",
+      "row": 155,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "155": {
+      "title": "NVLink：软件定义的错误",
+      "description": "被标记为“有意发生”的链路断开事件（包括进入 SLEEP 状态）会触发此 Xid",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "INVESTIGATE_SW_USER",
+          "label": "INVESTIGATE_SW_USER\n（调查软件或用户操作）",
+          "text": "如果事件并非预期行为，应调查软件或用户发起的操作。"
+        }
+      ],
+      "symbol": "NVLINK_SW_DEFINED_ERROR",
+      "sheet": "Xids",
+      "row": 156,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "156": {
+      "title": "资源退役事件",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        }
+      ],
+      "symbol": "RESOURCE_RETIREMENT_EVENT",
+      "sheet": "Xids",
+      "row": 157,
+      "association154": "CUDA 12.7；GPU 驱动 R565",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "157": {
+      "title": "资源退役失败",
+      "description": "由于缺少资源，已无法进行修复。仍可运行工作负载或应用程序，但可能再次遇到相同的 Xid。",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "RESOURCE_RETIREMENT_FAILURE",
+      "sheet": "Xids",
+      "row": 158,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "158": {
+      "title": "GPU 致命超时",
+      "description": "",
+      "actions": [
+        {
+          "key": "RESET_GPU",
+          "label": "RESET_GPU\n（复位 GPU）",
+          "text": "有关 GPU 复位的能力与限制，请参阅：\nhttps://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html\n\n无需重启物理主机（RESTART_BM）。"
+        },
+        {
+          "key": "CONTACT_SUPPORT",
+          "label": "CONTACT_SUPPORT\n（联系支持）",
+          "text": "请联系为您提供支持的组织，进一步调查。"
+        }
+      ],
+      "symbol": "GPU_FATAL_TIMEOUT",
+      "sheet": "Xids",
+      "row": 159,
+      "association154": "是；随该 Xid 引入而支持",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "159": {
+      "title": "CHI 非数据错误",
+      "description": "任何通过 C2C 链路连接的 GPU 都可能出现此事件。",
+      "actions": [
+        {
+          "key": "CHECK_UVM",
+          "label": "CHECK_UVM\n（检查是否使用 UVM／vGPU）",
+          "text": "如果正在使用统一虚拟内存（UVM）或 vGPU，则执行 RESET_GPU（复位 GPU）；否则 IGNORE（忽略）。"
+        },
+        {
+          "key": "SYMPATHETIC_REPORT_SOLO",
+          "label": "SYMPATHETIC_REPORT_SOLO\n（伴随错误；单独出现时报告）",
+          "text": "这是预计会伴随其他异常出现的伴随错误。应先按其他错误的指引处理；如果此错误单独出现，或其他所有处理措施仍不足以解决问题，则执行 REPORT_ISSUE（报告问题）。"
+        }
+      ],
+      "symbol": "ROBUST_CHANNEL_CHI_NON_DATA_ERROR",
+      "sheet": "Xids",
+      "row": 160,
+      "association154": "是；随该 Xid 引入而支持",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "160": {
+      "title": "通道退役事件",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "INVESTIGATE_SW",
+          "label": "INVESTIGATE_SW\n（调查软件问题）",
+          "text": "用户软件或 NVIDIA 软件存在需要进一步调查的问题。很多情况下，用户软件可能访问了非法区域、发送了结构不当的命令，或存在其他问题。\n\n问题也可能源于 NVIDIA 软件；此时应报告问题。\n\n很多情况下，可以根据进程标识符（PID）追溯到最初引发问题的进程或实体。"
+        }
+      ],
+      "symbol": "CHANNEL_RETIREMENT_EVENT",
+      "sheet": "Xids",
+      "row": 161,
+      "association154": "CUDA 12.9；GPU 驱动 R575",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "161": {
+      "title": "通道退役失败",
+      "description": "",
+      "actions": [
+        {
+          "key": "IGNORE",
+          "label": "IGNORE\n（无需操作）",
+          "text": "无需操作"
+        },
+        {
+          "key": "INVESTIGATE_SW",
+          "label": "INVESTIGATE_SW\n（调查软件问题）",
+          "text": "用户软件或 NVIDIA 软件存在需要进一步调查的问题。很多情况下，用户软件可能访问了非法区域、发送了结构不当的命令，或存在其他问题。\n\n问题也可能源于 NVIDIA 软件；此时应报告问题。\n\n很多情况下，可以根据进程标识符（PID）追溯到最初引发问题的进程或实体。"
+        }
+      ],
+      "symbol": "CHANNEL_RETIREMENT_FAILURE",
+      "sheet": "Xids",
+      "row": 162,
+      "association154": "CUDA 12.9；GPU 驱动 R575",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "162": {
+      "title": "功率平滑硬件电路的功能已重新启用",
+      "description": "",
+      "actions": [],
+      "symbol": "PSHC_REENGAGED",
+      "sheet": "Xids",
+      "row": 163,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "163": {
+      "title": "功率平滑硬件电路的功能已停用",
+      "description": "无需复位 GPU。如果需要功率平滑功能，客户应解决过热事件；如果该功能因超时而停用，应重新加载驱动或复位 GPU。",
+      "actions": [],
+      "symbol": "PSHC_DISENGAGED",
+      "sheet": "Xids",
+      "row": 164,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "164": {
+      "title": "功率平滑硬件电路的剩余寿命已降至低水平",
+      "description": "监测功率波动；如果需要功率平滑功能，应预期需要更换 GPU。\n\n功率平滑功能即将停用。评估功率波动是否可接受；如果不可接受，应采取措施。",
+      "actions": [],
+      "symbol": "PSHC_LOW_LIFETIME",
+      "sheet": "Xids",
+      "row": 165,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "165": {
+      "title": "功率平滑硬件电路的寿命已耗尽",
+      "description": "如果功率波动不可接受，并且需要功率平滑功能，应更换 GPU。驱动会停用功率平滑功能，随后会出现功率波动。应评估数据中心基础设施，确保其能够承受这些功率波动。",
+      "actions": [],
+      "symbol": "PSHC_ZERO_LIFETIME",
+      "sheet": "Xids",
+      "row": 166,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "166": {
+      "title": "链路尚未正确配置为加密传输时，检测到机密计算（CC）流量",
+      "description": "仅适用于机密计算（Confidential Computing，CC）模式。",
+      "actions": [],
+      "symbol": "NVLINK_SECURE_CRYPTO_ERR",
+      "sheet": "Xids",
+      "row": 167,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "167": {
+      "title": "PCIe 致命超时",
+      "description": "",
+      "actions": [],
+      "symbol": "PCIE_FATAL_TIMEOUT",
+      "sheet": "Xids",
+      "row": 168,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "168": {
+      "title": "在写保护区域（WPR）中发现错误",
+      "description": "此事件应仅在 ECC 已禁用时出现。\n应启用 ECC，以启用行重映射；或者调整写保护区域（WPR）的位置后，重新尝试启动。",
+      "actions": [],
+      "symbol": "REDUCED_GPU_MEMORY_CAPACITY",
+      "sheet": "Xids",
+      "row": 169,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "169": {
+      "title": "内部微控制器停止运行",
+      "description": "",
+      "actions": [],
+      "symbol": "SEC2_HALT_ERROR",
+      "sheet": "Xids",
+      "row": 170,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "170": {
+      "title": "在机密计算（CC）模式下检测到中断",
+      "description": "仅适用于机密计算（Confidential Computing，CC）模式。",
+      "actions": [],
+      "symbol": "NVLINK_SECURE_OTHER",
+      "sheet": "Xids",
+      "row": 171,
+      "association154": "",
+      "architectures": {
+        "A100": "否",
+        "H100": "否",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "171": {
+      "title": "作为 Xid 48 的补充，提供故障的更多细节，用于区分 DRAM 与 SRAM 错误。",
+      "description": "",
+      "actions": [],
+      "symbol": "UNCORRECTABLE_DRAM_ERROR",
+      "sheet": "Xids",
+      "row": 172,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    },
+    "172": {
+      "title": "作为 Xid 48 的补充，提供故障的更多细节，用于区分 DRAM 与 SRAM 错误。",
+      "description": "",
+      "actions": [],
+      "symbol": "UNCORRECTABLE_SRAM_ERROR",
+      "sheet": "Xids",
+      "row": 173,
+      "association154": "",
+      "architectures": {
+        "A100": "是",
+        "H100": "是",
+        "B100": "是",
+        "GB200": "是"
+      }
+    }
+  },
+  "importFile": "NVIDIA_Xid_Catalog_2026-09-09_中文译本.xlsx"
 }

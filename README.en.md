@@ -45,7 +45,7 @@ Results are stored in `runtime/results` beside the application.
 
 ## Xid reference
 
-Xid numbers, raw records, and the [official reference link](https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html) are available by default. Import your own workbook to add offline descriptions and suggested actions; see [catalog setup](docs/catalog.md).
+The built-in Xid library includes searchable Chinese descriptions, English source text, and troubleshooting topics. Parsing rules can be imported, inspected, or restored to the bundled Chinese catalog. Software updates have a separate entry. See [catalog setup](docs/catalog.md).
 
 Descriptions and suggested actions come from matching rules; fault causes require further verification. Missing serial numbers remain empty, conflicting fields are preserved, and physical slot locations require verification.
 
@@ -63,6 +63,10 @@ On Windows x64:
 
 ```sh
 python -m pip install -r requirements-build.txt
+cd frontend
+npm ci
+npm run build
+cd ..
 python tools/build_windows.py
 ```
 

@@ -52,14 +52,14 @@ class CatalogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             store=catalog.CatalogStore(folder);store.import_file(xlsx_bytes(),'rules.xlsx')
             self.assertEqual(catalog.CatalogStore(folder).info(),store.info())
-            store.reset();self.assertEqual(catalog.CatalogStore(folder).info()['count'],0)
+            store.reset();self.assertEqual(catalog.CatalogStore(folder).info()['count'],len(catalog.DEFAULT['codes']))
             store.path.write_text('invalid');restored=catalog.CatalogStore(folder)
-            self.assertEqual(restored.info()['count'],0);self.assertTrue(restored.info()['warning'])
+            self.assertEqual(restored.info()['count'],len(catalog.DEFAULT['codes']));self.assertTrue(restored.info()['warning'])
     def test_startup_bad_local_file_does_not_break_parser(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);(root/'xid_catalog.local.json').write_text('bad')
             with patch.dict(os.environ,{},clear=True):d,warning=catalog.initial_catalog(root,root)
-            self.assertEqual(d['codes'],{});self.assertTrue(warning)
+            self.assertEqual(d['codes'],catalog.DEFAULT['codes']);self.assertTrue(warning)
     def test_snapshot_is_stable_when_new_rules_are_imported(self):
         with tempfile.TemporaryDirectory() as folder:
             store=catalog.CatalogStore(folder);store.import_file(json.dumps(rule('A')).encode(),'a.json');snap=store.snapshot()
@@ -96,7 +96,7 @@ class CatalogApiTests(unittest.TestCase):
             self.assertEqual(error.exception.code,400);self.assertEqual(self.request('api/catalog'),current)
         self.assertEqual(catalog.CatalogStore(self.temp.name).info(),current)
         self.request('api/catalog/reset',b'')
-        self.assertEqual(catalog.CatalogStore(self.temp.name).info()['count'],0)
+        self.assertEqual(catalog.CatalogStore(self.temp.name).info()['count'],len(catalog.DEFAULT['codes']))
     def test_api_rules_require_session_and_same_origin(self):
         import urllib.error
         for path,body in [('api/catalog',None),('api/catalog/rules',None),('api/catalog/import?name=rules.json',b'{}'),('api/catalog/reset',b'')]:

@@ -42,7 +42,7 @@ python app/main.py
 
 ## Xid 说明
 
-默认显示 Xid 编号、原始记录及[官方手册入口](https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html)。在“规则与资料”导入兼容的 XLSX 或 JSON，查看离线说明与建议。格式见[规则说明](docs/catalog.md)。
+内置中文 Xid 查询、英文原文和排查手册，可按编号或关键词搜索。“解析规则”支持导入 XLSX / JSON、查看来源和恢复内置中文规则，格式见[规则说明](docs/catalog.md)。软件更新位于独立入口。
 
 说明和建议来自匹配的规则，故障原因需进一步核实。SN 缺失时留空，字段冲突保留原值；槽位需核对机箱或模组位置。
 
@@ -60,6 +60,10 @@ python tools/check_repository.py
 
 ```sh
 python -m pip install -r requirements-build.txt
+cd frontend
+npm ci
+npm run build
+cd ..
 python tools/build_windows.py
 ```
 

@@ -140,7 +140,7 @@ class CatalogStore:
             try:
                 saved=read_json(self.path.read_bytes());data=validate(saved['catalog'],allow_empty=True)
                 stamp=text(saved.get('importedAt',''),'导入时间',64)
-                self.data=data;self.imported_at=stamp;self.warning=''
+                self.data=data if data['codes'] else copy.deepcopy(DEFAULT);self.imported_at=stamp if data['codes'] else '';self.warning=''
             except (OSError,ValueError,KeyError,TypeError):self.warning='保存的规则无法读取，当前使用启动规则。'
     def snapshot(self):
         with self.lock:return copy.deepcopy(self.data)
@@ -161,3 +161,9 @@ class CatalogStore:
             return self.info()
     def import_file(self,raw,name):return self.apply(parse_upload(raw,name))
     def reset(self):return self.apply(copy.deepcopy(DEFAULT))
+
+# The bundled catalog is also the restore target. User imports remain independent.
+try:
+    DEFAULT = validate(read_json((Path(__file__).resolve().parent/'xid_catalog.json').read_bytes()))
+except (OSError, ValueError):
+    pass

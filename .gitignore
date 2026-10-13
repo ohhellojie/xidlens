@@ -20,3 +20,5 @@ dist/
 *.xls
 *.exe
 *.dll
+
+/frontend/node_modules/

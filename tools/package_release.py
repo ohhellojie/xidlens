@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import zipfile
 
-VERSION = '0.8.0'
+VERSION = '0.9.0'
 
 def main():
     root = Path(__file__).resolve().parent.parent
@@ -41,6 +41,8 @@ def main():
         for item in distribution.files or []:
             if Path(str(item)).name.lower().startswith(('license','licence','copying','authors')):
                 files['licenses/'+project+'/'+Path(str(item)).name]=Path(distribution.locate_file(item))
+    for project in ('react','react-dom','scheduler'):
+        files['licenses/'+project+'/LICENSE'] = root/'frontend/node_modules'/project/'LICENSE'
     archive = out/f'XidLens_v{VERSION}_Windows_x64.zip'
     with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
         for name, source in files.items():
