@@ -30,6 +30,42 @@
     }).sort((a,b)=>b.count-a.count);
   }
   const fields = [['model','型号'],['sn','GPU SN'],['uuid','GPU UUID'],['pci','PCI 地址'],['slot','槽位参考'],['numa','NUMA 节点'],['link','当前链路'],['linkMax','最大能力'],['status','读取状态']];
+  const provided=value=>value===0||String(value??'').trim()==='0'||available(value);
+  function fieldSide(value,refs=[],key=''){
+    const values=[...new Set(refs.map(r=>r.value).filter(provided).map(v=>String(v).trim()))];
+    const ambiguous=values.length>1||['冲突','多个采集值','有冲突'].includes(String(value))||(key==='driver'&&String(value).includes(' / '));
+    const text=values.length?values.join(' / '):provided(value)?String(value).trim():'';
+    return {value:text,refs,provided:Boolean(text)||ambiguous,ambiguous};
+  }
+  function healthFields(g){
+    if(g?.healthFields)return g.healthFields;
+    const out={};for(const c of g?.healthCounters||[]){if(c.path.startsWith('MIG'))continue;(out[c.path]??=[]).push({value:c.value,evidence:c.evidence,origin:'nvidia-smi'});}return out;
+  }
+  function compareFields(before,after,a,b){
+    const normalize=(value,key)=>(key==='uuid'||key.startsWith('health:'))?(key.startsWith('health:')&&/^\d+$/.test(value)?BigInt(value).toString():value.trim().toLowerCase()):['link','linkMax'].includes(key)?value.replace(/\d+(?:\.\d+)?/g,n=>String(Number(n))).replace(/\s+/g,'').toLowerCase():/^\d+$/.test(value)?BigInt(value).toString():value.trim();
+    const entry=(key,label,av,bv,ar=[],br=[])=>{
+      const left=fieldSide(av,ar,key),right=fieldSide(bv,br,key);
+      if(['sn','uuid'].includes(key)){if(!available(left.value)&&!left.ambiguous)left.provided=false;if(!available(right.value)&&!right.ambiguous)right.provided=false;}
+      const state=!left.provided||!right.provided?'missing':left.ambiguous||right.ambiguous?'ambiguous':normalize(left.value,key)!==normalize(right.value,key)?'changed':'same';
+      return {key,label,before:left,after:right,state};
+    };
+    function refs(g,key,report){
+      if(!g)return [];
+      if(key==='driver')return report.server?.fields?.driver||[];
+      if(key==='pci')return g.pciEvidence?[{value:g.pci,evidence:g.pciEvidence,origin:'lspci'}]:g.fields?.pci||[];
+      const map={sn:'serial',uuid:'uuid',model:'model',numa:'numa',link:'link',linkMax:'link_max',slotPhysical:'slot',slotDesignation:'slotDesignation'};
+      if(['sn','uuid','model'].includes(key))return g.fields?.[map[key]]||(key==='model'?g.pciFields?.pci_model:[])||[];
+      return g.pciFields?.[map[key]]||[];
+    }
+    const base=fields.filter(([key])=>!['status','slot'].includes(key));
+    const slots=a?.pciFields?.slot||a?.pciFields?.slotDesignation||b?.pciFields?.slot||b?.pciFields?.slotDesignation;
+    base.push(...(slots?[['slotPhysical','物理槽位'],['slotDesignation','槽位名称']]:[['slot','槽位参考']]),['driver','驱动版本']);
+    const result=base.map(([key,label])=>entry(key,label,key==='driver'?(a?before.server?.driver:''):a?.[key],key==='driver'?(b?after.server?.driver:''):b?.[key],refs(a,key,before),refs(b,key,after)));
+    const ah=healthFields(a),bh=healthFields(b);
+    const labels={'ECC Errors':'ECC','Volatile':'易失性','Aggregate':'累计','Double Bit':'双比特','Single Bit':'单比特','Device Memory':'显存','DRAM Uncorrectable':'DRAM 不可纠正','DRAM Correctable':'DRAM 可纠正','Remapped Rows':'行重映射','Correctable Error':'可纠正','Uncorrectable Error':'不可纠正','Pending':'待处理','Remapping Failure Occurred':'重映射失败','Retired Pages':'退役页'};
+    for(const path of new Set([...Object.keys(ah),...Object.keys(bh)]))result.push(entry('health:'+path,path.split('/').map(p=>labels[p]||p).join(' / '),undefined,undefined,ah[path]||[],bh[path]||[]));
+    return result.filter(f=>f.before.provided||f.after.provided);
+  }
   function compareReports(before,after){
     const left=before.gpus || [],right=after.gpus || [];
     const index = list => Object.fromEntries(['sn','uuid'].map(field=>{
@@ -62,11 +98,12 @@
       return {kind,code,address,before:a.get(key)?.count||0,after:b.get(key)?.count||0};
     });
     function row(a,b,basis,why){
-      const changes=fields.filter(([key])=>['sn','uuid'].includes(key)&&a&&b ? identity(a,key)!==identity(b,key) : String(a?.[key]??'')!==String(b?.[key]??'')).map(([,label])=>label);
+      const details=compareFields(before,after,a,b);
+      const changes=a&&b?details.filter(f=>f.state==='changed').map(f=>f.label):[];
       const ac=aCounts.get(a?.id)||new Map(),bc=bCounts.get(b?.id)||new Map();
       const errors=mergedCounts(ac,bc);
       if(errors.some(e=>e.before!==e.after))changes.push('错误记录');
-      rows.push({before:a||null,after:b||null,basis,reason:why,changes,errors,matched:Boolean(a&&b)});
+      rows.push({before:a||null,after:b||null,basis,reason:why,changes,details,errors,matched:Boolean(a&&b)});
     }
     const candidatesByGpu=new Map(),rightCandidates=new Map();
     for(const a of left){
@@ -105,7 +142,7 @@
     const addresses=new Set([...upstream(report.nodes,gpu.pci),gpu.pci]);
     return (report.events||[]).filter(e=>addresses.has(e.address)).length;
   }
-  const api={eventKey,groupEvents,compareReports,fields,upstream,pathErrorCount};
+  const api={eventKey,groupEvents,compareReports,compareFields,fields,upstream,pathErrorCount};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.XidAnalysis=api;
 })(globalThis);

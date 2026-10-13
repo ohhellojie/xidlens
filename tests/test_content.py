@@ -4,6 +4,49 @@ from test_parser import parse
 HEADER='Attached GPUs : 1\nGPU 00000000:41:00.0\n    Product Name : NVIDIA Demo\n'
 
 class ContentTests(unittest.TestCase):
+    def test_zero_health_values_and_no_keep_full_source(self):
+        r=parse(HEADER+'''    ECC Errors
+        Volatile
+            DRAM Uncorrectable : 0
+        Aggregate
+            DRAM Uncorrectable : 9
+    Remapped Rows
+        Correctable Error : 0
+        Pending : No
+''')
+        g=r['gpus'][0];fields=g['healthFields']
+        self.assertEqual(fields['ECC Errors/Volatile/DRAM Uncorrectable'][0]['value'],'0')
+        self.assertEqual(fields['Remapped Rows/Pending'][0]['value'],'No')
+        self.assertIn('Pending : No',fields['Remapped Rows/Pending'][0]['evidence']['text'])
+        self.assertEqual(len(g['healthCounters']),1)
+        self.assertEqual(r['events'],[])
+
+    def test_driver_and_gpu_address_have_source_lines(self):
+        text='Driver Version : 580.65.06\n'+HEADER
+        r=parse(text);self.assertEqual(r['server']['driver'],'580.65.06')
+        ref=r['server']['fields']['driver'][0]
+        self.assertEqual(ref['evidence']['line'],1)
+        self.assertEqual(ref['evidence']['text'],'Driver Version : 580.65.06')
+        self.assertEqual(r['gpus'][0]['fields']['pci'][0]['evidence']['text'],'GPU 00000000:41:00.0')
+
+    def test_kernel_driver_version_is_captured_with_evidence(self):
+        r=parse('NVRM version: NVIDIA UNIX Open Kernel Module for x86_64  580.65.06\n'+HEADER)
+        self.assertEqual(r['server']['driver'],'580.65.06')
+        self.assertEqual(r['server']['fields']['driver'][0]['evidence']['line'],1)
+
+    def test_mig_health_is_not_compared_as_physical_gpu_health(self):
+        r=parse(HEADER+'''    MIG Device
+        Index : 0
+        ECC Errors
+            Volatile
+                DRAM Uncorrectable : 9
+    ECC Errors
+        Volatile
+            DRAM Uncorrectable : 0
+''')
+        self.assertEqual(list(r['gpus'][0]['healthFields']),['ECC Errors/Volatile/DRAM Uncorrectable'])
+        self.assertEqual(r['gpus'][0]['healthFields']['ECC Errors/Volatile/DRAM Uncorrectable'][0]['value'],'0')
+
     def test_mig_memory_is_separate_from_whole_gpu(self):
         r=parse(HEADER+'''    MIG Device
         GPU Instance ID : 1

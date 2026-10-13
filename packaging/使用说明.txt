@@ -1,4 +1,4 @@
-XidLens · Windows x64 v0.4.0
+XidLens · Windows x64 v0.5.0
 
 双击 XidLens.exe 打开软件，关闭窗口退出。
 点击“导入日志”选择文件；多份报告可在顶部切换。
@@ -7,6 +7,7 @@ XidLens · Windows x64 v0.4.0
 可查看设备信息、槽位参考、PCIe 拓扑和错误原文。
 按 SN、UUID 或 PCI 地址搜索，复制到 Excel，或导出 TSV、TXT、JSON。
 错误记录支持聚合和原文切换；“日志对比”可按 SN / UUID 对照两份报告。
+点击对比字段查看两份原文；缺失字段和多个采集值不计为变化。
 “报告管理”支持搜索、筛选和批量删除解析结果；原始日志不受影响。
 
 日志在本机解析，结果保存在同目录 runtime/results。

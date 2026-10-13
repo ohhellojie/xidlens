@@ -81,4 +81,49 @@ test('error-type changes are detected even when total count stays equal',()=>{
 test('empty reports, incomplete reports and different servers remain explicit',()=>{
   const r=compareReports({...report([]),server:{sn:'A'},complete:false},{...report([]),server:{sn:'B'}});assert.equal(r.rows.length,0);assert.equal(r.incomplete,true);assert.equal(r.serverMismatch,true);
 });
+const ref=(value,line=1,text=String(value))=>({value,evidence:{line,text,section:'nvidia-smi'},origin:'nvidia-smi'});
+test('missing fields and placeholder values never count as changes',()=>{
+  const a=report([gpu(0,{uuid:'GPU-A',model:'H100',numa:'0',link:'16GT/s · x16'})]);
+  const b=report([gpu(1,{uuid:'GPU-A',model:'[N/A]',numa:'',link:''})]);
+  const r=compareReports(a,b);assert.equal(r.changed,0);assert.equal(r.rows[0].details.find(f=>f.key==='numa').state,'missing');
+});
+test('NUMA zero is provided and differs from node one',()=>{
+  const r=compareReports(report([gpu(0,{sn:'S',numa:0})]),report([gpu(0,{sn:'S',numa:1})]));assert.ok(r.rows[0].changes.includes('NUMA 节点'));
+});
+test('zero health values compare with nonzero and retain both evidence lines',()=>{
+  const key='ECC Errors/Volatile/DRAM Uncorrectable';
+  const a=report([gpu(0,{sn:'S',healthFields:{[key]:[ref('0',10,'DRAM Uncorrectable : 0')]}})]);
+  const b=report([gpu(1,{sn:'S',healthFields:{[key]:[ref('7',20,'DRAM Uncorrectable : 7')]}})]);
+  const d=compareReports(a,b).rows[0].details.find(d=>d.key==='health:'+key);assert.equal(d.state,'changed');assert.equal(d.before.refs[0].evidence.line,10);assert.equal(d.after.refs[0].evidence.line,20);
+});
+test('missing health values in old reports do not imply zero',()=>{
+  const a=report([gpu(0,{sn:'S',healthCounters:[]})]),b=report([gpu(0,{sn:'S',healthFields:{'Remapped Rows/Correctable Error':[ref('4')]}})]);
+  const r=compareReports(a,b);assert.equal(r.changed,0);assert.equal(r.rows[0].details.at(-1).state,'missing');
+});
+test('volatile and aggregate counters are separate fields',()=>{
+  const a=report([gpu(0,{sn:'S',healthFields:{'ECC Errors/Volatile/DRAM Uncorrectable':[ref('7')]}})]);
+  const b=report([gpu(0,{sn:'S',healthFields:{'ECC Errors/Aggregate/DRAM Uncorrectable':[ref('9')]}})]);
+  assert.equal(compareReports(a,b).changed,0);
+});
+test('multiple captured values are not collapsed into a change',()=>{
+  const key='Remapped Rows/Correctable Error';const a=report([gpu(0,{sn:'S',healthFields:{[key]:[ref('1'),ref('2')]}})]),b=report([gpu(0,{sn:'S',healthFields:{[key]:[ref('3')]}})]);
+  const d=compareReports(a,b).rows[0];assert.equal(d.changes.length,0);assert.equal(d.details.at(-1).state,'ambiguous');assert.equal(d.details.at(-1).before.refs.length,2);
+});
+test('link decimal formatting is equal but width changes retain source',()=>{
+  const a=report([gpu(0,{sn:'S',link:'16.0GT/s · x16',pciFields:{link:[ref('16.0GT/s · x16',3,'LnkSta: Speed 16.0GT/s Width x16')]}})]);
+  const b=report([gpu(0,{sn:'S',link:'16GT/s · x16'})]);assert.equal(compareReports(a,b).changed,0);
+  b.gpus[0].link='16GT/s · x8';const d=compareReports(a,b).rows[0].details.find(f=>f.key==='link');assert.equal(d.state,'changed');assert.equal(d.before.refs[0].evidence.line,3);
+});
+test('driver version participates only when both reports provide it',()=>{
+  const a={...report([gpu(0,{sn:'S'})]),server:{driver:'550.54.15',fields:{driver:[ref('550.54.15')]}}};
+  const b={...report([gpu(0,{sn:'S'})]),server:{driver:'580.65.06',fields:{driver:[ref('580.65.06')]}}};
+  assert.ok(compareReports(a,b).rows[0].changes.includes('驱动版本'));b.server={};assert.equal(compareReports(a,b).changed,0);
+});
+test('missing slot designation is not a physical slot change',()=>{
+  const a=report([gpu(0,{sn:'S',slot:'1 / SLOT_A',pciFields:{slot:[ref('1')],slotDesignation:[ref('SLOT_A')]}})]);
+  const b=report([gpu(0,{sn:'S',slot:'1',pciFields:{slot:[ref('1')]}})]);assert.equal(compareReports(a,b).changed,0);
+});
+test('identical reports including zero counters have no changes',()=>{
+  const a=report([gpu(0,{sn:'S',healthFields:{'Remapped Rows/Pending':[ref('No')],'Remapped Rows/Correctable Error':[ref('0')]}})]);assert.equal(compareReports(a,a).changed,0);
+});
 console.log(`${results.length} analysis tests passed`);
