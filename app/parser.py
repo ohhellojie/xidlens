@@ -12,12 +12,15 @@ LOCAL_CATALOG = APP_HOME/'xid_catalog.local.json'
 CATALOG_PATH = Path(os.environ.get('XIDLENS_CATALOG', str(LOCAL_CATALOG if LOCAL_CATALOG.is_file() else ROOT/'xid_catalog.json')))
 CATALOG = json.loads(CATALOG_PATH.read_text(encoding='utf-8'))
 PCI_HEADER = re.compile(r'^((?:[\da-fA-F]{4,8}:)?[\da-fA-F]{2}:[\da-fA-F]{2}\.[0-7])\s+(.+)')
-UNAVAILABLE = {'', 'n/a', 'na', 'none', 'unknown', 'not specified', 'not available', 'to be filled by o.e.m.', 'default string', '0'}
+UNAVAILABLE = {'', '—', 'n/a', 'na', 'none', 'unknown', 'not specified', 'not available', 'not supported', 'to be filled by o.e.m.', 'default string', '0'}
 
 def digest(path):
     with Path(path).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 
-def valid(value):return str(value).strip().lower() not in UNAVAILABLE
+def valid(value):
+    marker = str(value).strip().lower()
+    if marker.startswith('[') and marker.endswith(']'):marker = marker[1:-1].strip()
+    return marker not in UNAVAILABLE
 
 class Parser(BaseParser):
     def __init__(self,*args,**kwargs):

@@ -85,6 +85,20 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(c['gpus'][0]['uuid'],'冲突')
         self.assertEqual(len(c['gpus'][0]['fields']['uuid']),2)
 
+    def test_bracketed_unavailable_identity_is_not_a_serial_or_conflict(self):
+        for marker in ('[N/A]', '[ n/a ]', '[Not Supported]', 'Not Supported'):
+            with self.subTest(marker=marker):
+                c=parse(SAMPLE.replace('Serial Number: DEMO-GPU-001', f'Serial Number: {marker}'))
+                self.assertEqual(c['gpus'][0]['sn'], '')
+                self.assertEqual(c['gpus'][0]['uuid'], 'GPU-DEMO-001')
+                c=parse(SAMPLE+'\n*** /proc/driver/nvidia/gpus/0000:41:00.0/information\nSerial Number: '+marker+'\n')
+                self.assertEqual(c['gpus'][0]['sn'], 'DEMO-GPU-001')
+
+    def test_report_header_drops_bracketed_serial(self):
+        c=parse('NVIDIA bug report log file\nNVIDIA GPU Details | NVIDIA GeForce RTX 4090, 575.64.03, 24564 MiB, 95.02, 00000000:41:00.0, [N/A]\n')
+        self.assertEqual(len(c['gpus']), 1)
+        self.assertEqual(c['gpus'][0]['sn'], '')
+
     def test_smi_identity_stays_with_explicit_gpu_address(self):
         c=parse('Attached GPUs : 2\nGPU 00000000:41:00.0\n    Product Name : NVIDIA A800\n    Serial Number : 001234\n    GPU UUID : GPU-FIRST\nGPU 00000000:61:00.0\n    Product Name : NVIDIA GeForce RTX 4090\n    Serial Number : N/A\n    GPU UUID : GPU-SECOND\n')
         self.assertEqual([(g['sn'],g['uuid']) for g in c['gpus']],[('001234','GPU-FIRST'),('','GPU-SECOND')])

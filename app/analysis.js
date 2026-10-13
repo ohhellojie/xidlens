@@ -1,6 +1,10 @@
 (function(root){
   'use strict';
-  const available = value => value !== undefined && value !== null && !['','冲突','—','n/a','na','none','unknown','not specified','not available','to be filled by o.e.m.','default string','0'].includes(String(value).trim().toLowerCase());
+  const available = value => {
+    if(value === undefined || value === null)return false;
+    const marker=String(value).trim().toLowerCase().replace(/^\[\s*(.*?)\s*\]$/,'$1');
+    return !['','冲突','—','n/a','na','none','unknown','not specified','not available','not supported','to be filled by o.e.m.','default string','0'].includes(marker);
+  };
   const identity = (gpu, field) => available(gpu[field]) ? (field === 'uuid' ? String(gpu[field]).trim().toLowerCase() : String(gpu[field]).trim()) : '';
   const eventKey = e => JSON.stringify([e.gpu ?? null, e.address || '', e.kind, e.code || '', e.kind === 'xid' ? '' : e.title || '']);
   function groupEvents(events){
@@ -42,21 +46,25 @@
       return ['sn','uuid'].some(k=>identity(g,k))?'未找到相同标识':'缺少 SN / UUID';
     }
     const counts = report => {
-      const map=new Map();
+      const map=new Map(),ids=new Set((report.gpus||[]).map(g=>g.id));
       for(const e of report.events||[]){
-        if(e.gpu===null||e.gpu===undefined)continue;
-        if(!map.has(e.gpu))map.set(e.gpu,new Map());
-        const bucket=map.get(e.gpu),key=JSON.stringify([e.kind,e.code||'']);
-        if(!bucket.has(key))bucket.set(key,{kind:e.kind,code:e.code||'',count:0});
+        const gpu=ids.has(e.gpu)?e.gpu:null,address=gpu===null?(e.address||''):'';
+        if(!map.has(gpu))map.set(gpu,new Map());
+        const bucket=map.get(gpu),key=JSON.stringify([e.kind,e.code||'',address]);
+        if(!bucket.has(key))bucket.set(key,{kind:e.kind,code:e.code||'',address,count:0});
         bucket.get(key).count++;
       }
       return map;
     };
     const aCounts=counts(before),bCounts=counts(after);
+    const mergedCounts=(a=new Map(),b=new Map())=>[...new Set([...a.keys(),...b.keys()])].map(key=>{
+      const {kind,code,address}=a.get(key)||b.get(key);
+      return {kind,code,address,before:a.get(key)?.count||0,after:b.get(key)?.count||0};
+    });
     function row(a,b,basis,why){
-      const changes=fields.filter(([key])=>key==='uuid'&&a&&b ? identity(a,key)!==identity(b,key) : String(a?.[key]??'')!==String(b?.[key]??'')).map(([,label])=>label);
+      const changes=fields.filter(([key])=>['sn','uuid'].includes(key)&&a&&b ? identity(a,key)!==identity(b,key) : String(a?.[key]??'')!==String(b?.[key]??'')).map(([,label])=>label);
       const ac=aCounts.get(a?.id)||new Map(),bc=bCounts.get(b?.id)||new Map();
-      const errors=[...new Set([...ac.keys(),...bc.keys()])].map(key=>({...ac.get(key),...bc.get(key),before:ac.get(key)?.count||0,after:bc.get(key)?.count||0}));
+      const errors=mergedCounts(ac,bc);
       if(errors.some(e=>e.before!==e.after))changes.push('错误记录');
       rows.push({before:a||null,after:b||null,basis,reason:why,changes,errors,matched:Boolean(a&&b)});
     }
@@ -77,7 +85,9 @@
       }else row(a,null,'',candidates.length?'匹配不唯一':reason(a,right,aIndex,bIndex));
     }
     for(const b of right)if(!used.has(b))row(null,b,'',rightCandidates.get(b)?'匹配不唯一':reason(b,left,bIndex,aIndex));
-    return {rows,matched:rows.filter(r=>r.matched).length,changed:rows.filter(r=>r.matched&&r.changes.length).length,
+    const systemErrors=mergedCounts(aCounts.get(null),bCounts.get(null));
+    const system={errors:systemErrors,before:systemErrors.reduce((n,e)=>n+e.before,0),after:systemErrors.reduce((n,e)=>n+e.after,0),changed:systemErrors.some(e=>e.before!==e.after)};
+    return {rows,system,matched:rows.filter(r=>r.matched).length,changed:rows.filter(r=>r.matched&&r.changes.length).length,
       beforeOnly:rows.filter(r=>!r.after).length,afterOnly:rows.filter(r=>!r.before).length,
       serverMismatch:available(before.server?.sn)&&available(after.server?.sn)&&before.server.sn!==after.server.sn,
       incomplete:before.complete===false||after.complete===false};

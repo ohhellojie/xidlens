@@ -30,7 +30,34 @@ test('same PCI without identity must never identify a card',()=>{
   const r=compareReports(report([gpu(0)]),report([gpu(0)]));assert.equal(r.matched,0);assert.equal(r.rows.length,2);assert.equal(r.rows[0].reason,'缺少 SN / UUID');
 });
 test('placeholder identities are not matched',()=>{
-  for(const sn of ['—','N/A','Unknown','Default String'])assert.equal(compareReports(report([gpu(0,{sn})]),report([gpu(1,{sn})])).matched,0);
+  for(const sn of ['—','N/A','Unknown','Default String','[N/A]','[ n/a ]','[Not Supported]','Not Supported'])assert.equal(compareReports(report([gpu(0,{sn})]),report([gpu(1,{sn})])).matched,0);
+});
+
+test('placeholder SN in saved reports cannot block a valid UUID match',()=>{
+  for(const sn of ['[N/A]','[Not Supported]']){
+    const a=report([gpu(0,{sn,uuid:'GPU-A'})]),b=report([gpu(1,{sn:'REAL-SN',uuid:'gpu-a'})]);
+    for(const r of [compareReports(a,b),compareReports(b,a)]){assert.equal(r.matched,1);assert.equal(r.rows[0].basis,'UUID');}
+    const blank=report([gpu(0,{sn:'',uuid:'GPU-A'})]);
+    assert.equal(compareReports(a,blank).changed,0);
+  }
+});
+
+test('system errors retain every unassigned record without changing GPU counts',()=>{
+  const a=report([gpu(0,{sn:'S'})],[event('a',0,'79','—'),event('b',null,'','—',{kind:'smi_error',address:''}),event('c',null,'','—',{kind:'smi_error',address:''})]);
+  const b=report([gpu(3,{sn:'S'})],[event('d',3,'79','—'),event('e',undefined,'','—',{kind:'smi_error',address:''})]);
+  const r=compareReports(a,b);assert.equal(r.matched,1);assert.equal(r.changed,0);assert.equal(r.rows.length,1);
+  assert.deepEqual([r.system.before,r.system.after,r.system.changed],[2,1,true]);
+  assert.equal(r.system.errors[0].kind,'smi_error');
+  assert.equal(r.system.before+r.rows.reduce((n,row)=>n+row.errors.reduce((m,e)=>m+e.before,0),0),a.events.length);
+});
+
+test('system comparison retains PCI addresses, type changes and dangling GPU references',()=>{
+  const a=report([],[event('a',null,'','—',{kind:'aer',address:'0000:00:01.0'})]);
+  const b=report([],[event('b',99,'','—',{kind:'aer',address:'0000:00:02.0'})]);
+  const r=compareReports(a,b);assert.equal(r.rows.length,0);assert.equal(r.system.errors.length,2);assert.equal(r.system.changed,true);
+  assert.deepEqual([r.system.before,r.system.after],[1,1]);
+  assert.equal(compareReports(a,a).system.changed,false);
+  assert.equal(compareReports(report([]),report([])).system.errors.length,0);
 });
 test('SN match cannot override a conflicting UUID',()=>{
   const r=compareReports(report([gpu(0,{sn:'S',uuid:'GPU-A'})]),report([gpu(0,{sn:'S',uuid:'GPU-B'})]));assert.equal(r.matched,0);assert.equal(r.rows[0].reason,'标识有冲突');
