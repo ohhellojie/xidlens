@@ -11,12 +11,18 @@ if __name__ == '__main__':
         if len(sys.argv)==3 and sys.argv[1]=='--apply-update':
             import update_install
             update_install.main(sys.argv[2])
-        elif '--no-browser' in sys.argv:
-            import server
-            server.main()
         else:
-            import desktop
-            desktop.main()
+            from instance import Instance
+            app_home = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
+            runtime = Path(os.environ.get('GPU_LOG_DATA_DIR', str(app_home / 'runtime'))).resolve()
+            with Instance(runtime) as instance:
+                if instance.acquire():
+                    if '--no-browser' in sys.argv:
+                        import server
+                        server.main()
+                    else:
+                        import desktop
+                        desktop.main(instance=instance)
     except Exception:
         app_home = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parent
         log = Path(os.environ.get('GPU_LOG_DATA_DIR', str(app_home / 'runtime'))) / 'startup-error.log'
@@ -26,7 +32,7 @@ if __name__ == '__main__':
             detail = f'启动失败，请将以下文件发给开发者：\n{log}'
         except OSError:
             detail = '启动失败。请将程序放到有写入权限的文件夹后重试。'
-        if '--no-browser' not in sys.argv:
+        if '--no-browser' not in sys.argv and not os.environ.get('XIDLENS_UPDATE_RECEIPT'):
             import ctypes
             ctypes.windll.user32.MessageBoxW(None, detail, 'XidLens', 0x10)
         sys.exit(1)

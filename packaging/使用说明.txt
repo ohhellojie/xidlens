@@ -1,4 +1,4 @@
-XidLens · Windows x64 v0.9.0
+XidLens · Windows x64 v0.9.1
 
 双击 XidLens.exe 打开软件，关闭窗口退出。
 升级时先退出软件，用新版 EXE 替换原文件，保留同目录 runtime 文件夹。

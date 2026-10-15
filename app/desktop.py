@@ -48,7 +48,7 @@ class DesktopActions:
         return True
 
 
-def main(after_start=None):
+def main(after_start=None, instance=None):
     ap=argparse.ArgumentParser()
     ap.add_argument('--port',type=int,default=0)
     args=ap.parse_args()
@@ -65,6 +65,21 @@ def main(after_start=None):
                                                    'windows.fileFilter.allFiles':'所有文件'})
         actions._window=window
         window.events.before_show += position_window
+        def activate():
+            from System import Action
+            from System.Windows.Forms import FormWindowState
+            def focus():
+                form = window.native
+                if form.WindowState == FormWindowState.Minimized: form.WindowState = FormWindowState.Normal
+                form.Show(); form.Activate()
+            window.native.Invoke(Action(focus))
+        def shown():
+            if instance: instance.listen(activate)
+        window.events.shown += shown
+        def loaded():
+            if window.evaluate_js("Boolean(window.XidKnowledge && document.querySelector('#navigation button'))"):
+                service.mark_ready()
+        window.events.loaded += loaded
         service.on_stop=window.destroy
         window.events.closing += lambda: server.STOP_EVENT.set()
         webview.start(after_start,args=(window,service),gui='edgechromium',

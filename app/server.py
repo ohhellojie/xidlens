@@ -8,6 +8,7 @@ sys.dont_write_bytecode=True
 from parser import analyze, core, CATALOG, CATALOG_WARNING
 from catalog import CatalogStore, MAX_UPLOAD
 from online import OnlineUpdates
+import recovery
 
 ROOT=Path(__file__).resolve().parent
 APP_HOME=Path(sys.executable).resolve().parent if getattr(sys,'frozen',False) else ROOT
@@ -19,6 +20,8 @@ EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
 CASE_CACHE={}
+RECOVERY={'recovered':0,'interrupted':0,'pending':0}
+INVALID_REPORTS=[]
 CATALOG_STORE=CatalogStore(RUNTIME,CATALOG,CATALOG_WARNING)
 ONLINE=OnlineUpdates(RUNTIME,CATALOG_STORE)
 
@@ -45,6 +48,7 @@ class ImportJob:
             if self.result['state']!='cancelling':self.result.update(values)
 
     def cleanup(self):
+        if self.path and (self.path.parent/'transaction.json').exists():return
         if self.new_source and self.result['state']!='done':cleanup_file(self.new_source)
         if self.path:
             cleanup_file(self.path)
@@ -81,8 +85,8 @@ def _save_cases(cases, job):
             old=json.loads(p.read_text(encoding='utf-8'))
             if old.get('input'):old_sources.append(old['input'])
             if old.get('contentSha256'):identities[(old['contentSha256'],old['source'],json.dumps(old.get('catalog'),sort_keys=True))]=old['id']
-        except (ValueError,KeyError):continue
-    staged={};backups={};published=[];committed=False
+        except (OSError,ValueError,KeyError,TypeError,AttributeError):continue
+    staged={};committed=False
     try:
         for case in cases:
             core.check_cancel(job)
@@ -100,26 +104,36 @@ def _save_cases(cases, job):
                     if size>=65536:
                         core.check_cancel(job);f.write(''.join(parts));parts=[];size=0
                 core.check_cancel(job);f.write(''.join(parts))
+                f.flush();os.fsync(f.fileno())
         with LOCK:
             core.check_cancel(job)
+            recovery.prepare(job.path.parent,RESULTS,staged)
             try:
                 for case_id,temporary in staged.items():
                     target=RESULTS/(case_id+'.json')
-                    if target.exists():
-                        backup=job.path.parent/(case_id+'.backup');target.replace(backup);backups[case_id]=backup
-                    temporary.replace(target);published.append(case_id)
+                    temporary.replace(target)
                     CASE_CACHE.pop(case_id,None)
+                recovery.settle(job.path.parent,RESULTS,commit=True)
             except Exception:
-                for case_id in published:(RESULTS/(case_id+'.json')).unlink(missing_ok=True)
-                for case_id,backup in backups.items():backup.replace(RESULTS/(case_id+'.json'))
+                try:recovery.settle(job.path.parent,RESULTS)
+                except Exception:
+                    RECOVERY['pending']+=1
+                    raise
                 raise
             job.result.update(state='done',phase='done',ids=list(staged))
             committed=True
         return list(staged)
     finally:
-        for p in staged.values():cleanup_file(p)
+        journal=job.path.parent/'transaction.json'
+        if journal.exists():
+            try:
+                if json.loads(journal.read_text(encoding='utf-8'))['state'] in ('committed','rolledback'):
+                    recovery.clean_folder(job.path.parent)
+            except (OSError,ValueError,KeyError):pass
+        else:
+            for p in staged.values():cleanup_file(p)
+            for p in job.path.parent.glob('*.backup'):cleanup_file(p)
         if committed:
-            for p in backups.values():cleanup_file(p)
             prune_sources(old_sources)
 
 
@@ -197,6 +211,7 @@ def run_cached_job(job,cached):
 
 def case_list():
     with RESULTS_LOCK:
+        INVALID_REPORTS.clear()
         cases=[];seen=set()
         for p in RESULTS.glob('*.json'):
             if not re_id(p.stem) or p.is_symlink() or p.resolve().parent!=RESULTS:continue
@@ -213,7 +228,7 @@ def case_list():
                              'bytes':d.get('bytes'),'modified':stat.st_mtime}
                     CASE_CACHE[p.stem]=(stamp,summary)
                 cases.append(summary)
-            except (OSError,ValueError,KeyError,TypeError,AttributeError):continue
+            except (OSError,ValueError,KeyError,TypeError,AttributeError):INVALID_REPORTS.append(p.stem)
         for key in set(CASE_CACHE)-seen:CASE_CACHE.pop(key,None)
         return sorted(cases,key=lambda d:(d['modified'],d['id']))
 
@@ -236,6 +251,7 @@ def delete_cases(ids):
 
 def run_job(job):
     try:
+        if RECOVERY['pending']:raise ValueError('报告恢复未完成，请重启后重试')
         job.progress({'state':'running','phase':'parsing','source':job.path.name,'bytes':0,'lines':0,'totalBytes':None})
         cases=analyze(job.path,cancel_event=job,progress=job.progress,catalog=job.catalog)
         if not cases:raise ValueError('没有可读取的报告')
@@ -293,7 +309,7 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/api/catalog/rules':
             catalog=CATALOG_STORE.snapshot()
             return self.respond({'rules':[dict(code=key,**value) for key,value in sorted(catalog['codes'].items(),key=lambda item:int(item[0]))],'catalog':{k:v for k,v in catalog.items() if k!='codes'}})
-        if url.path=='/api/cases':return self.respond({'cases':case_list()})
+        if url.path=='/api/cases':return self.respond({'cases':case_list(),'recovery':RECOVERY,'unreadable':len(INVALID_REPORTS)})
         if url.path=='/api/reparse/source':
             try:
                 with RESULTS_LOCK:report,_=read_case(parse_qs(url.query).get('id',[''])[0])
@@ -318,6 +334,8 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if RECOVERY['pending'] and (url.path.startswith(('/api/import','/api/reparse')) or url.path=='/api/cases/delete'):
+            return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)
         if url.path.startswith('/api/online/'):
             action=url.path.rsplit('/',1)[-1]
             try:
@@ -436,10 +454,15 @@ class LocalService:
         self.close_lock=threading.Lock()
 
     def start(self):
+        RECOVERY.update(recovery.recover(RUNTIME))
         ONLINE.schedule()
         self.thread=threading.Thread(target=self.http.serve_forever,kwargs={'poll_interval':0.1},daemon=True)
         self.thread.start()
         (RUNTIME/'session.json').write_text(json.dumps({'url':self.url,'pid':os.getpid()}),encoding='utf-8')
+
+    def mark_ready(self):
+        import update_install
+        update_install.mark_ready(APP_HOME)
 
     def request_stop(self):
         if self.on_stop:self.on_stop()
@@ -468,6 +491,7 @@ def main():
     ap=argparse.ArgumentParser();ap.add_argument('--no-browser',action='store_true');ap.add_argument('--port',type=int,default=0);args=ap.parse_args()
     service=LocalService(args.port)
     service.start()
+    service.mark_ready()
     if sys.stdout is not None:print(service.url,flush=True)
     try:service.closed.wait()
     finally:service.close()
