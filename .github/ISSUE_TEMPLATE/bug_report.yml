@@ -19,4 +19,4 @@ body:
     id: sample
     attributes:
       label: 脱敏片段（可选）
-      description: 请移除真实 SN、UUID、IP、主机名、客户名和内部路径，不上传原始客户日志。
+      description: 请替换 SN、UUID、IP、主机名和敏感路径，保留原格式与关联关系，不上传未脱敏的日志。

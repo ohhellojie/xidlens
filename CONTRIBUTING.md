@@ -6,12 +6,6 @@
 
 字段缺失、冲突和规则适用条件必须保留，不能把排查建议写成硬件结论。
 
-提交前运行：
-
-```sh
-python -m unittest discover -s tests -v
-python tools/check_repository.py
-git diff --check
-```
+运行方式、构建和提交前检查见[开发说明](docs/development.md)。
 
 修改解析逻辑时，补充能证明行为的脱敏样本。修改 UI 时，检查设备、错误、拓扑之间的跳转，以及窄窗口和深色模式。

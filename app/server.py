@@ -9,6 +9,7 @@ from parser import analyze, core, CATALOG, CATALOG_WARNING
 from catalog import CatalogStore, MAX_UPLOAD
 from online import OnlineUpdates
 from knowledge import KnowledgeStore
+from version import VERSION
 import recovery
 
 ROOT=Path(__file__).resolve().parent
@@ -300,7 +301,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         url=urlparse(self.path)
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
-        if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).encode(),ctype='text/html; charset=utf-8')
+        if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).encode(),ctype='text/html; charset=utf-8')
         if url.path=='/analysis.js':return self.respond((ROOT/'analysis.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/knowledge.js':return self.respond((ROOT/'knowledge'/'knowledge.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')

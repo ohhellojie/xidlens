@@ -1,76 +1,66 @@
-# XidLens
+<p align="center"><img src="app/logo.png" width="64" alt=""></p>
 
-Offline NVIDIA GPU log triage: device inventory, PCIe topology, and error evidence.
+<h1 align="center">XidLens</h1>
 
-[简体中文](README.md) · [Usage](docs/usage.md)
+<p align="center">Inspect devices, errors, and PCIe paths in NVIDIA GPU logs offline.</p>
 
-Import a report, find a GPU by serial number, UUID, or PCI address, and follow its errors and upstream path. Original lines and field sources stay available for verification.
+<p align="center">
+  <a href="https://github.com/ohhellojie/xidlens/releases/latest">Download for Windows</a> ·
+  <a href="docs/usage.md">Usage (Chinese)</a> ·
+  <a href="https://github.com/ohhellojie/xidlens/releases">Release notes</a> ·
+  <a href="README.md">简体中文</a>
+</p>
+
+![Device inventory with serial numbers, UUIDs, PCI addresses, and field sources](docs/images/devices.png)
+
+*Actual interface with sample data.*
+
+## Get started
+
+1. Download the Windows x64 ZIP from [Releases](https://github.com/ohhellojie/xidlens/releases/latest).
+2. Extract the ZIP and open `XidLens.exe`.
+3. Click “导入日志” (Import logs) and select one or more files.
+
+Requires Windows 10 / 11 x64 and Microsoft Edge WebView2 Runtime. The interface is in Chinese.
+
+Reads nvidia-bug-report, dmesg / journal, nvidia-smi -q text, and GZ, ZIP, TAR archives. Logs are parsed locally.
 
 ## Features
 
-- Server and GPU serial numbers, UUIDs, models, and reported metrics.
-- Search by serial number, UUID, or PCI address; copy inventory to Excel.
-- Xid, initialization, and PCIe/AER records with original log text.
-- Error groups with record counts and first/last evidence.
-- Compare device fields, drivers, links, ECC, and errors by serial number or UUID, with source text from both reports.
-- Report search, filters, sorting, batch reparse, and deletion.
-- Import Xid rules or fetch NVIDIA's official English catalog, with source details.
-- Browse GPU troubleshooting steps and their official references.
-- Check for app updates, download and restart to install; optional daily checks.
-- PCIe paths and system-reported slot references.
-- TSV inventory, text summaries, and JSON evidence export.
+| Feature | Details |
+| --- | --- |
+| Device inventory | Server and GPU serial numbers, UUIDs, PCI addresses, metrics, and field sources; search and copy to Excel. |
+| Error records | Group Xid, initialization, and PCIe/AER records; inspect original text, line numbers, and rule descriptions. |
+| PCIe topology | View GPUs and upstream bridges by NUMA node, with related errors and slot references. |
+| Log comparison | Match GPUs by unique serial number or UUID; compare fields and errors with source text side by side. |
+| Report management | Search, filter, batch reparse, and delete reports; export TSV, TXT, and JSON. |
+| Xid reference | Search Chinese and English descriptions, browse troubleshooting topics, and update references independently. |
 
-Reads nvidia-bug-report, dmesg / journal, nvidia-smi -q text, GZ, ZIP, and TAR. Reports stay separate and are processed locally.
+<details>
+<summary>View error records and PCIe topology</summary>
 
-Windows desktop application with a Chinese interface.
+### Error records
 
-## Run
+![Error groups and original log text](docs/images/errors.png)
 
-Download the Windows ZIP from [Releases](https://github.com/ohhellojie/xidlens/releases), extract it, and open `XidLens.exe`.
+### PCIe topology
 
-### From source
+![GPUs and upstream PCIe bridges](docs/images/topology.png)
 
-Windows, Python 3.12+, and Microsoft Edge WebView2 Runtime.
+</details>
 
-```sh
-git clone https://github.com/ohhellojie/xidlens.git
-cd xidlens
-python -m pip install -r requirements-desktop.txt
-python app/main.py
-```
+Fields reflect the imported logs. Missing and conflicting values are preserved; slots are references. Descriptions and suggested actions come from matching rules and require verification against the original logs and device state.
 
-The interface opens in its own window. Close the window to exit the application.
+## Updates and data
 
-Results are stored in `runtime/results` beside the application.
+Use “软件更新” (Software updates) to check, download, and install a release. You can also close the app and replace the EXE, keeping the adjacent `runtime` folder.
 
-## Xid reference
+Reports, source copies, and settings are stored in `runtime`. The Xid reference and troubleshooting manual update separately. [Parsing rules](docs/catalog.md) accept XLSX / JSON imports. See [usage](docs/usage.md) and [reference updates](docs/reference-packages.md) for details (Chinese).
 
-The built-in Xid library includes searchable Chinese descriptions, English source text, and troubleshooting topics. Parsing rules can be imported, inspected, or restored to the bundled Chinese catalog. The Xid reference and troubleshooting manual update independently, with version and source details. Failed or cancelled updates keep the existing content. Software updates have a separate entry. See [catalog setup](docs/catalog.md).
+## Development and feedback
 
-Descriptions and suggested actions come from matching rules; fault causes require further verification. Missing serial numbers remain empty, conflicting fields are preserved, and physical slot locations require verification.
+[Run from source and build (Chinese)](docs/development.md) · [Contributing](CONTRIBUTING.md) · [Report an issue](https://github.com/ohhellojie/xidlens/issues/new?template=bug_report.yml)
 
-## Develop and build
+For parsing issues, include a minimal anonymized log sample that reproduces the problem.
 
-```sh
-python -m unittest discover -s tests -v
-node tests/test_analysis.cjs
-node tests/test_topology.cjs
-node tests/test_report_time.cjs
-node tests/test_exports.cjs
-python tools/check_repository.py
-```
-
-On Windows x64:
-
-```sh
-python -m pip install -r requirements-build.txt
-cd frontend
-npm ci
-npm run build
-cd ..
-python tools/build_windows.py
-```
-
-Output: `dist/XidLens.exe`.
-
-See [contributing](CONTRIBUTING.md), [MIT license](LICENSE), and [third-party notices](NOTICE.md).
+Code is licensed under [MIT](LICENSE). Chinese reference content is an unofficial translation with links to official sources. See [NOTICE](NOTICE.md) for third-party rights.
