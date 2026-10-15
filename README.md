@@ -19,11 +19,11 @@
 
 支持 nvidia-bug-report、dmesg / journal、nvidia-smi -q 文本，以及 GZ、ZIP、TAR。每份报告独立查看，日志在本机处理。
 
-当前为 Windows 试用版，界面使用中文。
+Windows 桌面程序，界面使用中文。
 
 ## 开始使用
 
-在 [Releases](https://github.com/ohhellojie/xidlens/releases) 下载 Windows 试用包，解压后双击 `XidLens.exe`。
+在 [Releases](https://github.com/ohhellojie/xidlens/releases) 下载 Windows ZIP 包，解压后双击 `XidLens.exe`。
 
 ### 从源码运行
 
@@ -53,6 +53,7 @@ python -m unittest discover -s tests -v
 node tests/test_analysis.cjs
 node tests/test_topology.cjs
 node tests/test_report_time.cjs
+node tests/test_exports.cjs
 python tools/check_repository.py
 ```
 

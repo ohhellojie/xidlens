@@ -22,11 +22,11 @@ Import a report, find a GPU by serial number, UUID, or PCI address, and follow i
 
 Reads nvidia-bug-report, dmesg / journal, nvidia-smi -q text, GZ, ZIP, and TAR. Reports stay separate and are processed locally.
 
-This is a Windows preview with a Chinese interface.
+Windows desktop application with a Chinese interface.
 
 ## Run
 
-Download a Windows preview ZIP from [Releases](https://github.com/ohhellojie/xidlens/releases), extract it, and open `XidLens.exe`.
+Download the Windows ZIP from [Releases](https://github.com/ohhellojie/xidlens/releases), extract it, and open `XidLens.exe`.
 
 ### From source
 
@@ -56,6 +56,7 @@ python -m unittest discover -s tests -v
 node tests/test_analysis.cjs
 node tests/test_topology.cjs
 node tests/test_report_time.cjs
+node tests/test_exports.cjs
 python tools/check_repository.py
 ```
 
