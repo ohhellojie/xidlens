@@ -45,7 +45,7 @@ Results are stored in `runtime/results` beside the application.
 
 ## Xid reference
 
-The built-in Xid library includes searchable Chinese descriptions, English source text, and troubleshooting topics. Parsing rules can be imported, inspected, or restored to the bundled Chinese catalog. Software updates have a separate entry. See [catalog setup](docs/catalog.md).
+The built-in Xid library includes searchable Chinese descriptions, English source text, and troubleshooting topics. Parsing rules can be imported, inspected, or restored to the bundled Chinese catalog. The Xid reference and troubleshooting manual update independently, with version and source details. Failed or cancelled updates keep the existing content. Software updates have a separate entry. See [catalog setup](docs/catalog.md).
 
 Descriptions and suggested actions come from matching rules; fault causes require further verification. Missing serial numbers remain empty, conflicting fields are preserved, and physical slot locations require verification.
 

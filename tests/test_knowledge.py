@@ -7,7 +7,7 @@ from test_catalog import catalog, rule
 class BuiltinKnowledgeTests(unittest.TestCase):
     def test_search_catalog_matches_parser_default(self):
         root=Path(__file__).resolve().parents[1]
-        library=json.loads((root/'frontend/src/catalog.json').read_text(encoding='utf-8'))
+        library=json.loads((root/'app/knowledge/xid.json').read_text(encoding='utf-8'))['content']
         self.assertEqual(library['cn']['codes'],catalog.DEFAULT['codes'])
         self.assertEqual(set(library['cn']['codes']),set(library['en']['codes']))
         self.assertEqual(len(library['cn']['codes']),172)
