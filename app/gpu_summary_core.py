@@ -34,6 +34,12 @@ LABELS = {'xid': 'Xid', 'init': '初始化失败', 'aer': 'PCIe/AER 记录',
           'ecc': 'ECC 错误记录', 'mods': 'MODS 错误/结果', 'thermal': '温度阈值/传感器错误'}
 TEXT_EXT = {'.log', '.txt', '.out', '.xml', '.csv', '.json'}
 
+def nvidia_driver_version(line):
+    match = re.match(r'^\s*\|?\s*(?:NVIDIA-SMI\s+\S+\s+)?Driver Version\s*:\s*(\d[\d.]+)(?=\s|\||$)', line, re.I)
+    if not match and 'NVRM version:' in line:
+        match = re.search(r'Kernel Module.*?(\d{3,}\.\d+(?:\.\d+)?)', line)
+    return match[1] if match else ''
+
 
 class AnalysisCancelled(Exception):
     pass
@@ -150,10 +156,9 @@ class Parser:
             self.pending_serial = None
         if n <= 100 and s.startswith(('Date:', 'MODS start:')):
             self.r['collection_time'].append({'raw': s.split(':', 1)[1].strip(), 'line': n})
-        if 'DRIVER version' in line or s.startswith('Driver Version'):
-            m = re.search(r':\s*([\d.]+)', line)
-            if m and m[1] not in self.r['driver_versions']:
-                self.r['driver_versions'].append(m[1])
+        driver = nvidia_driver_version(line)
+        if driver and driver not in self.r['driver_versions']:
+            self.r['driver_versions'].append(driver)
         m = HEADER_GPU.match(line) if n < 200 else None
         if m:
             address = bdf(m[3])

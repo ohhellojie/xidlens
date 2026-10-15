@@ -84,11 +84,9 @@ class Parser(BaseParser):
                 key,value=(v.strip() for v in s.split(':',1))
                 if re.fullmatch(r'\d+|yes|no',value,re.I):
                     self.put(self.r['health_fields'].setdefault(self.current_gpu,{}),'/'.join(path+[key]),value,n,line,'nvidia-smi')
-        driver=re.search(r'Driver Version\s*:\s*(\d[\d.]+)',line,re.I)
-        if not driver and 'NVRM version:' in line:driver=re.search(r'Kernel Module.*?(\d{3,}\.\d+(?:\.\d+)?)',line)
+        driver=core.nvidia_driver_version(line)
         if driver:
-            self.put(self.r['server_fields'],'driver',driver[1],n,line,'NVIDIA driver')
-            if driver[1] not in self.r['driver_versions']:self.r['driver_versions'].append(driver[1])
+            self.put(self.r['server_fields'],'driver',driver,n,line,'NVIDIA driver')
         address_match=core.SMI_GPU_RE.match(line)
         if address_match:self.field(core.bdf(address_match[1]),'pci',core.bdf(address_match[1]),n,line,'nvidia-smi GPU')
         if line.startswith('*** ') and self.proc_gpu:self.field(self.proc_gpu,'pci',self.proc_gpu,n,line,'proc GPU path')

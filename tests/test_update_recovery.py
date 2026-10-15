@@ -11,6 +11,9 @@ import update_install as updater
 
 class UpdateRecoveryTests(unittest.TestCase):
     def setUp(self):
+        # Process creation is mocked; supply the Windows flag on non-Windows hosts too.
+        flags=patch.object(updater.subprocess,'CREATE_NO_WINDOW',0x08000000,create=True)
+        flags.start();self.addCleanup(flags.stop)
         self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
         self.folder=self.root/'runtime/updater'/('a'*32);self.folder.mkdir(parents=True)
         self.target=self.root/'XidLens.exe';self.target.write_bytes(b'new')
@@ -39,6 +42,7 @@ class UpdateRecoveryTests(unittest.TestCase):
     def test_ready_handshake_keeps_new_executable(self):
         process=Mock();process.poll.return_value=None
         def start(*args,**kwargs):
+            self.assertEqual(kwargs['creationflags'],0x08000000)
             with patch.dict(updater.os.environ,kwargs['env']):updater.mark_ready(self.root)
             return process
         with patch.object(updater.subprocess,'Popen',side_effect=start):

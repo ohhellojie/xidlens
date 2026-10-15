@@ -34,6 +34,18 @@ class ContentTests(unittest.TestCase):
         self.assertEqual(r['server']['driver'],'580.65.06')
         self.assertEqual(r['server']['fields']['driver'][0]['evidence']['line'],1)
 
+    def test_other_kernel_drivers_do_not_pollute_nvidia_version(self):
+        noise='[4.5] acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5\n[18.3] shpchp: Standard Hot Plug PCI Controller Driver version: 0.4\n'
+        for line in ('Driver Version : 580.126.09', '| DRIVER version : 580.126.09',
+                     '| NVIDIA-SMI 580.126.09 Driver Version: 580.126.09 CUDA Version: 13.0 |'):
+            with self.subTest(line=line):
+                r=parse(line+'\n'+noise+HEADER)
+                self.assertEqual(r['server']['driver'],'580.126.09')
+                self.assertEqual([v['value'] for v in r['server']['fields']['driver']],['580.126.09'])
+        r=parse(noise+HEADER)
+        self.assertEqual(r['server']['driver'],'')
+        self.assertNotIn('driver',r['server']['fields'])
+
     def test_mig_health_is_not_compared_as_physical_gpu_health(self):
         r=parse(HEADER+'''    MIG Device
         Index : 0
