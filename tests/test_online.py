@@ -1,4 +1,4 @@
-import hashlib,json,tempfile,threading,time,unittest
+import hashlib,json,ssl,tempfile,threading,time,unittest
 from pathlib import Path
 from unittest.mock import patch
 from test_catalog import rule,xlsx_bytes
@@ -10,6 +10,24 @@ def release(tag='v0.9.0',raw=b'MZtest',draft=False):
 
 
 class OnlineTests(unittest.TestCase):
+ def test_download_uses_packaged_ca_context_without_system_roots(self):
+  with patch('online.ssl.create_default_context', wraps=ssl.create_default_context) as create:
+   context=online.tls_context()
+  create.assert_called_once_with(cafile=online.certifi.where())
+  self.assertTrue(context.check_hostname)
+  self.assertEqual(context.verify_mode,ssl.CERT_REQUIRED)
+  with patch('online.certifi.__version__','2026.7.22'):
+   with self.assertRaisesRegex(ValueError,'证书库版本过旧'):online.tls_context()
+ def test_https_context_reaches_shared_download_opener(self):
+  with patch('online.urllib.request.build_opener') as build:
+   response=build.return_value.open.return_value.__enter__.return_value
+   response.url='https://api.github.com/test';response.headers={}
+   response.read.side_effect=[b'ok',b'']
+   self.assertEqual(online.download(response.url,10),b'ok')
+  handlers=build.call_args.args
+  self.assertIsInstance(handlers[0],online.Redirects)
+  self.assertIsInstance(handlers[1],online.urllib.request.HTTPSHandler)
+  self.assertTrue(handlers[1]._context.check_hostname)
  def test_version_order_and_asset_origin(self):
   self.assertLess(online.version_key('0.9.0-preview.9'),online.version_key('0.9.0'))
   self.assertGreater(online.version_key('0.10.0'),online.version_key('0.9.9'))

@@ -4,14 +4,16 @@ import importlib.metadata
 from pathlib import Path
 import sys
 import zipfile
+from build_receipt import verify as verify_receipt
 
-VERSION = '1.0.0'
+VERSION = '1.0.1'
 
 def main():
     root = Path(__file__).resolve().parent.parent
     exe = root/'dist/XidLens.exe'
     if not exe.is_file():
         raise SystemExit('Build dist/XidLens.exe first.')
+    verify_receipt(root)
     if f'v{VERSION}' not in (root/'packaging/使用说明.txt').read_text(encoding='utf-8').splitlines()[0]:
         raise SystemExit('The bundled instructions version does not match the package version.')
     out = root/'dist/release'
@@ -36,7 +38,7 @@ def main():
         if str(item).endswith('COPYING.txt'):
             files['licenses/PYINSTALLER-COPYING.txt'] = Path(distribution.locate_file(item))
             break
-    for project in ('pywebview','pythonnet','clr_loader','cffi','pycparser','typing_extensions','bottle','proxy_tools','openpyxl','et_xmlfile','Pillow'):
+    for project in ('pywebview','pythonnet','clr_loader','cffi','pycparser','typing_extensions','bottle','proxy_tools','openpyxl','et_xmlfile','Pillow','certifi'):
         distribution=importlib.metadata.distribution(project)
         for item in distribution.files or []:
             if Path(str(item)).name.lower().startswith(('license','licence','copying','authors')):

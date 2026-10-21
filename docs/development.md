@@ -15,7 +15,9 @@ python app/main.py
 
 ## 检查
 
-Python 测试使用上述依赖；前端测试与构建使用 Node.js 22 和 npm。
+Python 测试使用上述依赖；前端测试与构建使用 Node.js 24.22.1 或更新的 24.x 和 npm。
+
+联网下载使用随应用打包的 certifi 公共证书库，不合并系统中额外安装的 CA。要求 certifi 2026.10.19 或更新版本；企业 HTTPS 检查代理的私有 CA 不在该公共信任集合中。
 
 ```sh
 python -m unittest discover -s tests -v
