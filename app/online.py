@@ -3,6 +3,7 @@ import copy
 import hashlib
 import json
 import re
+import ssl
 import threading
 import time
 import urllib.request
@@ -11,10 +12,19 @@ from urllib.parse import urljoin, urlparse
 from pathlib import Path
 from catalog import MAX_UPLOAD, parse_upload
 from version import VERSION
+import certifi
 
 RELEASES = 'https://api.github.com/repos/ohhellojie/xidlens/releases?per_page=100'
 CATALOG_PAGE = 'https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html'
 HOSTS = {'api.github.com', 'github.com', 'release-assets.githubusercontent.com', 'objects.githubusercontent.com', 'docs.nvidia.com'}
+
+
+def tls_context():
+    """Use the packaged public CA set, without reintroducing system roots."""
+    version = tuple(int(part) for part in certifi.__version__.split('.'))
+    if version < (2026, 10, 19):
+        raise ValueError('证书库版本过旧，请更新应用')
+    return ssl.create_default_context(cafile=certifi.where())
 
 
 def safe_url(url):
@@ -32,7 +42,8 @@ class Redirects(urllib.request.HTTPRedirectHandler):
 def download(url, limit, progress=None, cancelled=None):
     req = urllib.request.Request(safe_url(url), headers={'User-Agent': 'XidLens/'+VERSION})
     start = time.monotonic()
-    with urllib.request.build_opener(Redirects()).open(req, timeout=15) as response:
+    handler = urllib.request.HTTPSHandler(context=tls_context())
+    with urllib.request.build_opener(Redirects(), handler).open(req, timeout=15) as response:
         safe_url(response.url)
         total = int(response.headers.get('Content-Length', 0))
         if total > limit: raise ValueError('下载文件过大')
