@@ -8,9 +8,9 @@
   <a href="README.md">简体中文</a>
 </p>
 
-XidLens is an offline NVIDIA GPU log analyzer with device inventory, Xid error analysis, diagnostic checks, and topology visualization. Logs are processed locally.
+XidLens is an offline NVIDIA GPU log analyzer with a full log reader, device inventory, Xid error analysis, diagnostic checks, and topology visualization. Logs are processed locally.
 
-[![XidLens home screen with server information, eight GPUs, and details for the selected device](docs/images/devices.png)](docs/images/devices.png)
+[![XidLens home screen with server information, GPU inventory, and device details](docs/images/devices.jpg)](docs/images/devices.jpg)
 
 *Device information page. Screenshots use sample data; click to view at full resolution.*
 
@@ -22,17 +22,22 @@ XidLens is an offline NVIDIA GPU log analyzer with device inventory, Xid error a
 
 Requires Windows 10 or Windows 11 and Microsoft Edge WebView2 Runtime. The interface is in Chinese.
 
+## Full log reader
+
+Search the full text and jump to a line, with matches and errors marked on the scrollbar. Open source lines directly from analysis results, switch to focus mode, and keep your reading position when changing pages or logs.
+
+[![Full log reader with text search, line navigation, and scrollbar markers](docs/images/reader.jpg)](docs/images/reader.jpg)
+
 ## Log analysis
 
 Supports text output from `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `lspci`, as well as GZ, ZIP, and TAR archives.
 
 - **Device inventory**: extracts server information and GPU details, including models, serial numbers, UUIDs, and PCI addresses.
-- **Full log reader**: searches original text, jumps to lines and errors, and supports focus mode with saved reading positions.
 - **Error records**: groups Xid, initialization failures, and PCIe errors by device, preserving source text and line numbers.
 - **Status fields**: parses `nvidia-smi -q` parameters with field descriptions and support for multiple snapshots.
 - **Diagnostic checks**: checks PCIe links, ECC, and row remapping, identifying errors, items to verify, and missing data.
 
-[![Diagnostic checks with an ECC result selected and its counts and explanation shown on the right](docs/images/checks.png)](docs/images/checks.png)
+[![Diagnostic checks with an ECC result selected and its counts and explanation shown on the right](docs/images/checks.jpg)](docs/images/checks.jpg)
 
 Check results include explanations and source evidence, with items that need more data flagged separately. See [status and topology](docs/diagnostics.md) for field descriptions and collection commands.
 
@@ -40,7 +45,7 @@ Check results include explanations and source evidence, with items that need mor
 
 Converts `lspci` and `nvidia-smi topo` output into a PCIe tree and connectivity matrix for GPUs, network adapters, and other devices. Supports device filtering, path navigation, and affinity details.
 
-[![Connectivity matrix for eight GPUs and four network adapters, with details for the selected connection](docs/images/topology.png)](docs/images/topology.png)
+[![GPU connectivity matrix with connection type and affinity details on the right](docs/images/topology.jpg)](docs/images/topology.jpg)
 
 The tree groups devices with an unconfirmed upstream connection. Use device labels to verify physical slots.
 
