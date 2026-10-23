@@ -23,7 +23,7 @@
 
 Requires Windows 10 / 11 x64 and Microsoft Edge WebView2 Runtime. The interface is in Chinese.
 
-Reads nvidia-bug-report, dmesg / journal, nvidia-smi -q text, and GZ, ZIP, TAR archives. Logs are parsed locally.
+Reads nvidia-bug-report, dmesg / journal, nvidia-smi and lspci text, and GZ, ZIP, TAR archives. Logs are parsed locally.
 
 ## Features
 
@@ -31,7 +31,9 @@ Reads nvidia-bug-report, dmesg / journal, nvidia-smi -q text, and GZ, ZIP, TAR a
 | --- | --- |
 | Device inventory | Server and GPU serial numbers, UUIDs, PCI addresses, metrics, and field sources; search and copy to Excel. |
 | Error records | Group Xid, initialization, and PCIe/AER records; inspect original text, line numbers, and rule descriptions. |
-| PCIe topology | View GPUs and upstream bridges by NUMA node, with related errors and slot references. |
+| Status fields | Browse nvidia-smi -q fields, descriptions, and source text by GPU, snapshot, and parameter group. |
+| Diagnostic checks | Inspect PCIe, ECC, and row-remapping results, with errors, items to verify, and missing data identified. |
+| Machine topology | Explore PCIe trees, GPU / NIC connectivity matrices, and affinity; filter and locate devices. |
 | Log comparison | Match GPUs by unique serial number or UUID; compare fields and errors with source text side by side. |
 | Report management | Search, filter, batch reparse, and delete reports; export TSV, TXT, and JSON. |
 | Xid reference | Search Chinese and English descriptions, browse troubleshooting topics, and update references independently. |
@@ -53,9 +55,9 @@ Fields reflect the imported logs. Missing and conflicting values are preserved; 
 
 ## Updates and data
 
-Use “软件更新” (Software updates) to check, download, and install a release. You can also close the app and replace the EXE, keeping the adjacent `runtime` folder.
+The app checks for updates daily in the background and notifies you when a new version is available. You choose when to download and install it. You can also close the app and replace the EXE, keeping the adjacent `runtime` folder.
 
-Reports, source copies, and settings are stored in `runtime`. The Xid reference and troubleshooting manual update separately. [Parsing rules](docs/catalog.md) accept XLSX / JSON imports. See [usage](docs/usage.md) and [reference updates](docs/reference-packages.md) for details (Chinese).
+Reports, source copies, and settings are stored in `runtime`. The Xid reference and troubleshooting manual update separately. [Parsing rules](docs/catalog.md) accept XLSX / JSON imports. See [usage](docs/usage.md), [status and topology](docs/diagnostics.md), and [reference updates](docs/reference-packages.md) for details (Chinese).
 
 ## Development and feedback
 
