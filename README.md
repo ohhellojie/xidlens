@@ -2,63 +2,61 @@
 
 <h1 align="center">XidLens</h1>
 
-<p align="center">NVIDIA GPU 日志分析工具</p>
-
 <p align="center">
   <a href="https://github.com/ohhellojie/xidlens/releases/latest">下载 Windows 版</a> ·
   <a href="docs/usage.md">使用说明</a> ·
   <a href="README.en.md">English</a>
 </p>
 
-导入日志后，XidLens 会整理设备信息、错误记录和连接关系。你可以从一块 GPU 找到相关异常，再查看参数说明和日志原文。解析在本机完成。
+XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持设备信息提取、Xid 错误分析、状态检查和拓扑可视化。日志在本机解析。
 
 [![XidLens 主页：服务器信息、8 张 GPU 的设备清单和所选 GPU 的详情](docs/images/devices.png)](docs/images/devices.png)
 
-*软件主页：设备清单与 GPU 详情。截图使用演示数据，点击查看原图。*
+*设备信息页。截图使用演示数据，点击查看原图。*
 
-## 下载使用
+## 下载
 
 1. 从 [Releases](https://github.com/ohhellojie/xidlens/releases/latest) 下载 Windows x64 ZIP 包。
 2. 解压，双击 `XidLens.exe`。
-3. 点击“导入日志”，选择一份或多份文件。
+3. 点击导入日志，选择日志文件。
 
 支持 Windows 10 和 Windows 11，需安装 Microsoft Edge WebView2 Runtime。界面为中文。
 
-可读取 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 的文本输出，也支持 GZ、ZIP、TAR 压缩包。
+## 日志分析
 
-## 找到需要关注的设备
+支持 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 的文本输出，以及 GZ、ZIP 和 TAR 压缩包。
 
-“异常检查”按设备集中展示 PCIe、ECC 和行重映射等检查结果，标出错误、待核实项和缺失数据。点击一项，即可查看判断依据和原文。
+- **设备信息**：提取服务器信息和 GPU 清单，包括型号、序列号、UUID 和 PCI 地址。
+- **错误记录**：按设备归类 Xid、初始化失败和 PCIe 错误，保留原文和行号。
+- **状态解析**：解析 `nvidia-smi -q` 参数，提供字段说明，支持切换不同采集结果。
+- **异常检查**：检查 PCIe 链路、ECC 和行重映射等状态，标记错误、待核实项和缺失数据。
 
 [![异常检查：在设备矩阵中选择 ECC 记录，右侧显示计数和判断依据](docs/images/checks.png)](docs/images/checks.png)
 
-需要进一步查看时，“状态解析”提供 `nvidia-smi -q` 的参数和说明；“错误记录”汇总 Xid、初始化失败和 PCIe 错误，并保留原文行号。
+每项检查均提供判断依据和日志原文。结论受采集内容限制，数据缺失不能视为正常。详细判断范围见[状态与拓扑](docs/diagnostics.md)。
 
-检查结论限于日志中已有的证据。数据缺失不代表正常，累计错误计数也不能直接说明错误发生的时间。
+## 拓扑可视化
 
-## 查看设备之间的连接
-
-“机器拓扑”将 `lspci` 和 `nvidia-smi topo` 的输出整理为 PCIe 连接树和互联矩阵。选择两个设备，可以查看连接类型、PCI 地址和 CPU 亲和性，再到连接树中定位。
+将 `lspci` 和 `nvidia-smi topo` 输出转换为 PCIe 连接树和互联矩阵，展示 GPU、网卡等设备的连接关系。支持设备筛选、路径定位和亲和性查询。
 
 [![机器拓扑：8 张 GPU 与 4 张网卡的互联矩阵，右侧解释所选连接](docs/images/topology.png)](docs/images/topology.png)
 
-设备多时，可以只看 GPU 之间的连接、GPU 与网卡的连接，或聚焦单个设备。无法确认的连接会保留为未关联；槽位仍需结合设备标签核对。
+缺少连接证据的设备单独保留；物理槽位需结合设备标签核对。
 
-## 对比日志，导出结果
+## 对比与导出
 
-选择两份报告，可对比设备参数和错误记录，并排查看原文。GPU 按唯一的序列号或 UUID 匹配；无法匹配的设备会单独列出。
+按唯一的序列号或 UUID 匹配 GPU，对比两份日志中的设备参数和错误记录，支持并排查看原文。未匹配的设备分别列出。
 
-设备清单可复制到 Excel，也可导出清单、日志摘要和完整 JSON 证据。内置 Xid 查询和排查手册，可查阅错误说明及排查步骤。
+设备清单可复制到 Excel 或导出为 TSV，日志摘要导出为 TXT，完整证据导出为 JSON。
 
-## 更新与文档
+## 文档
 
-软件会在后台检查新版本，发现更新后由你选择是否安装。手动升级时，先退出软件，再替换 `XidLens.exe`，保留同目录的 `runtime` 文件夹，其中存放报告、日志副本和设置。
+内置 Xid 说明和排查手册，可独立更新。软件支持后台检查新版本，更新由用户确认。报告、日志副本和设置保存在 `runtime` 文件夹，升级时需保留。
 
-- [使用说明](docs/usage.md)：导入、对比、导出和更新。
-- [状态与拓扑](docs/diagnostics.md)：采集命令、字段含义和判断范围。
-- [资料更新](docs/reference-packages.md)与[解析规则](docs/catalog.md)：更新内置资料，导入自定义规则。
-- [源码运行与构建](docs/development.md) · [贡献说明](CONTRIBUTING.md) · [更新记录](https://github.com/ohhellojie/xidlens/releases)
+- [使用说明](docs/usage.md) · [日志采集与判断范围](docs/diagnostics.md)
+- [资料更新](docs/reference-packages.md) · [解析规则](docs/catalog.md)
+- [源码运行与构建](docs/development.md) · [贡献说明](CONTRIBUTING.md)
 
-遇到解析问题，请在 [Issues](https://github.com/ohhellojie/xidlens/issues/new?template=bug_report.yml) 提供可复现的脱敏日志片段。
+解析问题请提交至 [Issues](https://github.com/ohhellojie/xidlens/issues/new?template=bug_report.yml)，附上可复现问题的脱敏日志片段。版本变化见 [Releases](https://github.com/ohhellojie/xidlens/releases)。
 
 代码采用 [MIT](LICENSE) 许可证。中文资料为非官方译文，保留官方来源；第三方资料权利见 [NOTICE](NOTICE.md)。
