@@ -25,6 +25,10 @@ node tests/test_analysis.cjs
 node tests/test_topology.cjs
 node tests/test_report_time.cjs
 node tests/test_exports.cjs
+node tests/test_diagnostics.cjs
+node tests/test_import_ui.cjs
+node tests/test_update_ui.cjs
+node tests/test_state_ui.cjs
 python tools/check_repository.py
 git diff --check
 ```

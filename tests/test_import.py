@@ -71,6 +71,75 @@ class ImportTests(unittest.TestCase):
         job=self.s.ImportJob();folder=self.s.UPLOADS/('test-'+str(time.monotonic_ns()));folder.mkdir()
         job.path=folder/name;job.path.write_text(SAMPLE,encoding='utf-8');return job
 
+    def test_unsupported_file_extension_is_rejected_before_upload(self):
+        before=set(self.s.UPLOADS.iterdir())
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.request('api/import?name=photo.png', SAMPLE.encode())
+        self.assertEqual(caught.exception.code,415)
+        self.assertEqual(set(self.s.UPLOADS.iterdir()),before)
+
+    def test_unrecognized_content_does_not_create_report_or_source(self):
+        before=set(self.s.RESULTS.iterdir());sources=set(self.s.SOURCES.iterdir())
+        for content in (b'ordinary notes, no diagnostic content', b'\x89PNG\x00\x01\x02\x03'):
+            job=self.job_file();job.path.write_bytes(content);self.s.run_job(job)
+            self.assertEqual(job.result['state'],'error')
+            self.assertIn('未识别到',job.result['message'])
+        self.assertEqual(set(self.s.RESULTS.iterdir()),before)
+        self.assertEqual(set(self.s.SOURCES.iterdir()),sources)
+
+    def test_archive_skips_unrecognized_text_and_keeps_real_log(self):
+        job=self.job_file('mixed.zip')
+        with zipfile.ZipFile(job.path,'w') as archive:
+            archive.writestr('notes.txt','just some notes')
+            archive.writestr('gpu.log',SAMPLE)
+        self.s.run_job(job)
+        self.assertEqual(job.result['state'],'done')
+        self.assertEqual(len(job.result['ids']),1)
+        result=json.loads((self.s.RESULTS/(job.result['ids'][0]+'.json')).read_text(encoding='utf-8'))
+        self.assertTrue(any('1 个文件' in w for w in result['warnings']))
+
+    def test_extensionless_system_log_and_uppercase_log_are_accepted(self):
+        for name in ('dmesg','syslog','messages','GPU.LOG'):
+            key=self.request('api/import?name='+name,SAMPLE.encode())['job']
+            self.assertEqual(self.wait(key)['state'],'done')
+
+    def test_sidebar_mode_is_saved_and_restored_in_page(self):
+        for mode,pinned in [('unpin',False),('pin',True)]:
+            self.request('api/sidebar/'+mode,b'')
+            self.assertEqual(self.s.sidebar_pinned(),pinned)
+            page=self.opener.open(self.service.url).read().decode()
+            self.assertIn('data-sidebar-pinned="'+str(pinned).lower()+'"',page)
+
+    def test_stalled_upload_times_out_and_cleans_partial_copy(self):
+        import http.client
+        key=self.request('api/import/start',b'')['job']
+        connection=http.client.HTTPConnection('127.0.0.1',self.service.http.server_port,timeout=3)
+        try:
+            with patch.object(self.s,'IMPORT_IDLE_TIMEOUT',.05):
+                connection.putrequest('POST','/api/import?name=stall.log&job='+key)
+                connection.putheader('X-Local-Token',self.s.TOKEN)
+                connection.putheader('Content-Length','100');connection.endheaders();connection.send(b'N')
+                response=connection.getresponse();message=json.load(response)
+                self.assertEqual(response.status,400);self.assertIn('超时',message['error'])
+            self.assertEqual(self.wait(key)['state'],'error')
+            self.assertFalse((self.s.UPLOADS/key).exists())
+        finally:connection.close()
+
+    def test_storage_failure_is_distinguished_and_releases_job_data(self):
+        import errno
+        job=self.job_file();before=set(self.s.RESULTS.iterdir())
+        with patch.object(self.s,'copy_input',side_effect=OSError(errno.ENOSPC,'full')):self.s.run_job(job)
+        self.assertEqual(job.result['state'],'error');self.assertIn('空间不足',job.result['message'])
+        self.assertEqual(set(self.s.RESULTS.iterdir()),before);self.assertIsNone(job.catalog)
+
+    def test_completed_job_history_is_bounded_without_dropping_active_jobs(self):
+        with patch.object(self.s,'JOBS',{}),patch.object(self.s,'MAX_JOBS',3):
+            with self.s.LOCK:
+                active=self.s.register_job(self.s.ImportJob())
+                for _ in range(10):
+                    job=self.s.ImportJob();job.result['state']='done';self.s.register_job(job)
+            self.assertEqual(len(self.s.JOBS),3);self.assertIn(active,self.s.JOBS)
+
     def test_cancel_during_parsing_leaves_no_report_then_retry_succeeds(self):
         job=self.job_file();before=set(self.s.RESULTS.glob('*.json'))
         def progress(v):
@@ -126,6 +195,7 @@ class ImportTests(unittest.TestCase):
     def test_ready_cancel_is_idempotent(self):
         key=self.request('api/import/start',b'')['job']
         for _ in range(2):self.assertEqual(self.request('api/job/'+key+'/cancel',b'')['state'],'cancelled')
+        self.assertIsNone(self.s.JOBS[key].catalog)
 
     def test_upload_cancel_unblocks_read_and_cleans_temp(self):
         key=self.request('api/import/start',b'')['job']

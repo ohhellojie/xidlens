@@ -6,6 +6,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent
 import gpu_summary_core as core
+import diagnostics
 BaseParser = core.Parser
 APP_HOME = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else ROOT
 from catalog import initial_catalog
@@ -19,7 +20,7 @@ def digest(path):
 def valid(value):
     marker = str(value).strip().lower()
     if marker.startswith('[') and marker.endswith(']'):marker = marker[1:-1].strip()
-    return marker not in UNAVAILABLE
+    return marker not in UNAVAILABLE and marker not in diagnostics.READ_ERRORS
 
 class Parser(BaseParser):
     def __init__(self,*args,**kwargs):
@@ -31,10 +32,18 @@ class Parser(BaseParser):
         self.smi_path=[]
         self.r['scoped_metrics']={}
         self.r['health_fields']={}
+        self.diagnostics=diagnostics.Collector(self)
 
     def field(self,address,key,value,n,line,origin):
         if not valid(value):return
         super().field(address,key,str(value).strip(),n,line,origin)
+
+    def recover_line_error(self):
+        super().recover_line_error()
+        self.dmi_type=self.pci_node=self.in_sysfs=self.csv_columns=None
+        self.os_block=False;self.smi_path=[];self.dmi_slot={}
+        self.diagnostics.snapshot=self.diagnostics.matrix=self.diagnostics.pci=None
+        self.diagnostics.hierarchy=[];self.diagnostics.cpu_columns=None
 
     def evidence(self,n,line):
         ev=super().evidence(n,line);ev['text']=line;ev['truncated']=False
@@ -61,7 +70,7 @@ class Parser(BaseParser):
 
     def consume(self,line,n):
         s=line.strip()
-        boundary=line.startswith('*** ') or (s.startswith('__________') and set(s)=={'_'})
+        boundary=core.section_boundary(line)
         if boundary:
             self.flush_slot()
             self.dmi_type=None;self.pci_node=None;self.os_block=False;self.smi_scope='';self.in_sysfs=None
@@ -69,6 +78,7 @@ class Parser(BaseParser):
         if boundary or core.SMI_GPU_RE.match(line) or re.match(r'Attached GPUs\s*:',s):self.smi_path=[]
         health_start=len(self.r['health_counters'])
         super().consume(line,n)
+        self.diagnostics.consume(line,n)
         # The adapter retains the full hierarchy, including MIG instance scope.
         if self.current_gpu and self.smi is not None and s and not core.SMI_GPU_RE.match(line):
             indent=len(line)-len(line.lstrip())
@@ -142,6 +152,7 @@ class Parser(BaseParser):
             node=self.r['pci_nodes'].setdefault(address,{'address':address,'fields':{},'bridge':'PCI bridge' in m[2],'gpu':bool(core.LSPCI_RE.match(line))})
             if node['gpu']:self.put(node['fields'],'pci_model',m[2],n,line,'lspci')
             node['evidence']=self.evidence(n,line)
+        elif s and not line[:1].isspace():self.pci_node=None
         if self.pci_node:
             fields=self.r['pci_nodes'][self.pci_node]['fields']
             m=re.match(r'Physical Slot:\s*(.+)',s)
@@ -161,7 +172,11 @@ class Parser(BaseParser):
             self.put(self.r['server_fields'],'host',s,n,line,'hostname')
         # NVIDIA-SMI 表格中的 GPU 索引和 BDF 在同一行时才关联。
         m=re.search(r'^\|\s*(\d+)\s+[^|]+\|\s*('+core.BDF+r')\s+',line)
-        if m:self.put(self.r['gpu_indices'].setdefault(core.bdf(m[2]),{}),'index',m[1],n,line,'nvidia-smi table')
+        if m:
+            address=core.bdf(m[2])
+            self.put(self.r['gpu_indices'].setdefault(address,{}),'index',m[1],n,line,'nvidia-smi table')
+            self.field(address,'pci',address,n,line,'nvidia-smi table')
+            self.r['recognized']=True
         if self.current_gpu and self.smi is not None:
             scopes=[name for _,name in self.smi_path]
             self.smi_scope=scopes[-1] if scopes else ''
@@ -184,7 +199,9 @@ class Parser(BaseParser):
                 if m and not is_mig:self.put(self.r['metrics'].setdefault(self.current_gpu,{}),'ecc_dram_volatile',m[1],n,line,'nvidia-smi snapshot')
 
     def parse(self,stream):
-        result=super().parse(stream);self.flush_slot();return result
+        result=super().parse(stream);self.flush_slot()
+        result['diagnostic_collector']={key:getattr(self.diagnostics,key) for key in ('snapshots','matrices','paths','cpu_rows','nic_paths')}
+        return result
 
 core.Parser=Parser
 
@@ -201,8 +218,19 @@ def sampled(fields,key):
 def convert(r,container_warnings=(),cancel_event=None,catalog=None):
     catalog = CATALOG if catalog is None else catalog
     inventory=r['gpu_inventory'];nodes=r['pci_nodes']
-    addresses=sorted(set(inventory)|set(r['pci_gpu_addresses'])|{e['address'] for e in r['event_records'] if e['address'] and e['kind'] in {'xid','init','fallen','channel','ecc','smi_error'}})
+    diagnostics.identify_virtual_functions(nodes, cancel_event)
+    collector=r.get('diagnostic_collector')
+    if collector:
+        for snapshot in collector['snapshots']:
+            inventory.setdefault(snapshot['address'],{'fields':{}})
+    addresses=sorted(set(inventory)|set(r['pci_gpu_addresses'])|{p for p,node in nodes.items() if node.get('gpu')}|{e['address'] for e in r['event_records'] if e['address'] and e['kind'] in {'xid','init','fallen','channel','ecc','smi_error'}})
+    addresses=[p for p in addresses if not nodes.get(p,{}).get('physicalFunction')]
     gpus=[]
+    parent_index={}
+    for p,node in nodes.items():
+        if node.get('bridge'):
+            secondary=one(node['fields'],'secondary')
+            if secondary and secondary!='冲突':parent_index.setdefault((p.split(':')[0],secondary),[]).append(p)
     for i,address in enumerate(addresses):
         core.check_cancel(cancel_event)
         fields=inventory.get(address,{}).get('fields',{});nf=nodes.get(address,{}).get('fields',{});mf=r['metrics'].get(address,{})
@@ -215,7 +243,7 @@ def convert(r,container_warnings=(),cancel_event=None,catalog=None):
         slot=' / '.join(filter(None,[physical,designation]))
         if '冲突' in (physical,designation):slot='冲突'
         slot_refs=refs(nf,'slot')+refs(nf,'slotDesignation')
-        parents=[p for p,v in nodes.items() if v.get('bridge') and p.split(':')[0]==address.split(':')[0] and one(v['fields'],'secondary')==address.split(':')[1]]
+        parents=[p for p in parent_index.get(tuple(address.split(':')[:2]),[]) if p!=address]
         parent=parents[0] if len(parents)==1 else ''
         gpus.append({'id':i,'index':index,'label':f'GPU {index}' if index not in ('','冲突') else f'GPU · {address[5:]}','pci':address,'model':one(fields,'model') or one(nf,'pci_model'),'sn':sn,'uuid':one(fields,'uuid'),'slot':slot,'slotSource':'; '.join(x['origin'] for x in slot_refs),'slotRaw':'\n\n'.join(f"{r['source']} · 第 {v['evidence']['line']} 行\n{v['evidence']['text']}" for v in slot_refs),'status':'有冲突' if '冲突' in [sn,slot,one(fields,'uuid')] else ('已读取' if inventory.get(address) else '仅 PCI / 错误记录'),'temp':sampled(mf,'temp'),'power':sampled(mf,'power') or (sampled(mf,'power_average')+'（平均）' if sampled(mf,'power_average') else ''),'memory':' / '.join(filter(None,[sampled(mf,'memory_used'),sampled(mf,'memory_total')])),'ecc':sampled(mf,'ecc_dram_volatile'),'numa':one(nf,'numa'),'cpuAffinity':one(nf,'cpu_affinity'),'parent':parent,'link':one(nf,'link'),'linkMax':one(nf,'link_max'),'healthFields':r['health_fields'].get(address,{}),'pciEvidence':nodes.get(address,{}).get('evidence'),'fields':fields,'pciFields':nf,'metrics':mf,'scopedMetrics':r['scoped_metrics'].get(address,{}),'healthCounters':[c for c in r['health_counters'] if c['address']==address],'errors':0})
     ids={g['pci']:g['id'] for g in gpus};events=[]
@@ -232,7 +260,9 @@ def convert(r,container_warnings=(),cancel_event=None,catalog=None):
     raw='\n\n'.join(f"{p}\n"+'\n'.join(f"{k}: {v['value']} [第 {v['evidence']['line']} 行]" for k,vs in node['fields'].items() for v in vs) for p,node in nodes.items() if node.get('bridge') or p in ids)
     warnings=list(dict.fromkeys(list(container_warnings)+r['warnings']))
     if any(g['status']=='有冲突' for g in gpus):warnings.append('设备字段存在冲突，可在来源中核对。')
-    return {'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{k:catalog[k] for k in ('file','sha256','importFile','sourceSha256') if k in catalog},'contentSha256':r['sha256_content']}
+    result={'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{k:catalog[k] for k in ('file','sha256','importFile','sourceSha256','origin') if k in catalog},'contentSha256':r['sha256_content']}
+    if collector:result['diagnostics']=diagnostics.finish(r,collector,gpus,events,cancel_event)
+    return result
 
 def analyze(path,cancel_event=None,progress=None,catalog=None):
     catalog = CATALOG if catalog is None else catalog

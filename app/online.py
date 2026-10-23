@@ -1,7 +1,8 @@
-"""Opt-in update checks. Only fixed public endpoints receive requests."""
+"""Background update checks. Only fixed public endpoints receive requests."""
 import copy
 import hashlib
 import json
+import math
 import re
 import ssl
 import threading
@@ -68,14 +69,17 @@ def version_key(value):
 
 
 def select_release(rows, current=VERSION):
+    if not isinstance(rows, list): raise ValueError('更新服务返回的数据格式不正确，请稍后重试')
     candidates = []
     for row in rows:
-        if row.get('draft'): continue
+        if not isinstance(row, dict) or row.get('draft'): continue
         try: key = version_key(row['tag_name'])
         except (KeyError, TypeError, ValueError): continue
         assets = row.get('assets', [])
-        exe = next((a for a in assets if a.get('name') == 'XidLens.exe'), None)
-        if not exe or not re.fullmatch(r'sha256:[0-9a-f]{64}', exe.get('digest') or ''): continue
+        if not isinstance(assets, list): continue
+        exe = next((a for a in assets if isinstance(a, dict) and a.get('name') == 'XidLens.exe'), None)
+        if not exe or not isinstance(exe.get('digest'), str) or not re.fullmatch(r'sha256:[0-9a-f]{64}', exe['digest']): continue
+        if type(exe.get('size')) is not int or not 0 < exe['size'] <= 512*1024*1024: continue
         tag = row['tag_name']
         expected = f'https://github.com/ohhellojie/xidlens/releases/download/{tag}/XidLens.exe'
         if exe.get('browser_download_url') != expected: continue
@@ -109,11 +113,19 @@ class OnlineUpdates:
         self.root=Path(runtime)/'updates'; self.catalog=catalog
         self.lock=threading.RLock(); self.stop=threading.Event(); self.cancel=threading.Event()
         self.candidate=None; self.release=None; self.ready=None; self.active=set()
-        self.settings={'automatic':False, 'lastCheck':0}
+        self.settings={'automatic':True, 'notify':True, 'lastCheck':0, 'ignoredVersion':'', 'snoozedVersion':'', 'snoozeUntil':0}
         try:
             saved=json.loads((self.root/'settings.json').read_text(encoding='utf-8'))
-            if type(saved.get('automatic')) is bool:self.settings['automatic']=saved['automatic']
-            if type(saved.get('lastCheck')) in (float,int):self.settings['lastCheck']=saved['lastCheck']
+            for key in ('automatic','notify'):
+                if type(saved.get(key)) is bool:self.settings[key]=saved[key]
+            for key in ('lastCheck','snoozeUntil'):
+                value=saved.get(key)
+                if type(value) in (float,int) and 0<=value<=1e12 and math.isfinite(value):self.settings[key]=value
+            for key in ('ignoredVersion','snoozedVersion'):
+                value=saved.get(key)
+                if isinstance(value,str):
+                    try:version_key(value);self.settings[key]=value
+                    except ValueError:pass
         except (OSError,ValueError,AttributeError):pass
         self.state={'app':{'state':'idle'},'rules':{'state':'idle'}}
 
@@ -123,14 +135,28 @@ class OnlineUpdates:
             if self.candidate and result['rules']['state'] in ('current','available'):
                 same=self.candidate['sha256']==self.catalog.info()['sha256']
                 result['rules'].update(state='current' if same else 'available',message='官方规则已是最新' if same else '可获取官方规则')
+            version=(result['app'].get('release') or {}).get('version','')
+            result['app']['notify']=bool(version and result['app']['state']=='available' and self.settings['notify']
+                and version!=self.settings['ignoredVersion']
+                and not (version==self.settings['snoozedVersion'] and time.time()<self.settings['snoozeUntil']))
             return result|{'settings':dict(self.settings),'current':VERSION}
 
-    def settings_save(self, automatic=None):
+    def settings_save(self, automatic=None, notify=None, dismissal=None, expected_version=None):
         with self.lock:
             proposed=dict(self.settings)
             if automatic is not None:
                 if type(automatic) is not bool:raise ValueError('无效设置')
                 proposed['automatic']=automatic
+            if notify is not None:
+                if type(notify) is not bool:raise ValueError('无效设置')
+                proposed['notify']=notify
+            if dismissal is not None:
+                if dismissal not in ('later','ignore'):raise ValueError('无效提醒操作')
+                version=(self.release or {}).get('version')
+                if not version:raise ValueError('当前没有可提醒的版本')
+                if expected_version is not None and expected_version!=version:raise ValueError('版本信息已变化，请重新检查更新')
+                if dismissal=='ignore':proposed['ignoredVersion']=version
+                else:proposed.update(snoozedVersion=version,snoozeUntil=time.time()+86400)
             self.root.mkdir(parents=True,exist_ok=True)
             tmp=self.root/'settings.pending';tmp.write_text(json.dumps(proposed),encoding='utf-8');tmp.replace(self.root/'settings.json')
             self.settings=proposed
@@ -162,7 +188,7 @@ class OnlineUpdates:
                 same=candidate['sha256']==self.catalog.info()['sha256']
                 self.change(kind,state='current' if same else 'available',message='官方规则已是最新' if same else '可获取官方规则',count=len(candidate['codes']),sha256=candidate['sha256'])
             elif action=='apply-rules':
-                self.catalog.apply(copy.deepcopy(self.candidate))
+                self.catalog.apply(copy.deepcopy(self.candidate),origin='official')
                 self.change(kind,state='current',message='已应用官方规则',count=len(self.candidate['codes']))
             else:
                 release=dict(self.release)
@@ -184,11 +210,15 @@ class OnlineUpdates:
 
     def check_due(self):
         with self.lock:
-            due=self.settings['automatic'] and time.time()-self.settings['lastCheck']>=86400 and not self.active
+            now=time.time()
+            due=self.settings['automatic'] and (now-self.settings['lastCheck']>=86400 or now<self.settings['lastCheck']) and 'app' not in self.active
             if not due:return
-            self.settings['lastCheck']=time.time()
-            self.settings_save()
-            self.start('check-app');self.start('check-rules')
+            # A downloaded update must stay available for installation.
+            if self.state['app']['state']=='ready':return
+            self.settings['lastCheck']=now
+            try:self.settings_save()
+            except OSError:pass
+            self.start('check-app')
 
     def schedule(self):
         def loop():

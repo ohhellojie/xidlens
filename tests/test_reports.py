@@ -96,3 +96,19 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn('a'*32,self.s.CASE_CACHE)
         path,d=self.report();d['server']['sn']='REIMPORTED';path.write_text(json.dumps(d),encoding='utf-8')
         self.assertEqual(self.request('api/cases')['cases'][0]['server']['sn'],'REIMPORTED')
+
+    def test_corrupt_structure_is_rejected_without_modifying_file(self):
+        for broken in [[], {'source':'bad.log','gpus':None,'events':[]}, {'source':'bad.log','gpus':[None],'events':[]}]:
+            path,_=self.report();path.write_text(json.dumps(broken),encoding='utf-8');before=path.read_bytes()
+            self.assertEqual(self.request('api/cases')['unreadable'],1)
+            with self.assertRaises(urllib.error.HTTPError) as error:self.request('api/case/'+'a'*32)
+            self.assertEqual(error.exception.code,422);self.assertEqual(path.read_bytes(),before)
+
+    def test_legacy_defaults_are_read_only_and_bad_diagnostics_are_isolated(self):
+        path,d=self.report();d.pop('server');d.pop('warnings');d['diagnostics']={'checks':None}
+        path.write_text(json.dumps(d),encoding='utf-8');before=path.read_bytes()
+        result=self.request('api/case/'+'a'*32)
+        self.assertEqual(len(result['gpus']),len(d['gpus']))
+        self.assertIsInstance(result['server'],dict);self.assertNotIn('diagnostics',result)
+        self.assertTrue(result['warnings']);self.assertFalse(result['complete'])
+        self.assertEqual(path.read_bytes(),before)

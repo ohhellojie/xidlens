@@ -1,0 +1,34 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync(require.resolve('../app/app.js'),'utf8');
+const notice=source.slice(source.indexOf("let resourceTab='rules'"),source.indexOf('function renderOnline('));
+const elements={dialog:{open:false,dataset:{}},drawer:{open:false},'dialog-foot':{querySelector:()=>({focus(){}})}};
+const dialogs=[];
+const ctx=vm.createContext({document:{hidden:false,activeElement:{matches:()=>false}},$:id=>elements[id],busy:false,loading:false,catalogBusy:false,state:{page:'checks'},esc:s=>String(s).replaceAll('<','&lt;'),openDialog:(...args)=>{dialogs.push(args);elements.dialog.open=true;}});
+vm.runInContext(notice,ctx);
+const candidate=(version='v2.0.0')=>({current:'1.0.0',app:{state:'available',notify:true,release:{version,notes:'<script>example</script>'}}});
+const set=v=>{ctx.input=v;vm.runInContext('onlineInfo=input',ctx);};
+set(candidate());ctx.busy=true;vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,0);
+ctx.busy=false;elements.drawer.open=true;vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,0);
+elements.drawer.open=false;ctx.document.activeElement.matches=()=>true;vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,0);
+ctx.document.activeElement.matches=()=>false;vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,1);assert.ok(dialogs[0][1].includes('&lt;script>'));assert.ok(dialogs[0][2].includes('暂不更新'));assert.ok(dialogs[0][1].includes('不再提醒此版本'));
+elements.dialog.open=false;vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,1,'One prompt per version per window');
+set(candidate('v2.0.1'));ctx.state.page='updates';vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,1,'The updates page does not interrupt itself');
+ctx.state.page='checks';vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,2);
+elements.dialog.open=false;set({app:{state:'error',notify:false}});vm.runInContext('maybeNotifyUpdate()',ctx);assert.equal(dialogs.length,2);
+elements.dialog.open=true;elements.dialog.dataset.kind='update-notice';elements['ignore-update-version']={checked:false};
+ctx.closeDialog=()=>{elements.dialog.open=false;};ctx.api=()=>new Promise(()=>{});
+vm.runInContext('dismissUpdateNotice()',ctx);assert.equal(elements.dialog.open,false,'Later closes immediately even when the service never responds');
+elements.dialog.open=true;elements.dialog.dataset.kind='update-notice';elements['ignore-update-version'].checked=true;vm.runInContext('onlinePending=true;dismissUpdateNotice(false,true)',ctx);
+assert.equal(elements.dialog.open,false,'The close button remains usable during a failed settings save');
+
+const refresh=source.slice(source.indexOf('async function refreshOnline(){'),source.indexOf('async function onlineAction('));
+let requests=0,resolveRequest;const timers=[];
+const poll=vm.createContext({onlineRefreshing:false,onlineTimer:null,onlineInfo:null,api:()=>{requests++;return new Promise(r=>resolveRequest=r);},$:()=>null,document:{querySelector:()=>({classList:{toggle(){}},title:''})},clearTimeout(){},setTimeout:(_f,ms)=>{timers.push(ms);return 1;},maybeNotifyUpdate(){},loadCatalog:async()=>{}});
+vm.runInContext(refresh,poll);
+(async()=>{
+ const first=vm.runInContext('refreshOnline()',poll);await vm.runInContext('refreshOnline()',poll);assert.equal(requests,1,'Polling must not overlap');
+ resolveRequest({app:{state:'idle'},rules:{state:'idle'}});await first;assert.equal(timers.at(-1),15000);
+ poll.api=async()=>{throw Error('offline');};await vm.runInContext('refreshOnline()',poll);assert.equal(poll.onlineRefreshing,false);assert.equal(timers.at(-1),15000,'Failures retry silently without a tight loop');
+ console.log('Update UI: deferred prompts, per-version deduplication, escaped notes, quiet failures and bounded polling passed');
+})().catch(e=>{console.error(e);process.exitCode=1;});

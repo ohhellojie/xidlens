@@ -20,6 +20,27 @@ def xlsx_bytes(duplicate=False):
 
 
 class CatalogTests(unittest.TestCase):
+    def test_rule_origin_survives_import_reset_and_restart(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store=catalog.CatalogStore(folder)
+            self.assertEqual(store.info()['origin'],'builtin')
+            store.import_file(json.dumps(catalog.DEFAULT).encode(),'my-rules.json')
+            self.assertEqual(store.info()['origin'],'imported')
+            self.assertEqual(catalog.CatalogStore(folder).info()['origin'],'imported')
+            self.assertEqual(store.snapshot()['origin'],'imported')
+            store.apply(rule(),origin='official')
+            self.assertEqual(catalog.CatalogStore(folder).info()['origin'],'official')
+            store.reset()
+            self.assertEqual(catalog.CatalogStore(folder).info()['origin'],'builtin')
+    def test_startup_origin_distinguishes_bundled_and_local_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);(root/'xid_catalog.json').write_text(json.dumps(rule()))
+            with patch.dict(os.environ,{},clear=True):
+                data,_=catalog.initial_catalog(root,root)
+                self.assertEqual(catalog.CatalogStore(root/'runtime',data).info()['origin'],'builtin')
+                (root/'xid_catalog.local.json').write_text(json.dumps(rule()))
+                data,_=catalog.initial_catalog(root,root)
+                self.assertEqual(catalog.CatalogStore(root/'runtime',data).info()['origin'],'imported')
     def test_xlsx_retains_source_rows_and_actions(self):
         raw=xlsx_bytes();d=catalog.parse_upload(raw,'rules.xlsx')
         self.assertEqual(d['sha256'],hashlib.sha256(raw).hexdigest())
@@ -107,7 +128,7 @@ class CatalogApiTests(unittest.TestCase):
 
     def test_online_api_authentication_and_settings(self):
         import urllib.error
-        self.assertFalse(self.request('api/online')['settings']['automatic'])
+        self.assertTrue(self.request('api/online')['settings']['automatic'])
         for path,body in [('api/online',None),('api/online/check-app',b''),('api/online/enable',b'')]:
             with self.assertRaises(urllib.error.HTTPError) as error:self.request(path,body,headers={})
             self.assertEqual(error.exception.code,403)
@@ -116,5 +137,7 @@ class CatalogApiTests(unittest.TestCase):
         self.assertEqual(error.exception.code,403)
         self.assertTrue(self.request('api/online/enable',b'')['settings']['automatic'])
         self.assertFalse(self.request('api/online/disable',b'')['settings']['automatic'])
+        self.assertFalse(self.request('api/online/notify-disable',b'')['settings']['notify'])
+        self.assertTrue(self.request('api/online/notify-enable',b'')['settings']['notify'])
         with self.assertRaises(urllib.error.HTTPError) as error:self.request('api/online/unknown',b'')
         self.assertEqual(error.exception.code,400)

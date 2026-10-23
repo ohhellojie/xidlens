@@ -22,7 +22,8 @@ def main():
     shutil.copy2(exe, out/'XidLens.exe')
     files = {'XidLens.exe': exe,
              '使用说明.txt': root/'packaging/使用说明.txt',
-             'LICENSE': root/'LICENSE', 'NOTICE.md': root/'NOTICE.md'}
+             'LICENSE': root/'LICENSE', 'NOTICE.md': root/'NOTICE.md',
+             'licenses/LUCIDE-LICENSE.txt': root/'licenses/LUCIDE-LICENSE.txt'}
     python_home = Path(sys.base_prefix)
     for name in ('LICENSE.txt', 'LICENSE'):
         candidate = python_home/name
