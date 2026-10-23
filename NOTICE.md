@@ -18,3 +18,5 @@ Windows 打包使用 [PyInstaller](https://pyinstaller.org/)，其许可证及�
 排查参考是对 NVIDIA GPU Debug Guidelines 与 Xid Errors 的简要整理，各项保留官方来源链接。在线规则直接从 NVIDIA 官方获取，内容权利归原权利人。
 
 资料页使用 React，许可证随下载包提供。
+
+菜单展开图标来自 [Lucide](https://lucide.dev/)，采用 ISC 许可证；完整声明见 licenses/LUCIDE-LICENSE.txt。

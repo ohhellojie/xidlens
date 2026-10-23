@@ -28,6 +28,11 @@ class OnlineTests(unittest.TestCase):
   self.assertIsInstance(handlers[0],online.Redirects)
   self.assertIsInstance(handlers[1],online.urllib.request.HTTPSHandler)
   self.assertTrue(handlers[1]._context.check_hostname)
+ def test_malformed_release_entries_do_not_hide_valid_update(self):
+  rows=[None,42,{'assets':None,'tag_name':'v9.0.0'},release('v9.0.1'),release('v9.0.2'),release('v9.0.3')]
+  rows[3]['assets']=[None,42];rows[4]['assets'][0]['digest']={};rows[5]['assets'][0].pop('size')
+  self.assertEqual(online.select_release(rows+[release('v2.0.0')],current='1.0.0')['version'],'v2.0.0')
+  with self.assertRaises(ValueError):online.select_release({'message':'unavailable'})
  def test_version_order_and_asset_origin(self):
   self.assertLess(online.version_key('0.9.0-preview.9'),online.version_key('0.9.0'))
   self.assertGreater(online.version_key('0.10.0'),online.version_key('0.9.9'))
@@ -71,24 +76,50 @@ class OnlineTests(unittest.TestCase):
    updates.cancel.clear()
    with patch('online.download',return_value=b'MZtest'):updates.run('download-app','app')
    self.assertEqual(updates.snapshot()['app']['state'],'ready');self.assertEqual(Path(updates.ready['path']).read_bytes(),b'MZtest')
- def test_settings_default_off_persist_and_failed_save(self):
+ def test_settings_default_on_persist_and_failed_save(self):
   with tempfile.TemporaryDirectory() as folder:
    updates=online.OnlineUpdates(folder,catalog.CatalogStore(folder))
-   self.assertFalse(updates.snapshot()['settings']['automatic'])
-   updates.settings_save(True);self.assertTrue(online.OnlineUpdates(folder,updates.catalog).settings['automatic'])
+   self.assertTrue(updates.snapshot()['settings']['automatic'])
+   updates.settings_save(False);self.assertFalse(online.OnlineUpdates(folder,updates.catalog).settings['automatic'])
    with patch.object(Path,'replace',side_effect=OSError('full')):
-    with self.assertRaises(OSError):updates.settings_save(False)
-   self.assertTrue(updates.settings['automatic'])
- def test_automatic_checks_are_opt_in_daily_and_never_install(self):
+    with self.assertRaises(OSError):updates.settings_save(True)
+   self.assertFalse(updates.settings['automatic'])
+ def test_automatic_checks_are_daily_software_only_and_never_install(self):
   with tempfile.TemporaryDirectory() as folder:
    updates=online.OnlineUpdates(folder,catalog.CatalogStore(folder))
    with patch.object(updates,'start') as start:
-    updates.check_due();start.assert_not_called()
-    updates.settings_save(True)
-    updates.check_due();self.assertEqual([c.args[0] for c in start.call_args_list],['check-app','check-rules'])
-    updates.check_due();self.assertEqual(start.call_count,2)
+    updates.check_due();self.assertEqual([c.args[0] for c in start.call_args_list],['check-app'])
+    updates.check_due();self.assertEqual(start.call_count,1)
     updates.settings_save(False);updates.settings['lastCheck']=0
-    updates.check_due();self.assertEqual(start.call_count,2)
+    updates.check_due();self.assertEqual(start.call_count,1)
+ def test_update_notification_choices_persist_and_expire(self):
+  with tempfile.TemporaryDirectory() as folder:
+   updates=online.OnlineUpdates(folder,catalog.CatalogStore(folder))
+   candidate=online.select_release([release('v9.0.0')])
+   updates.release=candidate;updates.change('app',state='available',release=candidate)
+   self.assertTrue(updates.snapshot()['app']['notify'])
+   with patch('online.time.time',return_value=1000):updates.settings_save(dismissal='later',expected_version='v9.0.0')
+   restored=online.OnlineUpdates(folder,updates.catalog);restored.release=candidate;restored.change('app',state='available',release=candidate)
+   with patch('online.time.time',return_value=2000):self.assertFalse(restored.snapshot()['app']['notify'])
+   with patch('online.time.time',return_value=90000):self.assertTrue(restored.snapshot()['app']['notify'])
+   restored.settings_save(dismissal='ignore',expected_version='v9.0.0')
+   self.assertFalse(restored.snapshot()['app']['notify'])
+   self.assertEqual(online.OnlineUpdates(folder,updates.catalog).settings['ignoredVersion'],'v9.0.0')
+   candidate=online.select_release([release('v9.0.1')]);restored.release=candidate;restored.change('app',state='available',release=candidate)
+   self.assertTrue(restored.snapshot()['app']['notify'])
+   with self.assertRaises(ValueError):restored.settings_save(dismissal='ignore',expected_version='v9.0.0')
+   self.assertTrue(restored.snapshot()['app']['notify'])
+   restored.settings_save(notify=False);self.assertFalse(restored.snapshot()['app']['notify'])
+ def test_background_failure_and_unwritable_settings_do_not_repeat_or_notify(self):
+  with tempfile.TemporaryDirectory() as folder:
+   updates=online.OnlineUpdates(folder,catalog.CatalogStore(folder))
+   with patch.object(updates,'settings_save',side_effect=PermissionError('readonly')),patch.object(updates,'start') as start:
+    updates.check_due();updates.check_due();start.assert_called_once_with('check-app')
+   with patch('online.download',side_effect=OSError('offline')):updates.run('check-app','app')
+   self.assertEqual(updates.snapshot()['app']['state'],'error');self.assertFalse(updates.snapshot()['app']['notify'])
+   self.assertFalse(updates.active)
+   updates.settings['lastCheck']=0;updates.change('app',state='ready')
+   with patch.object(updates,'start') as start:updates.check_due();start.assert_not_called()
  def test_duplicate_operation_rejected(self):
   with tempfile.TemporaryDirectory() as folder:
    updates=online.OnlineUpdates(folder,catalog.CatalogStore(folder));updates.active.add('app')

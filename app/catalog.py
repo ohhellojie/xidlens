@@ -128,6 +128,7 @@ def initial_catalog(root,app_home):
     try:
         data=validate(read_json(chosen.read_bytes()),allow_empty=True)
         if data['codes']:data=parse_upload(chosen.read_bytes(),chosen.name)
+        data['_origin']='builtin' if chosen.resolve()==(root/'xid_catalog.json').resolve() else 'imported'
         return data,''
     except (OSError,ValueError):return copy.deepcopy(DEFAULT),'启动规则无法读取，当前使用默认规则。'
 
@@ -135,32 +136,33 @@ def initial_catalog(root,app_home):
 class CatalogStore:
     def __init__(self,runtime,initial=None,warning=''):
         self.path=Path(runtime)/'rules'/'active.json';self.lock=threading.RLock()
-        self.data=copy.deepcopy(initial if initial is not None else DEFAULT);self.imported_at='';self.warning=warning
+        self.data=copy.deepcopy(initial if initial is not None else DEFAULT);self.origin=self.data.pop('_origin','builtin' if initial is None or self.data==DEFAULT else 'imported');self.imported_at='';self.warning=warning
         if self.path.exists():
             try:
                 saved=read_json(self.path.read_bytes());data=validate(saved['catalog'],allow_empty=True)
                 stamp=text(saved.get('importedAt',''),'导入时间',64)
                 self.data=data if data['codes'] else copy.deepcopy(DEFAULT);self.imported_at=stamp if data['codes'] else '';self.warning=''
+                origin=saved.get('origin');self.origin=origin if origin in ('builtin','imported','official') else ('builtin' if self.data==DEFAULT else 'official' if self.data.get('provider')=='NVIDIA' else 'imported')
             except (OSError,ValueError,KeyError,TypeError):self.warning='保存的规则无法读取，当前使用启动规则。'
     def snapshot(self):
-        with self.lock:return copy.deepcopy(self.data)
+        with self.lock:return copy.deepcopy(self.data)|{'origin':self.origin}
     def info(self):
         with self.lock:
-            return {k:v for k,v in self.data.items() if k!='codes'}|{'count':len(self.data['codes']),'importedAt':self.imported_at,'warning':self.warning}
-    def apply(self,data):
+            return {k:v for k,v in self.data.items() if k!='codes'}|{'count':len(self.data['codes']),'importedAt':self.imported_at,'warning':self.warning,'origin':self.origin}
+    def apply(self,data,origin='imported'):
         with self.lock:
             stamp=datetime.now(timezone.utc).isoformat(timespec='seconds')
             self.path.parent.mkdir(parents=True,exist_ok=True)
             tmp=self.path.parent/(uuid.uuid4().hex+'.pending')
             try:
                 with tmp.open('w',encoding='utf-8') as f:
-                    json.dump({'catalog':data,'importedAt':stamp},f,ensure_ascii=False);f.flush();os.fsync(f.fileno())
+                    json.dump({'catalog':data,'importedAt':stamp,'origin':origin},f,ensure_ascii=False);f.flush();os.fsync(f.fileno())
                 tmp.replace(self.path)
             finally:tmp.unlink(missing_ok=True)
-            self.data=copy.deepcopy(data);self.imported_at=stamp;self.warning=''
+            self.data=copy.deepcopy(data);self.imported_at=stamp;self.warning='';self.origin=origin
             return self.info()
     def import_file(self,raw,name):return self.apply(parse_upload(raw,name))
-    def reset(self):return self.apply(copy.deepcopy(DEFAULT))
+    def reset(self):return self.apply(copy.deepcopy(DEFAULT),origin='builtin')
 
 # The bundled catalog is also the restore target. User imports remain independent.
 try:

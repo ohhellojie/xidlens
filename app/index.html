@@ -61,11 +61,42 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,su
 button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 0}@media(max-width:1060px){button.prototype-tag{display:flex;justify-content:center}.prototype-tag .update-label,.side-version{display:none}.update-available:after{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);position:absolute;margin-left:25px}}
 </style>
 <link rel="icon" type="image/png" href="/logo.png">
+<link rel="stylesheet" href="/diagnostics.css">
 </head>
 <body>
-<div class="shell" id="app">
+<div class="shell" id="app" data-sidebar-pinned="__SIDEBAR_PINNED__">
  <aside class="sidebar" aria-label="主导航">
-  <div class="brand"><span class="brand-mark" id="brand-mark" aria-hidden="true"><img src="/logo.png" alt=""></span><span class="brand-text">XidLens</span></div>
+  <div class="brand"><button class="brand-mark" id="sidebar-toggle" aria-label="展开菜单" aria-controls="navigation"><img src="/logo.png" alt=""></button><span class="brand-text">XidLens</span><button class="sidebar-pin" id="sidebar-pin" aria-pressed="true"><svg aria-hidden="true" class="icon pin-icon-fixed"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="M9 3v18" />
+  <path d="m16 15-3-3 3-3" />
+</svg>
+<svg aria-hidden="true" class="icon pin-icon-floating"
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  <rect width="18" height="18" x="3" y="3" rx="2" />
+  <path d="M9 3v18" />
+  <path d="m14 9 3 3-3 3" />
+</svg>
+<span class="pin-label sr-only">取消固定</span></button></div>
   <div class="nav-caption">日志分析</div>
   <nav id="navigation"></nav>
   <div class="sidebar-foot"><button class="manual-link" data-page="resources" aria-label="解析规则" id="manual"></button><button class="prototype-tag" type="button" aria-label="软件更新">软件更新</button><div class="side-version">v__APP_VERSION__</div></div>
@@ -85,6 +116,7 @@ button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padd
 </div>
 <script src="/analysis.js" defer></script>
 <script src="/knowledge.js" defer></script>
+<script src="/diagnostics.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

@@ -3,7 +3,8 @@ import {createRoot} from 'react-dom/client';
 import {App} from './App';
 import css from './prototype.css?inline';
 import extra from './integration.css?inline';
-let root;
+let root,pendingNavigation;
+const sessionState={};
 function Library(props){
  const [payload,setPayload]=useState(null),[error,setError]=useState('');
  const current=useRef(null),alive=useRef(true);
@@ -21,11 +22,19 @@ function Library(props){
  if(!payload)return <div className="empty"><p>{error||'正在读取资料…'}</p>{error&&<button className="btn" onClick={load}>重试</button>}</div>;
  return <>{error&&<div className="library-error" role="status">{error}<button className="text-button" onClick={load}>重试</button></div>}<App {...props} packages={payload.packages} status={payload.status} onUpdate={action}/></>;
 }
+export function navigate(page,code,topic){
+ pendingNavigation={page,code,topic};
+}
 export function mount(host,options){
  if(root)root.unmount();
+ if(pendingNavigation){
+  const {code,topic}=pendingNavigation;pendingNavigation=null;
+  if(code){Object.assign(sessionState,{selected:code,q:code,filter:'all',lang:'cn'});delete sessionState.positions?.xid;}
+  if(topic){Object.assign(sessionState,{topic,mq:''});delete sessionState.positions?.manual;}
+ }
  const shadow=host.attachShadow({mode:'open'});
  const style=document.createElement('style');style.textContent=css+extra;shadow.append(style);
  const body=document.createElement('div');body.className='knowledge-mount';shadow.append(body);
- root=createRoot(body);root.render(<Library {...options}/>);
+ root=createRoot(body);root.render(<Library {...options} sessionState={sessionState}/>);
 }
 export function unmount(){if(root){root.unmount();root=null}}

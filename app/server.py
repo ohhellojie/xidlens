@@ -1,6 +1,6 @@
 """仅监听本机的离线界面；不向外部服务发送日志。"""
 from __future__ import annotations
-import argparse, concurrent.futures, hashlib, json, os, secrets, select, sys, threading, uuid
+import argparse, concurrent.futures, errno, hashlib, json, os, secrets, select, sys, threading, time, uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -10,6 +10,7 @@ from catalog import CatalogStore, MAX_UPLOAD
 from online import OnlineUpdates
 from knowledge import KnowledgeStore
 from version import VERSION
+from report_data import normalize_report
 import recovery
 
 ROOT=Path(__file__).resolve().parent
@@ -18,6 +19,8 @@ RUNTIME=Path(os.environ.get('GPU_LOG_DATA_DIR',str(APP_HOME/'runtime'))).resolve
 SOURCES=RUNTIME/'sources'
 for p in (RUNTIME,RESULTS,UPLOADS,SOURCES):p.mkdir(parents=True,exist_ok=True)
 TOKEN=secrets.token_urlsafe(24);JOBS={};LOCK=threading.Lock()
+MAX_JOBS=128
+IMPORT_IDLE_TIMEOUT=30
 EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
@@ -28,12 +31,36 @@ CATALOG_STORE=CatalogStore(RUNTIME,CATALOG,CATALOG_WARNING)
 ONLINE=OnlineUpdates(RUNTIME,CATALOG_STORE)
 KNOWLEDGE=KnowledgeStore(RUNTIME)
 
+def sidebar_pinned():
+    try:return json.loads((RUNTIME/'ui-settings.json').read_text(encoding='utf-8')).get('sidebarPinned',True) is not False
+    except (OSError,ValueError,AttributeError):return True
+
 def cleanup_file(path):
     try:path.unlink(missing_ok=True)
     except OSError:pass
 
+def import_error(exc):
+    if isinstance(exc,TimeoutError):return '文件传输超时，请重试'
+    if isinstance(exc,PermissionError):return '无法读写文件，请检查目录权限或文件占用'
+    if isinstance(exc,OSError):
+        if exc.errno==errno.ENOSPC or getattr(exc,'winerror',None)==112:return '磁盘空间不足，原有报告已保留'
+        return '文件读取或保存失败，请检查磁盘和文件状态'
+    return str(exc) if isinstance(exc,ValueError) else '日志处理失败，请重试或重新选择原始日志'
+
+def register_job(job):
+    # Caller holds LOCK. Keep active jobs and bound completed job history.
+    for key,old in list(JOBS.items()):
+        if old.result['state']=='ready' and time.monotonic()-old.created>300:
+            JOBS.pop(key)
+    for key,old in list(JOBS.items()):
+        if len(JOBS)<MAX_JOBS:break
+        if old.result['state'] in {'done','error','cancelled'}:JOBS.pop(key)
+    if len(JOBS)>=MAX_JOBS:raise ValueError('待处理任务过多，请等待当前任务结束')
+    key=uuid.uuid4().hex;JOBS[key]=job;return key
+
 class ImportJob:
     def __init__(self):
+        self.created=time.monotonic()
         self.cancelled=threading.Event()
         self.result={'state':'ready','phase':'uploading','bytes':0,'lines':0,'totalBytes':None}
         self.future=None
@@ -51,6 +78,8 @@ class ImportJob:
             if self.result['state']!='cancelling':self.result.update(values)
 
     def cleanup(self):
+        if self.result['state'] in {'done','error','cancelled'}:
+            self.catalog=None;self.target=None
         if self.path and (self.path.parent/'transaction.json').exists():return
         if self.new_source and self.result['state']!='done':cleanup_file(self.new_source)
         if self.path:
@@ -66,8 +95,8 @@ class ImportJob:
             self.result['state']='cancelling'
             queued=self.future is not None and self.future.cancel()
         if previous=='ready' or queued:
-            self.cleanup()
             with LOCK:self.result['state']='cancelled'
+            self.cleanup()
 
 
 def save_cases(cases, job):
@@ -144,7 +173,10 @@ def read_case(key):
     if not isinstance(key,str) or not re_id(key):raise ValueError('报告不存在')
     path=RESULTS/(key+'.json')
     if path.is_symlink() or path.resolve().parent!=RESULTS:raise ValueError('报告不存在')
-    raw=path.read_bytes();report=json.loads(raw);report['id']=key
+    raw=path.read_bytes()
+    try:report=normalize_report(json.loads(raw))
+    except (ValueError,RecursionError) as exc:raise ValueError('报告数据损坏，请重新导入原日志') from exc
+    report['id']=key
     return report,hashlib.sha256(raw).hexdigest()
 
 
@@ -188,9 +220,8 @@ def reparse_job(key,use_file=False):
     if not target[0].get('contentSha256'):raise ValueError('报告缺少文件校验信息，请重新导入')
     job=ImportJob();job.target=target
     cached=None if use_file else source_path(target[0].get('input'))
-    job_key=uuid.uuid4().hex
     with LOCK:
-        JOBS[job_key]=job
+        job_key=register_job(job)
         if cached:
             job.input_ref=target[0]['input']
             job.result.update(state='queued',phase='queued')
@@ -223,7 +254,7 @@ def case_list():
                 cached=CASE_CACHE.get(p.stem)
                 if cached and cached[0]==stamp:summary=cached[1]
                 else:
-                    d=json.loads(p.read_text(encoding='utf-8'));server=d.get('server') or {}
+                    d=normalize_report(json.loads(p.read_text(encoding='utf-8')));server=d['server']
                     summary={'id':p.stem,'source':d['source'],'gpus':len(d['gpus']),'events':len(d['events']),
                              'complete':d.get('complete',True),'collected':server.get('time',''),
                              'server':{k:(server.get(k) or '') for k in ('sn','model','time')},
@@ -231,7 +262,7 @@ def case_list():
                              'bytes':d.get('bytes'),'modified':stat.st_mtime}
                     CASE_CACHE[p.stem]=(stamp,summary)
                 cases.append(summary)
-            except (OSError,ValueError,KeyError,TypeError,AttributeError):INVALID_REPORTS.append(p.stem)
+            except (OSError,ValueError,KeyError,TypeError,AttributeError,RecursionError):INVALID_REPORTS.append(p.stem)
         for key in set(CASE_CACHE)-seen:CASE_CACHE.pop(key,None)
         return sorted(cases,key=lambda d:(d['modified'],d['id']))
 
@@ -257,7 +288,12 @@ def run_job(job):
         if RECOVERY['pending']:raise ValueError('报告恢复未完成，请重启后重试')
         job.progress({'state':'running','phase':'parsing','source':job.path.name,'bytes':0,'lines':0,'totalBytes':None})
         cases=analyze(job.path,cancel_event=job,progress=job.progress,catalog=job.catalog)
-        if not cases:raise ValueError('没有可读取的报告')
+        recognized=[case for case in cases if case.get('recognized')]
+        if not recognized:raise ValueError('未识别到 GPU、PCIe 或系统日志内容，请选择原始日志或命令输出')
+        skipped=len(cases)-len(recognized)
+        cases=recognized
+        if skipped:
+            for case in cases:case['warnings'].append(f'压缩包中有 {skipped} 个文件未识别到日志内容，已跳过')
         if job.target:
             old=job.target[0]
             matches=[c for c in cases if c.get('contentSha256')==old['contentSha256']]
@@ -281,7 +317,7 @@ def run_job(job):
     except core.AnalysisCancelled:
         with LOCK:job.result.update(state='cancelled')
     except Exception as exc:
-        message=(str(exc) if isinstance(exc,ValueError) else '重新解析失败，请重试') if job.target else f'解析失败：{type(exc).__name__} · {exc}'
+        message=import_error(exc)
         with LOCK:job.result.update(state='error',message=message)
     finally:job.cleanup()
 
@@ -301,7 +337,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         url=urlparse(self.path)
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
-        if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).encode(),ctype='text/html; charset=utf-8')
+        if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).replace('__SIDEBAR_PINNED__',str(sidebar_pinned()).lower()).encode(),ctype='text/html; charset=utf-8')
+        if url.path=='/diagnostics.js':return self.respond((ROOT/'diagnostics.js').read_bytes(),ctype='application/javascript; charset=utf-8')
+        if url.path=='/diagnostics.css':return self.respond((ROOT/'diagnostics.css').read_bytes(),ctype='text/css; charset=utf-8')
         if url.path=='/analysis.js':return self.respond((ROOT/'analysis.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/knowledge.js':return self.respond((ROOT/'knowledge'/'knowledge.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
@@ -323,11 +361,12 @@ class Handler(BaseHTTPRequestHandler):
         if url.path.startswith('/api/case/'):
             key=url.path.rsplit('/',1)[-1]
             if not re_id(key):return self.respond({'error':'不存在的记录'},404)
-            path=RESULTS/(key+'.json')
             with RESULTS_LOCK:
                 try:
-                    if not path.is_symlink() and path.resolve().parent==RESULTS and path.is_file():
-                        return self.respond(path.read_bytes(),ctype='application/octet-stream')
+                    report,_=read_case(key)
+                    return self.respond(report)
+                except FileNotFoundError:return self.respond({'error':'不存在的记录'},404)
+                except ValueError as exc:return self.respond({'error':str(exc)},422)
                 except OSError:return self.respond({'error':'报告读取失败'},500)
         if url.path.startswith('/api/job/'):
             with LOCK:
@@ -339,6 +378,14 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if url.path in ('/api/sidebar/pin','/api/sidebar/unpin'):
+            try:
+                with LOCK:
+                    pending=RUNTIME/'ui-settings.pending'
+                    pending.write_text(json.dumps({'sidebarPinned':url.path.endswith('/pin')}),encoding='utf-8')
+                    pending.replace(RUNTIME/'ui-settings.json')
+                return self.respond({'ok':True})
+            except OSError:return self.respond({'error':'菜单设置保存失败，请重试'},500)
         if url.path.startswith('/api/knowledge/'):
             parts=url.path.split('/')
             try:
@@ -352,6 +399,10 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if action=='enable':ONLINE.settings_save(True)
                 elif action=='disable':ONLINE.settings_save(False)
+                elif action=='notify-enable':ONLINE.settings_save(notify=True)
+                elif action=='notify-disable':ONLINE.settings_save(notify=False)
+                elif action=='remind-later':ONLINE.settings_save(dismissal='later',expected_version=parse_qs(url.query).get('version',[''])[0])
+                elif action=='ignore-version':ONLINE.settings_save(dismissal='ignore',expected_version=parse_qs(url.query).get('version',[''])[0])
                 elif action=='cancel':ONLINE.cancel.set()
                 else:ONLINE.start(action)
                 return self.respond(ONLINE.snapshot())
@@ -398,8 +449,9 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/api/stop':
             self.respond({'ok':True});threading.Thread(target=self.server.request_stop,daemon=True).start();return
         if url.path=='/api/import/start':
-            key=uuid.uuid4().hex
-            with LOCK:JOBS[key]=ImportJob()
+            try:
+                with LOCK:key=register_job(ImportJob())
+            except ValueError as exc:return self.respond({'error':str(exc)},409)
             return self.respond({'job':key},201)
         if url.path=='/api/reparse/start':
             query=parse_qs(url.query)
@@ -419,9 +471,12 @@ class Handler(BaseHTTPRequestHandler):
         query=parse_qs(url.query)
         name=Path(query.get('name',['log.txt'])[0].replace('\\','/')).name
         if not name or name in ('.','..') or '\x00' in name:return self.respond({'error':'无效文件名'},400)
+        if not (core.log_member(name.lower()) or name.lower().endswith(('.zip','.tar','.tgz','.tar.gz'))):return self.respond({'error':'不支持此文件类型，请选择日志文本或 GZ、ZIP、TAR 压缩包'},415)
         key=query.get('job',[''])[0]
         with LOCK:
-            if not key:key=uuid.uuid4().hex;JOBS[key]=ImportJob()
+            if not key:
+                try:key=register_job(ImportJob())
+                except ValueError as exc:return self.respond({'error':str(exc)},409)
             job=JOBS.get(key)
             if job is None or job.result['state']!='ready':job=None
             else:job.result.update(state='uploading',totalBytes=length)
@@ -431,23 +486,26 @@ class Handler(BaseHTTPRequestHandler):
             folder.mkdir();job.path=folder/name
             with job.path.open('wb') as f:
                 left=length
+                last_received=time.monotonic()
                 while left:
                     core.check_cancel(job)
+                    if time.monotonic()-last_received>IMPORT_IDLE_TIMEOUT:raise TimeoutError('upload timeout')
                     if not select.select([self.connection],[],[],.2)[0]:continue
                     chunk=self.rfile.read(min(left,1024*1024))
                     core.check_cancel(job)
                     if not chunk:raise ValueError('文件传输中断')
                     f.write(chunk);left-=len(chunk)
+                    last_received=time.monotonic()
                     job.progress({'bytes':length-left})
             with LOCK:
                 core.check_cancel(job)
                 job.result.update(state='queued',phase='queued')
                 job.future=EXECUTOR.submit(run_job,job)
         except Exception as exc:
-            job.cleanup()
             with LOCK:
-                job.result.update(state='cancelled' if job.is_set() else 'error',message='文件读取失败')
-            return self.respond({'error':'已取消' if job.is_set() else '文件读取失败'},409 if job.is_set() else 400)
+                job.result.update(state='cancelled' if job.is_set() else 'error',message=import_error(exc))
+            job.cleanup()
+            return self.respond({'error':'已取消' if job.is_set() else job.result['message']},409 if job.is_set() else 400)
         return self.respond({'job':key},202)
 
 

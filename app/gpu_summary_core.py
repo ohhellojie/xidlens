@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 from datetime import date, datetime
 import gzip
 import hashlib
@@ -14,6 +15,7 @@ import tarfile
 import time
 import uuid
 import zipfile
+import zlib
 
 VERSION = '0.1.0'
 REFERENCE = 'https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html'
@@ -33,6 +35,12 @@ LABELS = {'xid': 'Xid', 'init': '初始化失败', 'aer': 'PCIe/AER 记录',
           'lockup': '内核 soft lockup', 'channel': 'GPU 通道超时',
           'ecc': 'ECC 错误记录', 'mods': 'MODS 错误/结果', 'thermal': '温度阈值/传感器错误'}
 TEXT_EXT = {'.log', '.txt', '.out', '.xml', '.csv', '.json'}
+COMMAND_RE = re.compile(r'^(?:(?:\$\s*|[^\s]+[#$]\s+))?(?:sudo\s+)?((?:lspci|lscpu|dmidecode|nvidia-smi(?:\s+topo)?)(?:\s+-.*)?)\s*$')
+
+
+def section_boundary(line):
+    s = line.strip()
+    return (line.startswith('*** ') and not line.startswith('*** ls:')) or (s.startswith('__________') and set(s) == {'_'}) or s.startswith('-- Boot ') or s == '-- Reboot --' or bool(COMMAND_RE.fullmatch(s))
 
 def nvidia_driver_version(line):
     match = re.match(r'^\s*\|?\s*(?:NVIDIA-SMI\s+\S+\s+)?Driver Version\s*:\s*(\d[\d.]+)(?=\s|\||$)', line, re.I)
@@ -103,6 +111,10 @@ class Parser:
         if value not in self.r['warnings']:
             self.r['warnings'].append(value)
 
+    def recover_line_error(self):
+        self.current_gpu = self.proc_gpu = self.smi = self.pending_serial = None
+        self.health_block = None
+
     def evidence(self, n, line):
         return {'line': n, 'section': self.section, 'boot_marker': self.boot,
                 'time': timestamp(line), 'text': clean(line)}
@@ -136,9 +148,11 @@ class Parser:
 
     def consume(self, line, n):
         s = line.strip()
-        if s.startswith('__________') and set(s) == {'_'}:
+        if section_boundary(line):
             self.current_gpu = self.proc_gpu = self.smi = self.pending_serial = None
             self.health_block = None
+            command = COMMAND_RE.fullmatch(s)
+            if command: self.section = clean(command[1])
         if n <= 100 and ('NVIDIA bug report log file' in line or 'MODS start:' in line):
             self.r['recognized'] = True
         if line.startswith('*** ') and not line.startswith('*** ls:'):
@@ -284,13 +298,19 @@ class Parser:
                 except UnicodeDecodeError:
                     line = raw.decode('gb18030', errors='replace')
                     self.encoding_replacements += 1
-                self.consume(line.rstrip('\r\n'), self.r['lines_read'])
+                try:
+                    self.consume(line.rstrip('\r\n'), self.r['lines_read'])
+                except (ValueError, OverflowError, csv.Error) as exc:
+                    self.recover_line_error()
+                    self.r['complete'] = False
+                    if len(self.r['warnings']) < 100:
+                        self.warn(f"第 {self.r['lines_read']} 行字段无法解析（{type(exc).__name__}），已继续读取后续日志。")
                 if self.progress and (self.r['lines_read'] % 128 == 0 or len(raw) > 65536):
                     now = time.monotonic()
                     if now-last_progress >= .15:
                         self.progress(self.r['bytes_read'], self.r['lines_read'])
                         last_progress = now
-        except (OSError, EOFError, RuntimeError, ValueError, zipfile.BadZipFile) as exc:
+        except (OSError, EOFError, RuntimeError, ValueError, zipfile.BadZipFile, zlib.error) as exc:
             self.r['complete'] = False
             self.warn(f'读取失败：{type(exc).__name__}；结果仅覆盖已读部分。')
         self.r['sha256_content'] = digest.hexdigest() if self.r['complete'] else None
@@ -373,7 +393,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                     try:
                         with archive.open(m) as f:
                             read(f, f'{path.name}!{m.filename}', m.filename.lower().endswith('.gz'), m.file_size)
-                    except (OSError, RuntimeError, zipfile.BadZipFile) as exc:
+                    except (OSError, EOFError, ValueError, RuntimeError, zipfile.BadZipFile, zlib.error) as exc:
                         result['complete'] = False
                         result['warnings'].append(f'成员 {m.filename} 读取失败：{type(exc).__name__}')
                 if len(selected) > max_members:
@@ -409,7 +429,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
         else:
             with path.open('rb') as f:
                 read(f, path.name, lower.endswith('.gz'), path.stat().st_size)
-    except (OSError, EOFError, ValueError, RuntimeError, tarfile.TarError, zipfile.BadZipFile) as exc:
+    except (OSError, EOFError, ValueError, RuntimeError, tarfile.TarError, zipfile.BadZipFile, zlib.error) as exc:
         result['complete'] = False
         result['warnings'].append(f'文件读取失败：{type(exc).__name__}；输入未被修改。')
     if not result['reports']:
