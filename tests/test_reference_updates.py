@@ -30,7 +30,9 @@ class ReferenceUpdatesTests(unittest.TestCase):
         self.store=knowledge.KnowledgeStore(self.root)
     def tearDown(self):self.store.close();self.temp.cleanup()
     def updated(self,kind):
-        pack=copy.deepcopy(self.store.data[kind]);pack['version']='1.0.1'
+        pack=copy.deepcopy(self.store.data[kind])
+        major,minor,patch_version=map(int,pack['version'].split('.'))
+        pack['version']=f'{major}.{minor}.{patch_version+1}'
         if kind=='xid':pack['content']['cn']['codes']['79']['title']='更新后的说明'
         else:pack['content']['topics'][0]['title']='更新后的步骤'
         return pack
@@ -44,8 +46,8 @@ class ReferenceUpdatesTests(unittest.TestCase):
     def test_each_package_updates_independently_and_survives_restart(self):
         for kind in ('xid','manual'):
             other='manual' if kind=='xid' else 'xid';unchanged=copy.deepcopy(self.store.data[other])
-            pack=self.updated(kind);raw=self.check(kind,pack)
-            self.assertEqual(self.store.data[kind]['version'],'1.0.0')
+            before=copy.deepcopy(self.store.data[kind]);pack=self.updated(kind);raw=self.check(kind,pack)
+            self.assertEqual(self.store.data[kind],before)
             self.apply(kind,raw)
             self.assertEqual(self.store.data[kind],pack);self.assertEqual(self.store.data[other],unchanged)
             self.assertEqual(knowledge.KnowledgeStore(self.root).data[kind],pack)
@@ -53,7 +55,7 @@ class ReferenceUpdatesTests(unittest.TestCase):
     def test_failed_download_hash_schema_and_write_preserve_current(self):
         pack=self.updated('xid');raw=self.check('xid',pack);self.apply('xid',raw)
         before=self.store.content();path=self.root/'knowledge/xid/active.json';saved=path.read_bytes()
-        newer=copy.deepcopy(pack);newer['version']='1.0.2'
+        newer=self.updated('xid')
         good=self.check('xid',newer)
         for failure in ('network','hash','schema','write'):
             with self.subTest(failure=failure):
@@ -106,7 +108,7 @@ class ReferenceUpdatesTests(unittest.TestCase):
 
     def test_corrupted_active_falls_back_without_deleting_file(self):
         pack=self.updated('manual');self.apply('manual',self.check('manual',pack))
-        second=copy.deepcopy(pack);second['version']='1.0.2';self.apply('manual',self.check('manual',second))
+        second=self.updated('manual');self.apply('manual',self.check('manual',second))
         path=self.root/'knowledge/manual/active.json';path.write_text('{broken')
         loaded=knowledge.KnowledgeStore(self.root)
         self.assertEqual(loaded.data['manual'],pack);self.assertTrue(loaded.warning['manual']);self.assertEqual(path.read_text(),'{broken')
@@ -135,5 +137,5 @@ class ReferenceUpdatesTests(unittest.TestCase):
                 with self.assertRaises(urllib.error.HTTPError) as error:opener.open(request)
                 self.assertEqual(error.exception.code,403)
             request=urllib.request.Request(service.url+'api/knowledge/content',headers={'X-Local-Token':server.TOKEN})
-            with opener.open(request) as response:self.assertEqual(json.load(response)['packages']['manual']['version'],'1.0.0')
+            with opener.open(request) as response:self.assertEqual(json.load(response)['packages']['manual'],server.KNOWLEDGE.data['manual'])
         finally:service.close()
