@@ -1,28 +1,17 @@
-XidLens · Windows x64 v1.0.1
+XidLens · Windows x64 v1.1.0
 
-双击 XidLens.exe 打开软件，关闭窗口退出。
+解压后双击 XidLens.exe 启动，点击“导入日志”选择文件。
 升级时先退出软件，用新版 EXE 替换原文件，保留同目录 runtime 文件夹。
-点击“导入日志”选择文件；多份报告可在顶部切换。
+旧报告需要使用新增解析功能时，在“报告管理”中重新解析。
 
-支持 nvidia-bug-report、dmesg / journal、nvidia-smi -q 文本，以及 GZ、ZIP、TAR。
-可查看设备信息、槽位参考、PCIe 拓扑和错误原文。
-按 SN、UUID 或 PCI 地址搜索，复制到 Excel，或导出 TSV、TXT、JSON。
-错误记录支持聚合和原文切换；“日志对比”可按 SN / UUID 对照两份报告。
-点击对比字段查看两份原文；缺失字段和多个采集值不计为变化。
-“报告管理”支持搜索、筛选、多选重新解析和删除报告。
-重新解析时，缺少原日志可重新选择；文件内容须与原报告一致。失败或取消保留旧结果。
+支持 nvidia-bug-report、dmesg / journal、nvidia-smi、lspci 文本及 GZ、ZIP、TAR 压缩包。
+可查看设备、状态字段、错误原文、异常检查与拓扑，比较日志并导出 TSV、TXT、JSON。
+“软件更新”默认每天后台检查，发现新版后可更新、暂不更新或忽略此版本。
 
-“Xid 查询”可搜索中英文资料；“排查手册”按主题查看步骤与条件。
-两页的“版本与更新”可查看版本和来源、独立更新资料；失败保留原资料。
-“解析规则”支持导入 XLSX 或规则 JSON、查看当前来源与恢复内置中文规则。
-“软件更新”可检查、下载并选择安装新版。
-新规则用于新导入和重新解析的报告。
-
-日志在本机解析，结果保存在同目录 runtime/results，原日志副本保存在 runtime/sources。
-删除报告会清理不再使用的副本，不修改原始文件。
-退出后可删除 results 内的 JSON 清空历史。槽位需核对实际位置。
+日志在本机解析，报告、原日志副本和设置保存在 runtime。
 启动失败时查看 runtime/startup-error.log。
 
+使用说明：https://github.com/ohhellojie/xidlens/blob/main/docs/usage.md
 问题反馈：https://github.com/ohhellojie/xidlens/issues
 
 运行环境：Windows 10 / 11 x64，Microsoft Edge WebView2 Runtime。

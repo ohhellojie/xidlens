@@ -23,7 +23,7 @@
 
 运行环境：Windows 10 / 11 x64、Microsoft Edge WebView2 Runtime。界面使用中文。
 
-支持 nvidia-bug-report、dmesg / journal、nvidia-smi -q 文本，以及 GZ、ZIP、TAR 压缩包。日志在本机解析。
+支持 nvidia-bug-report、dmesg / journal、nvidia-smi、lspci 文本，以及 GZ、ZIP、TAR 压缩包。日志在本机解析。
 
 ## 功能
 
@@ -31,7 +31,9 @@
 | --- | --- |
 | 设备信息 | 查看服务器 SN、GPU SN / UUID、PCI 地址、采集值和字段来源；搜索并复制到 Excel。 |
 | 错误记录 | 聚合 Xid、初始化失败、PCIe/AER 记录，查看原文、行号和规则说明。 |
-| PCIe 拓扑 | 按 NUMA 查看 GPU 与上游桥路径，定位相关错误和槽位参考。 |
+| 状态解析 | 按 GPU、采集块和参数分组查看 nvidia-smi -q 字段、说明与原文。 |
+| 异常检查 | 查看 PCIe、ECC、行重映射等检查结果，区分错误、待核实和数据不足。 |
+| 机器拓扑 | 查看 PCIe 连接树、GPU / NIC 互联矩阵和亲和性，支持筛选与设备定位。 |
 | 日志对比 | 按唯一 SN / UUID 匹配 GPU，比较设备字段和错误记录，并排查看两份原文。 |
 | 报告管理 | 搜索、筛选、多选重新解析和删除；导出 TSV、TXT、JSON。 |
 | Xid 资料 | 搜索中英文 Xid 说明，浏览排查手册，查看来源并独立更新资料。 |
@@ -53,9 +55,9 @@
 
 ## 更新与数据
 
-在“软件更新”中检查、下载并安装新版；也可退出程序后替换 EXE，保留同目录的 `runtime` 文件夹。
+软件默认每天在后台检查更新，发现新版后提示；下载和安装由用户选择。也可退出程序后替换 EXE，保留同目录的 `runtime` 文件夹。
 
-报告、原日志副本和设置保存在 `runtime`。中文 Xid 资料和排查手册可分别更新；[解析规则](docs/catalog.md)支持导入 XLSX / JSON。操作细节见[使用说明](docs/usage.md)和[资料更新](docs/reference-packages.md)。
+报告、原日志副本和设置保存在 `runtime`。中文 Xid 资料和排查手册可分别更新；[解析规则](docs/catalog.md)支持导入 XLSX / JSON。操作细节见[使用说明](docs/usage.md)、[状态与拓扑](docs/diagnostics.md)和[资料更新](docs/reference-packages.md)。
 
 ## 开发与反馈
 

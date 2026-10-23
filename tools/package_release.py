@@ -6,7 +6,7 @@ import sys
 import zipfile
 from build_receipt import verify as verify_receipt
 
-VERSION = '1.0.1'
+VERSION = '1.1.0'
 
 def main():
     root = Path(__file__).resolve().parent.parent
