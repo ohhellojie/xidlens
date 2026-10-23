@@ -27,6 +27,7 @@ Requires Windows 10 or Windows 11 and Microsoft Edge WebView2 Runtime. The inter
 Supports text output from `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `lspci`, as well as GZ, ZIP, and TAR archives.
 
 - **Device inventory**: extracts server information and GPU details, including models, serial numbers, UUIDs, and PCI addresses.
+- **Full log reader**: searches original text, jumps to lines and errors, and supports focus mode with saved reading positions.
 - **Error records**: groups Xid, initialization failures, and PCIe errors by device, preserving source text and line numbers.
 - **Status fields**: parses `nvidia-smi -q` parameters with field descriptions and support for multiple snapshots.
 - **Diagnostic checks**: checks PCIe links, ECC, and row remapping, identifying errors, items to verify, and missing data.
@@ -47,7 +48,7 @@ The tree groups devices with an unconfirmed upstream connection. Use device labe
 
 Matches GPUs by a unique serial number or UUID, compares device fields and errors, and lists unmatched devices separately. Source text from both logs can be viewed side by side.
 
-Device inventories can be copied to Excel or exported as TSV. Log summaries are exported as TXT, and full evidence as JSON.
+Device inventories can be copied to Excel or exported as TSV. Log summaries are exported as TXT, and full records as JSON.
 
 ## Documentation
 

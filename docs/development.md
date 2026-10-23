@@ -29,6 +29,7 @@ node tests/test_diagnostics.cjs
 node tests/test_import_ui.cjs
 node tests/test_update_ui.cjs
 node tests/test_state_ui.cjs
+node tests/test_reader_ui.cjs
 python tools/check_repository.py
 git diff --check
 ```

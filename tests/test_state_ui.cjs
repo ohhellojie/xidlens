@@ -40,18 +40,21 @@ for(const count of [1,16,64,240]){
 }
 const source=fs.readFileSync(require.resolve('../app/app.js'),'utf8');
 const load=source.slice(source.indexOf('async function loadCase('),source.indexOf('async function refreshCases('));
+const remember=source.slice(source.indexOf('function rememberCaseView('),source.indexOf('function openSource('));
 function fixture(){
  const nodes=new Map(),el=id=>{if(!nodes.has(id))nodes.set(id,{setAttribute(){},value:'old'});return nodes.get(id)};
  const env={loadRequest:0,loadedCase:'old',loading:false,data:{source:'old'},state:{page:'status',gpu:7,query:'old',filter:'7',code:'79',errorPage:9,errorView:'records',compareBase:'new',compareRow:8,compareChanged:true},
   viewPositions:new Map([['old|status',new Map()]]),renderedView:'old|status',comparisonRequest:0,comparisonData:{},comparisonLoading:true,comparisonError:'old',
-  resets:0,apiCalls:0,render(){},closeMenu(){},closeDrawer(){},status(){},toast(){},$:el,
-  XidDiagnostics:{reset(){env.resets++},openMatrix(){}},api:async()=>{env.apiCalls++;return structuredClone(sample)}};
- vm.createContext(env);vm.runInContext(load,env);return env;
+  resets:0,apiCalls:0,render(){},closeMenu(){},closeDrawer(){},status(){},toast(){},$:el,structuredClone,caseViews:new Map(),saveViewPosition(){},readerReturn:null,pendingSource:null,
+  XidDiagnostics:{reset(){env.resets++},openMatrix(){},capture(){return {group:'temperature'}},restore(value){env.restored=value}},api:async path=>{env.apiCalls++;return {...structuredClone(sample),source:path.endsWith('/old')?'old':'sample'}}};
+ vm.createContext(env);vm.runInContext(remember+load,env);return env;
 }
 (async()=>{
  let env=fixture();assert.equal(await env.loadCase('old'),true);assert.equal(env.apiCalls,0);assert.equal(env.state.query,'old');
- await env.loadCase('new');assert.equal(env.loadedCase,'new');assert.equal(env.state.gpu,2);assert.equal(env.state.errorView,'groups');assert.equal(env.state.query,'');assert.equal(env.state.compareChanged,false);assert.equal(env.state.compareRow,0);assert.equal(env.state.compareBase,'');assert.equal(env.comparisonData,null);assert.equal(env.resets,1);assert.equal(env.viewPositions.size,0);
+ await env.loadCase('new');assert.equal(env.loadedCase,'new');assert.equal(env.state.gpu,2);assert.equal(env.state.errorView,'groups');assert.equal(env.state.query,'');assert.equal(env.state.compareChanged,false);assert.equal(env.state.compareRow,0);assert.equal(env.state.compareBase,'');assert.equal(env.comparisonData,null);assert.equal(env.resets,1);assert.equal(env.viewPositions.size,1,'Keep the previous log position');
  await env.loadCase('new',true);assert.equal(env.apiCalls,2,'Reparse explicitly refreshes an existing report');
+ await env.loadCase('old');assert.equal(env.state.gpu,7);assert.equal(env.state.query,'old');assert.equal(env.state.errorPage,9);assert.equal(env.restored.group,'temperature');assert.equal(env.viewPositions.has('old|status'),true);
+ await env.loadCase('old',true);assert.equal(env.state.query,'');assert.equal(env.viewPositions.has('old|status'),false,'Reparse resets analysis positions');
  env=fixture();env.api=async()=>{throw Error('missing')};assert.equal(await env.loadCase('bad'),false);assert.equal(env.loadedCase,'old');assert.equal(env.state.query,'old');assert.equal(env.loading,false);
  env=fixture();const pending={};env.api=path=>new Promise(resolve=>pending[path]=resolve);const first=env.loadCase('first'),second=env.loadCase('second');pending['/api/case/second']({...sample,source:'second'});await second;pending['/api/case/first']({...sample,source:'first'});await first;assert.equal(env.loadedCase,'second');assert.equal(env.data.source,'second');
  console.log('Page state: defaults, same-log return, new-log reset, stale loads, GPU picker scale and empty snapshots passed');
