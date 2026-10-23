@@ -33,7 +33,7 @@ Supports text output from `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-sm
 
 [![Diagnostic checks with an ECC result selected and its counts and explanation shown on the right](docs/images/checks.png)](docs/images/checks.png)
 
-Each check includes its explanation and source evidence. Results are limited by the collected data; missing data does not establish that a device is healthy. See [status and topology](docs/diagnostics.md) for interpretation limits.
+Check results include explanations and source evidence, with items that need more data flagged separately. See [status and topology](docs/diagnostics.md) for field descriptions and collection commands.
 
 ## Topology visualization
 
@@ -41,11 +41,11 @@ Converts `lspci` and `nvidia-smi topo` output into a PCIe tree and connectivity 
 
 [![Connectivity matrix for eight GPUs and four network adapters, with details for the selected connection](docs/images/topology.png)](docs/images/topology.png)
 
-Devices without connection evidence remain unlinked. Verify physical slots against device labels.
+The tree groups devices with an unconfirmed upstream connection. Use device labels to verify physical slots.
 
 ## Comparison and export
 
-Matches GPUs by a unique serial number or UUID to compare device fields and errors across two logs, with source text side by side. Unmatched devices are listed separately.
+Matches GPUs by a unique serial number or UUID, compares device fields and errors, and lists unmatched devices separately. Source text from both logs can be viewed side by side.
 
 Device inventories can be copied to Excel or exported as TSV. Log summaries are exported as TXT, and full evidence as JSON.
 

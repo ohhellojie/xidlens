@@ -1,12 +1,12 @@
 XidLens · Windows x64 v1.1.0
 
-解压后双击 XidLens.exe 启动，点击“导入日志”选择文件。
+解压后双击 XidLens.exe 启动，点击导入日志选择文件。
 升级时先退出软件，用新版 EXE 替换原文件，保留同目录 runtime 文件夹。
-旧报告需要使用新增解析功能时，在“报告管理”中重新解析。
+旧报告可在报告管理中重新解析，使用新版解析功能。
 
-支持 nvidia-bug-report、dmesg / journal、nvidia-smi、lspci 文本及 GZ、ZIP、TAR 压缩包。
+支持 nvidia-bug-report、dmesg、journalctl、nvidia-smi 和 lspci 文本，以及 GZ、ZIP 和 TAR 压缩包。
 可查看设备、状态字段、错误原文、异常检查与拓扑，比较日志并导出 TSV、TXT、JSON。
-“软件更新”默认每天后台检查，发现新版后可更新、暂不更新或忽略此版本。
+软件默认每天在后台检查更新，发现新版后可更新、暂不更新或忽略此版本。
 
 日志在本机解析，报告、原日志副本和设置保存在 runtime。
 启动失败时查看 runtime/startup-error.log。
@@ -14,4 +14,4 @@ XidLens · Windows x64 v1.1.0
 使用说明：https://github.com/ohhellojie/xidlens/blob/main/docs/usage.md
 问题反馈：https://github.com/ohhellojie/xidlens/issues
 
-运行环境：Windows 10 / 11 x64，Microsoft Edge WebView2 Runtime。
+运行环境：Windows 10 或 Windows 11 x64，Microsoft Edge WebView2 Runtime。
