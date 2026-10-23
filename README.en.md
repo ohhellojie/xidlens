@@ -2,7 +2,7 @@
 
 <h1 align="center">XidLens</h1>
 
-<p align="center">Inspect devices, errors, and PCIe paths in NVIDIA GPU logs offline.</p>
+<p align="center">Analyze NVIDIA GPU logs offline: status, diagnostic checks, and machine topology.</p>
 
 <p align="center">
   <a href="https://github.com/ohhellojie/xidlens/releases/latest">Download for Windows</a> ·
@@ -11,7 +11,7 @@
   <a href="README.md">简体中文</a>
 </p>
 
-![Device inventory with serial numbers, UUIDs, PCI addresses, and field sources](docs/images/devices.png)
+![Status fields with PCIe parameters, check results, and source evidence](docs/images/status.png)
 
 *Actual interface with sample data.*
 
@@ -39,15 +39,15 @@ Reads nvidia-bug-report, dmesg / journal, nvidia-smi and lspci text, and GZ, ZIP
 | Xid reference | Search Chinese and English descriptions, browse troubleshooting topics, and update references independently. |
 
 <details>
-<summary>View error records and PCIe topology</summary>
+<summary>View diagnostic checks and topology matrices</summary>
 
-### Error records
+### Diagnostic checks
 
-![Error groups and original log text](docs/images/errors.png)
+![Device checks with items to verify and ECC errors](docs/images/checks.png)
 
-### PCIe topology
+### GPU / NIC topology
 
-![GPUs and upstream PCIe bridges](docs/images/topology.png)
+![GPU to NIC connectivity, PCI addresses, and affinity](docs/images/topology.png)
 
 </details>
 

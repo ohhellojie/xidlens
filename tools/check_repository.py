@@ -17,7 +17,8 @@ for name in filter(None, names):
     if p.suffix.lower() in {'.log', '.gz', '.zip', '.tar', '.xlsx', '.xls', '.exe', '.dll'} or name.endswith('.local.json'):
         errors.append(name + ': local artifact')
         continue
-    if name in {'app/logo.png', 'docs/images/devices.png', 'docs/images/errors.png', 'docs/images/topology.png'}:
+    if name in {'app/logo.png', 'docs/images/devices.png', 'docs/images/errors.png',
+                'docs/images/topology.png', 'docs/images/status.png', 'docs/images/checks.png'}:
         if not p.read_bytes().startswith(b'\x89PNG\r\n\x1a\n'):
             errors.append(name + ': invalid PNG')
         continue

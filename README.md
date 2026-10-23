@@ -2,7 +2,7 @@
 
 <h1 align="center">XidLens</h1>
 
-<p align="center">离线查看 NVIDIA GPU 日志中的设备、错误和 PCIe 路径。</p>
+<p align="center">离线分析 NVIDIA GPU 日志，查看状态、异常与机器拓扑。</p>
 
 <p align="center">
   <a href="https://github.com/ohhellojie/xidlens/releases/latest">下载 Windows 版</a> ·
@@ -11,7 +11,7 @@
   <a href="README.en.md">English</a>
 </p>
 
-![设备信息：GPU 列表、SN、UUID、PCI 地址与字段来源](docs/images/devices.png)
+![状态解析：PCIe 参数、检查结果与原文证据](docs/images/status.png)
 
 *实际界面，使用演示数据。*
 
@@ -39,15 +39,15 @@
 | Xid 资料 | 搜索中英文 Xid 说明，浏览排查手册，查看来源并独立更新资料。 |
 
 <details>
-<summary>查看错误记录与 PCIe 拓扑</summary>
+<summary>查看异常检查与拓扑矩阵</summary>
 
-### 错误记录
+### 异常检查
 
-![错误聚合与日志原文](docs/images/errors.png)
+![异常检查：按设备定位待核实项与 ECC 错误](docs/images/checks.png)
 
-### PCIe 拓扑
+### GPU / NIC 拓扑
 
-![GPU 与上游 PCIe 桥路径](docs/images/topology.png)
+![GPU 与 NIC 连接矩阵、PCI 地址与亲和性](docs/images/topology.png)
 
 </details>
 
