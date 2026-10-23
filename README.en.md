@@ -2,67 +2,65 @@
 
 <h1 align="center">XidLens</h1>
 
-<p align="center">Analyze NVIDIA GPU logs offline: status, diagnostic checks, and machine topology.</p>
+<p align="center">NVIDIA GPU log analysis</p>
 
 <p align="center">
   <a href="https://github.com/ohhellojie/xidlens/releases/latest">Download for Windows</a> ·
   <a href="docs/usage.md">Usage (Chinese)</a> ·
-  <a href="https://github.com/ohhellojie/xidlens/releases">Release notes</a> ·
   <a href="README.md">简体中文</a>
 </p>
 
-![Status fields with PCIe parameters, check results, and source evidence](docs/images/status.png)
+Import logs to explore device information, errors, and connections. Select a GPU, find related issues, and inspect the field descriptions and original log text. All parsing takes place locally.
 
-*Actual interface with sample data.*
+[![XidLens home screen with server information, eight GPUs, and details for the selected device](docs/images/devices.png)](docs/images/devices.png)
 
-## Get started
+*Home screen with the device inventory and GPU details. Screenshots use sample data; click to view at full resolution.*
+
+## Download and start
 
 1. Download the Windows x64 ZIP from [Releases](https://github.com/ohhellojie/xidlens/releases/latest).
-2. Extract the ZIP and open `XidLens.exe`.
+2. Extract it and open `XidLens.exe`.
 3. Click “导入日志” (Import logs) and select one or more files.
 
-Requires Windows 10 / 11 x64 and Microsoft Edge WebView2 Runtime. The interface is in Chinese.
+Requires Windows 10 or Windows 11 and Microsoft Edge WebView2 Runtime. The interface is in Chinese.
 
-Reads nvidia-bug-report, dmesg / journal, nvidia-smi and lspci text, and GZ, ZIP, TAR archives. Logs are parsed locally.
+Reads text output from `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `lspci`. GZ, ZIP, and TAR archives are also supported.
 
-## Features
+## Find devices that need attention
 
-| Feature | Details |
-| --- | --- |
-| Device inventory | Server and GPU serial numbers, UUIDs, PCI addresses, metrics, and field sources; search and copy to Excel. |
-| Error records | Group Xid, initialization, and PCIe/AER records; inspect original text, line numbers, and rule descriptions. |
-| Status fields | Browse nvidia-smi -q fields, descriptions, and source text by GPU, snapshot, and parameter group. |
-| Diagnostic checks | Inspect PCIe, ECC, and row-remapping results, with errors, items to verify, and missing data identified. |
-| Machine topology | Explore PCIe trees, GPU / NIC connectivity matrices, and affinity; filter and locate devices. |
-| Log comparison | Match GPUs by unique serial number or UUID; compare fields and errors with source text side by side. |
-| Report management | Search, filter, batch reparse, and delete reports; export TSV, TXT, and JSON. |
-| Xid reference | Search Chinese and English descriptions, browse troubleshooting topics, and update references independently. |
+Diagnostic checks organize PCIe, ECC, and row-remapping results by device, highlighting errors, items to verify, and missing data. Select a result to see its explanation and source evidence.
 
-<details>
-<summary>View diagnostic checks and topology matrices</summary>
+[![Diagnostic checks with an ECC result selected and its counts and explanation shown on the right](docs/images/checks.png)](docs/images/checks.png)
 
-### Diagnostic checks
+For a closer look, the status page provides `nvidia-smi -q` fields and descriptions. Error records group Xid, initialization failures, and PCIe errors while preserving the original line numbers.
 
-![Device checks with items to verify and ECC errors](docs/images/checks.png)
+Results apply only to the evidence in the log. Missing data does not establish that a device is healthy, and cumulative error counts do not identify when errors occurred.
 
-### GPU / NIC topology
+## Explore device connections
 
-![GPU to NIC connectivity, PCI addresses, and affinity](docs/images/topology.png)
+The topology page turns `lspci` and `nvidia-smi topo` output into a PCIe tree and connectivity matrix. Select two devices to inspect their connection type, PCI addresses, and CPU affinity, then locate them in the tree.
 
-</details>
+[![Connectivity matrix for eight GPUs and four network adapters, with details for the selected connection](docs/images/topology.png)](docs/images/topology.png)
 
-Fields reflect the imported logs. Missing and conflicting values are preserved; slots are references. Descriptions and suggested actions come from matching rules and require verification against the original logs and device state.
+For larger systems, filter the matrix to connections between GPUs, connections to network adapters, or a single device. Unconfirmed connections remain unlinked. Verify physical slots against device labels.
 
-## Updates and data
+## Compare logs and export results
 
-The app checks for updates daily in the background and notifies you when a new version is available. You choose when to download and install it. You can also close the app and replace the EXE, keeping the adjacent `runtime` folder.
+Compare two reports to review device fields and errors, with source text side by side. GPUs are matched by a unique serial number or UUID; unmatched devices are listed separately.
 
-Reports, source copies, and settings are stored in `runtime`. The Xid reference and troubleshooting manual update separately. [Parsing rules](docs/catalog.md) accept XLSX / JSON imports. See [usage](docs/usage.md), [status and topology](docs/diagnostics.md), and [reference updates](docs/reference-packages.md) for details (Chinese).
+Copy the device inventory to Excel, export a log summary, or save the full evidence as JSON. The built-in Xid reference and troubleshooting manual provide error descriptions and investigation steps.
 
-## Development and feedback
+## Updates and documentation
 
-[Run from source and build (Chinese)](docs/development.md) · [Contributing](CONTRIBUTING.md) · [Report an issue](https://github.com/ohhellojie/xidlens/issues/new?template=bug_report.yml)
+The app checks for new versions in the background and lets you choose whether to install them. To update manually, close the app and replace `XidLens.exe`. Keep the adjacent `runtime` folder, which stores reports, log copies, and settings.
 
-For parsing issues, include a minimal anonymized log sample that reproduces the problem.
+Documentation is in Chinese:
+
+- [Usage](docs/usage.md): import, compare, export, and update.
+- [Status and topology](docs/diagnostics.md): collection commands, field meanings, and interpretation limits.
+- [Reference updates](docs/reference-packages.md) and [parsing rules](docs/catalog.md): update bundled references and import custom rules.
+- [Run from source and build](docs/development.md) · [Contributing](CONTRIBUTING.md) · [Release notes](https://github.com/ohhellojie/xidlens/releases)
+
+For parsing issues, open an [issue](https://github.com/ohhellojie/xidlens/issues/new?template=bug_report.yml) with a minimal anonymized log sample that reproduces the problem.
 
 Code is licensed under [MIT](LICENSE). Chinese reference content is an unofficial translation with links to official sources. See [NOTICE](NOTICE.md) for third-party rights.

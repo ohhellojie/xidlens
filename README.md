@@ -2,67 +2,63 @@
 
 <h1 align="center">XidLens</h1>
 
-<p align="center">离线分析 NVIDIA GPU 日志，查看状态、异常与机器拓扑。</p>
+<p align="center">NVIDIA GPU 日志分析工具</p>
 
 <p align="center">
   <a href="https://github.com/ohhellojie/xidlens/releases/latest">下载 Windows 版</a> ·
   <a href="docs/usage.md">使用说明</a> ·
-  <a href="https://github.com/ohhellojie/xidlens/releases">更新记录</a> ·
   <a href="README.en.md">English</a>
 </p>
 
-![状态解析：PCIe 参数、检查结果与原文证据](docs/images/status.png)
+导入日志后，XidLens 会整理设备信息、错误记录和连接关系。你可以从一块 GPU 找到相关异常，再查看参数说明和日志原文。解析在本机完成。
 
-*实际界面，使用演示数据。*
+[![XidLens 主页：服务器信息、8 张 GPU 的设备清单和所选 GPU 的详情](docs/images/devices.png)](docs/images/devices.png)
 
-## 开始使用
+*软件主页：设备清单与 GPU 详情。截图使用演示数据，点击查看原图。*
 
-1. 在 [Releases](https://github.com/ohhellojie/xidlens/releases/latest) 下载 Windows x64 ZIP 包。
+## 下载使用
+
+1. 从 [Releases](https://github.com/ohhellojie/xidlens/releases/latest) 下载 Windows x64 ZIP 包。
 2. 解压，双击 `XidLens.exe`。
 3. 点击“导入日志”，选择一份或多份文件。
 
-运行环境：Windows 10 / 11 x64、Microsoft Edge WebView2 Runtime。界面使用中文。
+支持 Windows 10 和 Windows 11，需安装 Microsoft Edge WebView2 Runtime。界面为中文。
 
-支持 nvidia-bug-report、dmesg / journal、nvidia-smi、lspci 文本，以及 GZ、ZIP、TAR 压缩包。日志在本机解析。
+可读取 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 的文本输出，也支持 GZ、ZIP、TAR 压缩包。
 
-## 功能
+## 找到需要关注的设备
 
-| 功能 | 内容 |
-| --- | --- |
-| 设备信息 | 查看服务器 SN、GPU SN / UUID、PCI 地址、采集值和字段来源；搜索并复制到 Excel。 |
-| 错误记录 | 聚合 Xid、初始化失败、PCIe/AER 记录，查看原文、行号和规则说明。 |
-| 状态解析 | 按 GPU、采集块和参数分组查看 nvidia-smi -q 字段、说明与原文。 |
-| 异常检查 | 查看 PCIe、ECC、行重映射等检查结果，区分错误、待核实和数据不足。 |
-| 机器拓扑 | 查看 PCIe 连接树、GPU / NIC 互联矩阵和亲和性，支持筛选与设备定位。 |
-| 日志对比 | 按唯一 SN / UUID 匹配 GPU，比较设备字段和错误记录，并排查看两份原文。 |
-| 报告管理 | 搜索、筛选、多选重新解析和删除；导出 TSV、TXT、JSON。 |
-| Xid 资料 | 搜索中英文 Xid 说明，浏览排查手册，查看来源并独立更新资料。 |
+“异常检查”按设备集中展示 PCIe、ECC 和行重映射等检查结果，标出错误、待核实项和缺失数据。点击一项，即可查看判断依据和原文。
 
-<details>
-<summary>查看异常检查与拓扑矩阵</summary>
+[![异常检查：在设备矩阵中选择 ECC 记录，右侧显示计数和判断依据](docs/images/checks.png)](docs/images/checks.png)
 
-### 异常检查
+需要进一步查看时，“状态解析”提供 `nvidia-smi -q` 的参数和说明；“错误记录”汇总 Xid、初始化失败和 PCIe 错误，并保留原文行号。
 
-![异常检查：按设备定位待核实项与 ECC 错误](docs/images/checks.png)
+检查结论限于日志中已有的证据。数据缺失不代表正常，累计错误计数也不能直接说明错误发生的时间。
 
-### GPU / NIC 拓扑
+## 查看设备之间的连接
 
-![GPU 与 NIC 连接矩阵、PCI 地址与亲和性](docs/images/topology.png)
+“机器拓扑”将 `lspci` 和 `nvidia-smi topo` 的输出整理为 PCIe 连接树和互联矩阵。选择两个设备，可以查看连接类型、PCI 地址和 CPU 亲和性，再到连接树中定位。
 
-</details>
+[![机器拓扑：8 张 GPU 与 4 张网卡的互联矩阵，右侧解释所选连接](docs/images/topology.png)](docs/images/topology.png)
 
-字段以日志记录为准。缺失或冲突字段保留原状；槽位仅供参考。错误说明与建议来自匹配规则，需结合原文和设备状态判断。
+设备多时，可以只看 GPU 之间的连接、GPU 与网卡的连接，或聚焦单个设备。无法确认的连接会保留为未关联；槽位仍需结合设备标签核对。
 
-## 更新与数据
+## 对比日志，导出结果
 
-软件默认每天在后台检查更新，发现新版后提示；下载和安装由用户选择。也可退出程序后替换 EXE，保留同目录的 `runtime` 文件夹。
+选择两份报告，可对比设备参数和错误记录，并排查看原文。GPU 按唯一的序列号或 UUID 匹配；无法匹配的设备会单独列出。
 
-报告、原日志副本和设置保存在 `runtime`。中文 Xid 资料和排查手册可分别更新；[解析规则](docs/catalog.md)支持导入 XLSX / JSON。操作细节见[使用说明](docs/usage.md)、[状态与拓扑](docs/diagnostics.md)和[资料更新](docs/reference-packages.md)。
+设备清单可复制到 Excel，也可导出清单、日志摘要和完整 JSON 证据。内置 Xid 查询和排查手册，可查阅错误说明及排查步骤。
 
-## 开发与反馈
+## 更新与文档
 
-[源码运行与构建](docs/development.md) · [贡献说明](CONTRIBUTING.md) · [问题反馈](https://github.com/ohhellojie/xidlens/issues/new?template=bug_report.yml)
+软件会在后台检查新版本，发现更新后由你选择是否安装。手动升级时，先退出软件，再替换 `XidLens.exe`，保留同目录的 `runtime` 文件夹，其中存放报告、日志副本和设置。
 
-反馈解析问题时，请提供可复现的脱敏日志片段。
+- [使用说明](docs/usage.md)：导入、对比、导出和更新。
+- [状态与拓扑](docs/diagnostics.md)：采集命令、字段含义和判断范围。
+- [资料更新](docs/reference-packages.md)与[解析规则](docs/catalog.md)：更新内置资料，导入自定义规则。
+- [源码运行与构建](docs/development.md) · [贡献说明](CONTRIBUTING.md) · [更新记录](https://github.com/ohhellojie/xidlens/releases)
+
+遇到解析问题，请在 [Issues](https://github.com/ohhellojie/xidlens/issues/new?template=bug_report.yml) 提供可复现的脱敏日志片段。
 
 代码采用 [MIT](LICENSE) 许可证。中文资料为非官方译文，保留官方来源；第三方资料权利见 [NOTICE](NOTICE.md)。
