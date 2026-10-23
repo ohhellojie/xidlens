@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vite build"
+    "build": "vite build && vite build --config vite.reader.config.js"
   },
   "dependencies": {
     "vite": "6.4.2",

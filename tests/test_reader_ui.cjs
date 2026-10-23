@@ -1,0 +1,22 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {pathToFileURL}=require('node:url');
+(async()=>{
+ const {advance,endPosition,boundPosition,sanitize,expandTabs,highlightParts}=await import(pathToFileURL(require.resolve('../frontend/src/reader/model.js')));
+ const h=()=>26,total=20_000_000;
+ assert.deepEqual(advance({top:1,offset:0},-900,total,h),{top:1,offset:0});
+ assert.deepEqual(advance({top:12_000_000,offset:8},60,total,h),{top:12_000_002,offset:16});
+ const end=endPosition(total,520,h);assert.deepEqual(end,{top:total-19,offset:0});
+ assert.deepEqual(boundPosition({top:total,offset:25},total,520,h),end);
+ assert.deepEqual(endPosition(4,520,h),{top:1,offset:0});
+ const wrapped=n=>n===2?260:26;
+ assert.deepEqual(advance({top:1,offset:0},100,100,wrapped),{top:2,offset:74});
+ assert.deepEqual(advance({top:3,offset:0},-100,100,wrapped),{top:2,offset:160});
+ assert.equal(sanitize({top:99,selected:200,query:'x'.repeat(900)},10).top,10);
+ assert.equal(sanitize({selected:200},10).selected,10);
+ assert.equal(sanitize({query:'x'.repeat(900)},10).query.length,512);
+ assert.equal(expandTabs('a\tb'),'a       b');
+ const raw='<img onerror=x> [A].*';assert.deepEqual(highlightParts(raw,'[a].*'),['<img onerror=x> ',{match:'[A].*'},'']);
+ const long='a'.repeat(1024*1024),parts=highlightParts(long,'a');assert.ok(parts.length<=4001);assert.equal(parts.map(p=>typeof p==='string'?p:p.match).join(''),long,'Highlight limit preserves every original character');
+ console.log('Reader: large line counts, wrapped scrolling, boundaries, state clamping and literal highlights passed');
+})().catch(e=>{console.error(e);process.exitCode=1});

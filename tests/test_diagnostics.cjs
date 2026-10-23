@@ -45,8 +45,8 @@ assert.match(html,/data-diag="group" data-value="概览" aria-pressed="true"/,'A
  ]}};
  const model=ui.checksModel(sample);assert.equal(model.rows[0].cells.get('read').length,2);assert.ok(model.columns.includes('other'));assert.ok(model.columns.includes('report'));
  ui.reset();ctx.state.page='checks';html=ui.render(sample,ctx);
- assert.ok(html.includes('Unknown Error')&&html.includes('GPU requires reset'));assert.ok(html.includes('不适用'));assert.ok(html.includes('未采集'));assert.ok(!html.includes('&lt;script&gt;unsafe'),'Evidence stays collapsed');
- ui.click({dataset:{diag:'checkEvidence'}});html=ui.render(sample,ctx);assert.ok(html.includes('&lt;script&gt;unsafe'));assert.ok(!html.includes('<script>unsafe'));
+ assert.ok(html.includes('Unknown Error')&&html.includes('GPU requires reset'));assert.ok(html.includes('不适用'));assert.ok(html.includes('未采集'));assert.ok(!html.includes('<pre>'),'Raw text stays out of the detail body');
+ assert.ok(html.includes('data-source-line="1"'),'The original line remains reachable');assert.ok(html.includes('&lt;script&gt;unsafe'),'Preview text is escaped');assert.ok(!html.includes('<script>unsafe'));
  ui.click({dataset:{diag:'checkCell',value:'0000:02:00.0|CESta'}});html=ui.render(sample,ctx);assert.ok(html.includes('RxErr'));
  ui.change({dataset:{diagChange:'checkOnly'},type:'checkbox',checked:true});html=ui.render(sample,ctx);assert.ok(html.includes('Matrix missing'),'Attention filter retains missing evidence');
  ui.click({dataset:{diag:'check',value:'global'}});html=ui.render(sample,ctx);assert.ok(html.includes('Matrix missing'),'External deep links reveal a collapsed report group');

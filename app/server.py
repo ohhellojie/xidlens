@@ -11,6 +11,7 @@ from online import OnlineUpdates
 from knowledge import KnowledgeStore
 from version import VERSION
 from report_data import normalize_report
+from log_reader import LogStore
 import recovery
 
 ROOT=Path(__file__).resolve().parent
@@ -145,6 +146,8 @@ def _save_cases(cases, job):
                     target=RESULTS/(case_id+'.json')
                     temporary.replace(target)
                     CASE_CACHE.pop(case_id,None)
+                    READER.drop(case_id)
+                    READER_SOURCES.pop(case_id,None)
                 recovery.settle(job.path.parent,RESULTS,commit=True)
             except Exception:
                 try:recovery.settle(job.path.parent,RESULTS)
@@ -278,7 +281,7 @@ def delete_cases(ids):
                 try:refs.append(json.loads(path.read_text(encoding='utf-8')).get('input'))
                 except (OSError,ValueError,AttributeError):pass
                 path.unlink(missing_ok=True)
-                CASE_CACHE.pop(key,None);deleted.append(key)
+                CASE_CACHE.pop(key,None);READER.drop(key);READER_SOURCES.pop(key,None);deleted.append(key)
             except OSError:failed.append(key)
         prune_sources(refs)
     return {'deleted':deleted,'failed':failed}
@@ -322,6 +325,30 @@ def run_job(job):
     finally:job.cleanup()
 
 
+READER_SOURCES={}
+def reader_source(key):
+    # Avoid reparsing a large JSON report for every small viewport request.
+    with RESULTS_LOCK:
+        report_path=RESULTS/(key+'.json')
+        if report_path.is_symlink() or not report_path.is_file():raise ValueError('报告不存在')
+        stat=report_path.stat();stamp=(stat.st_mtime_ns,stat.st_size)
+        cached=READER_SOURCES.get(key)
+        if not cached or cached[0]!=stamp:
+            report,_=read_case(key)
+            ref=report.get('input');path=source_path(ref)
+            if path is None:raise ValueError('原日志副本不存在，请重新导入日志')
+            report={k:report.get(k) for k in ('input','source','sourceMember','contentSha256','events','lines')}
+            cached=(stamp,path,report)
+            READER_SOURCES[key]=cached
+            while len(READER_SOURCES)>4:READER_SOURCES.pop(next(iter(READER_SOURCES)))
+        _,path,report=cached
+        if source_path(report['input'])!=path:raise ValueError('原日志副本不存在，请重新导入日志')
+        source_stat=path.stat()
+        revision=hashlib.sha256(json.dumps([stamp,source_stat.st_mtime_ns,source_stat.st_size,report['input'],report['sourceMember']]).encode()).hexdigest()[:24]
+        return path,report,revision
+
+READER=LogStore(RUNTIME/'reader-cache',reader_source)
+
 class Handler(BaseHTTPRequestHandler):
     rbufsize=0
     def log_message(self,*args):pass
@@ -338,6 +365,7 @@ class Handler(BaseHTTPRequestHandler):
         url=urlparse(self.path)
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
         if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).replace('__SIDEBAR_PINNED__',str(sidebar_pinned()).lower()).encode(),ctype='text/html; charset=utf-8')
+        if url.path=='/reader.js':return self.respond((ROOT/'reader'/'reader.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/diagnostics.js':return self.respond((ROOT/'diagnostics.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/diagnostics.css':return self.respond((ROOT/'diagnostics.css').read_bytes(),ctype='text/css; charset=utf-8')
         if url.path=='/analysis.js':return self.respond((ROOT/'analysis.js').read_bytes(),ctype='application/javascript; charset=utf-8')
@@ -345,6 +373,19 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
+        if url.path.startswith('/api/log/'):
+            q=parse_qs(url.query);value=lambda name,default='':q.get(name,[default])[0]
+            key=value('id');revision=value('revision')
+            try:
+                if url.path=='/api/log/meta':
+                    if value('retry')=='1':READER.drop(key)
+                    return self.respond(READER.meta(key))
+                if url.path=='/api/log/lines':return self.respond(READER.lines(key,revision,int(value('start','1')),int(value('count','128'))))
+                if url.path=='/api/log/search':return self.respond(READER.search(key,revision,value('q'),int(value('selected','1'))))
+                if url.path=='/api/log/match':return self.respond(READER.match(key,revision,value('q'),int(value('selected','1')),value('direction','next')))
+                return self.respond({'error':'不存在的接口'},404)
+            except (ValueError,FileNotFoundError) as exc:return self.respond({'error':str(exc) if isinstance(exc,ValueError) else '原日志副本不存在，请重新导入日志'},400)
+            except OSError:return self.respond({'error':'原日志暂时无法读取，请重试'},503)
         if url.path=='/api/knowledge/content':return self.respond(KNOWLEDGE.content())
         if url.path=='/api/knowledge/status':return self.respond(KNOWLEDGE.status())
         if url.path=='/api/online':return self.respond(ONLINE.snapshot())
@@ -394,6 +435,14 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError as exc:return self.respond({'error':str(exc)},400)
         if RECOVERY['pending'] and (url.path.startswith(('/api/import','/api/reparse')) or url.path=='/api/cases/delete'):
             return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)
+        if url.path=='/api/log/position':
+            q=parse_qs(url.query)
+            try:
+                length=int(self.headers.get('Content-Length','0'))
+                if not 0<length<=8192:raise ValueError('阅读位置数据无效')
+                body=json.loads(self.rfile.read(length))
+                return self.respond(READER.save_position(q.get('id',[''])[0],q.get('revision',[''])[0],body))
+            except (ValueError,OSError) as exc:return self.respond({'error':str(exc) if isinstance(exc,ValueError) else '阅读位置保存失败'},400)
         if url.path.startswith('/api/online/'):
             action=url.path.rsplit('/',1)[-1]
             try:
@@ -543,6 +592,7 @@ class LocalService:
             self.closed.set()
             ONLINE.stop.set();ONLINE.cancel.set()
             KNOWLEDGE.close()
+            READER.close()
             STOP_EVENT.set()
             with LOCK:jobs=list(JOBS.values())
             for job in jobs:job.cancel()

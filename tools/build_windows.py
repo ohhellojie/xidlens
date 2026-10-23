@@ -35,7 +35,7 @@ def main():
                '--exclude-module', 'PyQt5', '--exclude-module', 'PySide6']
     for name in ('index.html', 'app.js', 'analysis.js', 'diagnostics.js', 'diagnostics.css', 'logo.png'):
         command += ['--add-data', f'{root/"app"/name}:.']
-    command += ['--add-data', f'{root/"app/knowledge"}:knowledge']
+    command += ['--add-data', f'{root/"app/knowledge"}:knowledge', '--add-data', f'{root/"app/reader"}:reader']
     # A stage preserves the expected filename for optional local catalogs.
     import shutil
     stage = root/'build/catalog'

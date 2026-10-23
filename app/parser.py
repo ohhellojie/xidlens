@@ -261,6 +261,7 @@ def convert(r,container_warnings=(),cancel_event=None,catalog=None):
     warnings=list(dict.fromkeys(list(container_warnings)+r['warnings']))
     if any(g['status']=='有冲突' for g in gpus):warnings.append('设备字段存在冲突，可在来源中核对。')
     result={'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{k:catalog[k] for k in ('file','sha256','importFile','sourceSha256','origin') if k in catalog},'contentSha256':r['sha256_content']}
+    if 'source_member' in r:result['sourceMember']=r['source_member']
     if collector:result['diagnostics']=diagnostics.finish(r,collector,gpus,events,cancel_event)
     return result
 

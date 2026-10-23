@@ -354,7 +354,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
     result = {'path': str(path), 'reports': [], 'warnings': [], 'complete': True}
     used = 0
 
-    def read(stream, label, gz=False, total_bytes=None):
+    def read(stream, label, gz=False, total_bytes=None, member=None):
         nonlocal used
         check_cancel(cancel_event)
         remaining = max_total_bytes - used
@@ -372,6 +372,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
         else:
             report = parser.parse(stream)
         used += report['bytes_read']
+        if member is not None: report['source_member'] = member
         result['reports'].append(report)
         result['complete'] = result['complete'] and report['complete']
 
@@ -379,7 +380,9 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
         lower = path.name.lower()
         if lower.endswith('.zip'):
             with zipfile.ZipFile(path) as archive:
-                members = [m for m in archive.infolist() if not m.is_dir()]
+                entries = archive.infolist()
+                members = [m for m in entries if not m.is_dir()]
+                member_indices = {id(m): i for i, m in enumerate(entries)}
                 selected = [m for m in members if log_member(m.filename)]
                 skipped = len(members) - len(selected)
                 if skipped:
@@ -392,7 +395,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                         break
                     try:
                         with archive.open(m) as f:
-                            read(f, f'{path.name}!{m.filename}', m.filename.lower().endswith('.gz'), m.file_size)
+                            read(f, f'{path.name}!{m.filename}', m.filename.lower().endswith('.gz'), m.file_size, {'name':m.filename,'index':member_indices[id(m)]})
                     except (OSError, EOFError, ValueError, RuntimeError, zipfile.BadZipFile, zlib.error) as exc:
                         result['complete'] = False
                         result['warnings'].append(f'成员 {m.filename} 读取失败：{type(exc).__name__}')
@@ -404,7 +407,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
             with opener(path, 'rb') as container, tarfile.open(fileobj=ReadBudget(container, max_total_bytes, cancel_event), mode='r|') as archive:
                 count = 0
                 skipped = 0
-                for m in archive:
+                for member_index, m in enumerate(archive):
                     check_cancel(cancel_event)
                     if m.isdir():
                         continue
@@ -423,7 +426,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                     f = archive.extractfile(m)
                     if f:
                         with f:
-                            read(f, f'{path.name}!{m.name}', m.name.lower().endswith('.gz'), m.size)
+                            read(f, f'{path.name}!{m.name}', m.name.lower().endswith('.gz'), m.size, {'name':m.name,'index':member_index})
                 if skipped:
                     result['warnings'].append(f'{skipped} 个非支持文本/链接成员未解析。')
         else:

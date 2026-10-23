@@ -29,5 +29,6 @@ jobs:
       - run: node tests/test_import_ui.cjs
       - run: node tests/test_update_ui.cjs
       - run: node tests/test_state_ui.cjs
+      - run: node tests/test_reader_ui.cjs
       - run: python tools/check_repository.py
       - run: git diff --check

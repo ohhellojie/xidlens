@@ -125,6 +125,33 @@ class ImportTests(unittest.TestCase):
             self.assertFalse((self.s.UPLOADS/key).exists())
         finally:connection.close()
 
+    def test_full_log_http_archive_members_positions_and_auth(self):
+        payload=io.BytesIO()
+        with zipfile.ZipFile(payload,'w') as z:
+            z.writestr('first.log',SAMPLE)
+            z.writestr('second.log',SAMPLE.replace('DEMO-GPU-001','SECOND-GPU'))
+        job=self.request('api/import?name=reader-test.zip',payload.getvalue())
+        result=self.wait(job['job']);self.assertEqual(result['state'],'done',result)
+        for key,token in zip(result['ids'],['DEMO-GPU-001','SECOND-GPU']):
+            meta=self.request('api/log/meta?id='+key)
+            self.s.READER.jobs[key].future.result(timeout=10)
+            meta=self.request('api/log/meta?id='+key);self.assertEqual(meta['state'],'ready',meta)
+            suffix='?id='+key+'&revision='+meta['revision']
+            rows=self.request('api/log/lines'+suffix+'&start=1&count=128')['lines']
+            self.assertIn(token,'\n'.join(rows))
+            report=self.request('api/case/'+key)
+            for event in report['events']:self.assertEqual(rows[event['line']-1],event['raw'])
+            view={'top':4,'selected':8,'offset':3,'left':24,'wrap':True,'query':'GPU'}
+            self.request('api/log/position'+suffix,json.dumps(view).encode())
+            self.assertEqual(self.request('api/log/meta?id='+key)['position'],view)
+            with self.assertRaises(urllib.error.HTTPError) as caught:self.request('api/log/lines?id='+key+'&revision=stale')
+            self.assertEqual(caught.exception.code,400)
+            with self.assertRaises(urllib.error.HTTPError) as caught:self.opener.open(self.service.url+'api/log/lines'+suffix)
+            self.assertEqual(caught.exception.code,403)
+        self.s.delete_cases(result['ids'])
+        self.assertTrue(all(key not in self.s.READER.jobs for key in result['ids']))
+        with self.assertRaises(urllib.error.HTTPError):self.request('api/log/meta?id='+result['ids'][0])
+
     def test_storage_failure_is_distinguished_and_releases_job_data(self):
         import errno
         job=self.job_file();before=set(self.s.RESULTS.iterdir())

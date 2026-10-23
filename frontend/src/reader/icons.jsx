@@ -1,0 +1,5 @@
+import React from 'react';
+import {paths} from '../icons';
+const make=(path,rotate=0)=>function Icon({size=18,...props}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d={path} transform={rotate?`rotate(${rotate} 12 12)`:undefined}/></svg>};
+export const Search=make(paths.search),X=make(paths.close),Copy=make(paths.copy),Check=make(paths.check),FileText=make(paths.file),ChevronRight=make(paths.chevron),ChevronDown=make(paths.chevron,90),ChevronUp=make(paths.chevron,-90),ArrowLeft=make(paths.arrow,180),ArrowUpRight=make(paths.external);
+export const Maximize=make('M8 3H3v5M16 3h5v5M21 16v5h-5M3 16v5h5'),PanelLeftClose=make('M3 3h18v18H3zM9 3v18M16 9l-3 3 3 3'),LocateFixed=make('M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8'),ListTree=make('M4 3v14h5M4 7h5M13 7h8M13 17h8'),WrapText=make('M3 5h18M3 10h13a4 4 0 1 1 0 8h-4M15 15l-3 3 3 3M3 16h4'),CornerDownLeft=make('M20 4v10H5M9 10l-4 4 4 4');
