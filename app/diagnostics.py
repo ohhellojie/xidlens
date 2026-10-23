@@ -282,7 +282,7 @@ def finish(r, collector, gpus, events, cancel_event=None):
             f['availability'] = 'error' if marker in READ_ERRORS else 'unavailable' if marker in {'n/a', 'not supported', 'unknown', 'not available'} else 'value'
             if marker in READ_ERRORS: failures.setdefault(marker, []).append(f)
         for values in failures.values():
-            add('smi-read', snap['address'], 'error', 'nvidia-smi 字段读取失败', f"{values[0]['value']} · {len(values)} 个字段", '保留工具返回的错误信息；需结合驱动、权限与内核日志核对，不能作为有效参数值使用。', [f['evidence'] for f in values], values[0]['path'], snap['id'])
+            add('smi-read', snap['address'], 'error', 'nvidia-smi 字段读取失败', f"{values[0]['value']} · {len(values)} 个字段", '工具返回读取错误。结合驱动、权限与内核日志排查。', [f['evidence'] for f in values], values[0]['path'], snap['id'])
     topology = []
     parent_index = {}
     for address, node in nodes.items():
@@ -368,7 +368,7 @@ def finish(r, collector, gpus, events, cancel_event=None):
             state = title = basis = ''
             if 'ECC Errors/' in p and number is not None and number > 0:
                 state = 'error' if 'Uncorrect' in p or '/Double Bit/' in p else 'review'
-                title = 'ECC 非零计数'; basis = describe(p) + ' 单次采集不提供增长速率。'
+                title = 'ECC 非零计数'; basis = describe(p) + ' 增长情况需比较同一统计周期内的多次采集。'
             elif 'Remapped Rows/' in p and ('Failure' in p or 'Pending' in p) and v.lower() == 'yes':
                 state = 'error' if 'Failure' in p else 'review'; title = '行重映射状态'; basis = describe(p)
             elif ('Retired Pages/' in p and 'Pending' in p and v.lower() == 'yes') or ('Replay' in p and number is not None and number > 0):

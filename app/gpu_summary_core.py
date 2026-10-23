@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""离线 GPU 日志摘要。只读输入；逐文件保留证据，不自动判定坏卡。"""
+"""离线分析 GPU 日志，逐文件生成摘要与证据。"""
 from __future__ import annotations
 
 import argparse
@@ -127,7 +127,7 @@ class Parser:
         if not any(v['value'] == value for v in vals):
             vals.append({'value': value, 'origin': origin, 'evidence': self.evidence(n, line)})
         if len(vals) > 1:
-            self.warn(f'{address} 的 {key} 存在多个值，短稿不自动选取。')
+            self.warn(f'{address} 的 {key} 存在多个值，请核对字段来源。')
 
     def event(self, kind, address, code, n, line):
         self.r['recognized'] = True
@@ -192,7 +192,7 @@ class Parser:
                 self.field(self.pending_serial[0], 'serial', line.split('Number:', 1)[1].strip(),
                            n, line, 'kernel_history_adjacent')
             else:
-                self.warn('存在无法可靠关联 PCIe 的 GPU SN，未强行配对。')
+                self.warn('部分 GPU SN 缺少唯一的 PCIe 对应关系。')
             self.pending_serial = None
         if self.proc_gpu:
             for prefix, key in [('Model:', 'model'), ('GPU UUID:', 'uuid'), ('Serial Number:', 'serial')]:
@@ -278,11 +278,11 @@ class Parser:
                 self.r['bytes_read'] += len(raw)
                 if self.r['bytes_read'] > self.max_bytes:
                     self.r['complete'] = False
-                    self.warn('解压后字节数达到上限，读取未完成；不能据此排除故障。')
+                    self.warn('解压后字节数达到上限，读取未完成。')
                     break
                 if len(raw) >= 1024*1024 and not raw.endswith(b'\n'):
                     self.r['complete'] = False
-                    self.warn('遇到超长行，停止读取；可能是二进制或异常日志。')
+                    self.warn('遇到超长行，已停止读取。')
                     break
                 digest.update(raw)
                 self.r['lines_read'] += 1
@@ -323,7 +323,7 @@ class Parser:
         self.r['pci_gpu_addresses'] = sorted(self.pci)
         self.r['events'] = list(self.groups.values())
         if not self.r['recognized']:
-            self.warn('未识别到支持的 GPU 日志结构或错误记录；不是健康检查通过。')
+            self.warn('未识别到支持的 GPU 日志结构或错误记录。')
         return self.r
 
 
@@ -431,7 +431,7 @@ def analyze_path(path, max_bytes=512*1024*1024, max_members=100, max_total_bytes
                 read(f, path.name, lower.endswith('.gz'), path.stat().st_size)
     except (OSError, EOFError, ValueError, RuntimeError, tarfile.TarError, zipfile.BadZipFile, zlib.error) as exc:
         result['complete'] = False
-        result['warnings'].append(f'文件读取失败：{type(exc).__name__}；输入未被修改。')
+        result['warnings'].append(f'文件读取失败：{type(exc).__name__}。')
     if not result['reports']:
         result['complete'] = False
         result['warnings'].append('没有可用文本报告。')
@@ -464,7 +464,7 @@ def format_summary(report, report_date=None, note=None):
     elif events:
         out.append('检查日志，发现以下异常记录。')
     else:
-        out.append('在已读内容中未提取到主要 GPU 错误，不能据此判断硬件正常。')
+        out.append('已读内容中未提取到主要 GPU 错误。')
     snapshots = report['smi_snapshots']
     counts = sorted({s['attached'] for s in snapshots})
     if len(counts) == 1:
@@ -495,33 +495,31 @@ def format_summary(report, report_date=None, note=None):
         out.extend(['', '核心记录：' + '；'.join(core) + '。'])
     counters = [c for c in report['health_counters'] if any(k in c['path'].lower() for k in ['uncorrectable', 'double bit', 'pending', 'failure', 'threshold'])]
     if counters:
-        out.append('另有不可纠正 ECC 或页面/重映射告警计数，范围及数值见证据明细。')
+        out.append('另有不可纠正 ECC、页面或重映射告警计数，范围及数值见证据明细。')
     if any(e['kind'] == 'aer' for e in events):
-        out.append('PCIe/AER 涉及设备需核对拓扑，不能直接归因于显卡。')
+        out.append('PCIe AER 记录需结合报错设备及上下游拓扑定位。')
     if note:
         out.append('补充说明：' + note.rstrip('。') + '。')
     if report['events']:
-        out.append('具体原因待核实，暂不据此判定显卡损坏。')
+        out.append('具体原因待核实。')
     if not report['complete']:
-        out.append('本次日志未完整读取，结论仅限已读内容。')
-    if not note:
-        out.append('以上为日志记录，当前状态需进一步核实。')
+        out.append('本次日志未完整读取，摘要仅覆盖已读内容。')
     return '\n'.join(out) + '\n'
 
 
 def evidence_text(report):
     lines = [f'来源：{report["source"]}', f'读取完整：{report["complete"]}；行数：{report["lines_read"]}',
              '内容 SHA-256：' + str(report['sha256_content']),
-             '采集时间（非故障时间）：' + ' / '.join(x['raw'] for x in report['collection_time']),
-             '驱动版本：' + ' / '.join(report['driver_versions']),
+             '采集时间：' + '、'.join(x['raw'] for x in report['collection_time']),
+             '驱动版本：' + '、'.join(report['driver_versions']),
              'PCI 枚举的 NVIDIA 显示/计算设备：' + '、'.join(report['pci_gpu_addresses']),
-             '说明：下列计数为匹配行数，含 syslog/journal/dmesg 重复采集，不是独立故障次数。',
-             '时间保留原文；无年份/时区和 uptime 不跨启动排序，最后一条日志不等于死机时间。',
-             'SN 来源与冲突见 evidence.json；历史 SN 不自动证明换卡后的当前身份。', '']
+             '计数按匹配行统计，包含 syslog、journal、dmesg 中的重复采集。',
+             '时间保留原文；缺少年份、时区或使用 uptime 的记录按日志顺序查看。',
+             'SN 来源与冲突见 evidence.json；当前设备身份按最新采集记录核对。', '']
     for warning in report['warnings']:
         lines.append('读取提示：' + warning)
     if report['health_counters']:
-        lines.append('\n非零 ECC/页面/重映射计数（可能是累计历史，不自动判定当前故障）：')
+        lines.append('\n非零 ECC、页面与重映射计数（统计范围见字段路径）：')
         for item in report['health_counters']:
             lines.append(f'L{item["evidence"]["line"]} | {item["address"]} | {item["path"]} = {item["value"]}')
     for event in report['events']:
@@ -538,7 +536,7 @@ def evidence_text(report):
 def write_results(inputs, out_root, report_date=None, note=None, max_bytes=512*1024*1024):
     # 独立新目录，绝不覆盖输入或前一次结果；失败保留可审计的未完成状态。
     if note and (len(inputs) != 1 or str(inputs[0]).lower().endswith(('.zip', '.tar', '.tgz', '.tar.gz'))):
-        raise ValueError('补充说明只允许用于一份独立日志，避免套用到其他设备。')
+        raise ValueError('补充说明仅适用于单份日志文件。')
     folder = Path(out_root) / (datetime.now().strftime('%Y%m%d-%H%M%S') + '-' + uuid.uuid4().hex[:8])
     folder.mkdir(parents=True, exist_ok=False)
     manifest = {'version': VERSION, 'complete': False, 'user_context': {'date': report_date, 'note': note},
@@ -564,7 +562,7 @@ def write_results(inputs, out_root, report_date=None, note=None, max_bytes=512*1
             (target/'evidence.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
             timeline = {s['line']: s for e in report['events'] for s in e['samples']+[e['last_sample']] if s}
             (target/'时间记录.txt').write_text('\n'.join([
-                '错误样本按原文行号排列，非完整事件表；不跨启动/时区排序，不推测死机时刻。',
+                '错误样本按原文行号排列，保留各自的时间格式。',
                 *[f'L{n} | {s["time"]["kind"]} | {s["time"]["raw"]} | {s["text"]}' for n,s in sorted(timeline.items())]
             ]), encoding='utf-8-sig')
             manifest['outputs'].append({'folder': name, 'source': report['source']})
@@ -575,8 +573,8 @@ def write_results(inputs, out_root, report_date=None, note=None, max_bytes=512*1
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
     notes = [w for r in manifest['inputs'] for w in r['warnings']]
     (folder/'结果索引.txt').write_text('\n'.join([
-        '每份报告单独出稿，未把不同文件当作同一台机器或同一次故障。',
-        '摘要日期和补充说明来自输入参数，未从文件名、修改时间或错误行推测。',
+        '每份日志分别生成报告。',
+        '摘要日期和补充说明按输入参数填写。',
         '证据文件含原始设备信息及日志片段，仅在本地保存。', '', *index, '',
         f'内容相同的重复报告：{len(manifest["duplicates"])} 份，详见 manifest.json。', *notes]), encoding='utf-8-sig')
     return folder, manifest
@@ -586,8 +584,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('inputs', nargs='*', help='普通日志、gz、zip、tar、tar.gz、tgz；每份独立分析')
     ap.add_argument('--out', default='results', help='输出根目录，每次建立新子目录')
-    ap.add_argument('--date', help='明确的摘要日期 YYYY-MM-DD；不填则不猜日期')
-    ap.add_argument('--note', help='人工确认的补充说明，只附在草稿中，不改变日志证据')
+    ap.add_argument('--date', help='摘要日期 YYYY-MM-DD，可选')
+    ap.add_argument('--note', help='附在摘要中的补充说明，仅适用于单份日志文件')
     ap.add_argument('--max-mib', type=int, default=512, help='单份日志解压后上限，默认 512 MiB')
     ap.add_argument('--pick', action='store_true', help='弹窗选择日志（需要 Python tkinter）')
     ap.add_argument('--version', action='version', version=VERSION)
@@ -614,7 +612,7 @@ def main(argv=None):
             return 0
         ap.error('请指定日志文件或使用 --pick')
     if args.note and (len(args.inputs) != 1 or args.inputs[0].lower().endswith(('.zip', '.tar', '.tgz', '.tar.gz'))):
-        ap.error('--note 只允许用于一份独立日志，不能批量套用设备状态')
+        ap.error('--note 仅适用于单份日志文件')
     folder, manifest = write_results(args.inputs, args.out, args.date, args.note, args.max_mib*1024*1024)
     print('结果目录：' + str(folder.resolve()))
     print(f'生成 {len(manifest["outputs"])} 份草稿，跳过 {len(manifest["duplicates"])} 份内容相同的报告。')
