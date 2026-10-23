@@ -8,9 +8,9 @@
   <a href="README.en.md">English</a>
 </p>
 
-XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持设备信息提取、Xid 错误分析、状态检查和拓扑可视化。日志在本机解析。
+XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持完整日志阅读、设备信息提取、Xid 错误分析、状态检查和拓扑可视化。日志在本机解析。
 
-[![XidLens 主页：服务器信息、8 张 GPU 的设备清单和所选 GPU 的详情](docs/images/devices.png)](docs/images/devices.png)
+[![XidLens 主页：服务器信息、GPU 清单和设备详情](docs/images/devices.jpg)](docs/images/devices.jpg)
 
 *设备信息页。截图使用演示数据，点击查看原图。*
 
@@ -22,17 +22,22 @@ XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持设备信息提
 
 支持 Windows 10 和 Windows 11，需安装 Microsoft Edge WebView2 Runtime。界面为中文。
 
+## 完整日志阅读
+
+搜索全文、跳转行号，右侧滚动条标出匹配项和异常位置。分析结果可直接跳到对应原文，支持专注阅读，切换页面或日志后保留阅读位置。
+
+[![完整日志阅读：全文搜索、行号跳转和右侧位置标记](docs/images/reader.jpg)](docs/images/reader.jpg)
+
 ## 日志分析
 
 支持 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 的文本输出，以及 GZ、ZIP 和 TAR 压缩包。
 
 - **设备信息**：提取服务器信息和 GPU 清单，包括型号、序列号、UUID 和 PCI 地址。
-- **完整日志**：搜索原文、跳转行号、定位异常，支持专注阅读和阅读位置记忆。
 - **错误记录**：按设备归类 Xid、初始化失败和 PCIe 错误，保留原文和行号。
 - **状态解析**：解析 `nvidia-smi -q` 参数，提供字段说明，支持切换不同采集结果。
 - **异常检查**：检查 PCIe 链路、ECC 和行重映射等状态，标记错误、待核实项和缺失数据。
 
-[![异常检查：在设备矩阵中选择 ECC 记录，右侧显示计数和判断依据](docs/images/checks.png)](docs/images/checks.png)
+[![异常检查：在设备矩阵中选择 ECC 记录，右侧显示计数和判断依据](docs/images/checks.jpg)](docs/images/checks.jpg)
 
 检查结果附有判断依据和日志原文，数据不足的项目会单独标记。字段含义与采集方法见[状态与拓扑](docs/diagnostics.md)。
 
@@ -40,7 +45,7 @@ XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持设备信息提
 
 将 `lspci` 和 `nvidia-smi topo` 输出转换为 PCIe 连接树和互联矩阵，展示 GPU、网卡等设备的连接关系。支持设备筛选、路径定位和亲和性查询。
 
-[![机器拓扑：8 张 GPU 与 4 张网卡的互联矩阵，右侧解释所选连接](docs/images/topology.png)](docs/images/topology.png)
+[![机器拓扑：GPU 互联矩阵，右侧显示连接类型与亲和性](docs/images/topology.jpg)](docs/images/topology.jpg)
 
 连接树将上游未确认的设备集中列出。物理槽位按设备标签核对。
 
