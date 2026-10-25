@@ -47,3 +47,18 @@ python tools/package_release.py
 ```
 
 EXE 位于 `dist/XidLens.exe`；便携 ZIP 和 SHA-256 清单位于 `dist/release`。自定义规则的构建方式见[规则说明](catalog.md)，独立中文资料包的生成方式见[资料更新](reference-packages.md)。
+
+## 公开内容检查
+
+提交或发布前执行：
+
+```powershell
+python tools/privacy_guard.py --install-hooks
+python tools/privacy_guard.py --history
+```
+
+本地钩子检查暂存文件、提交署名和可达的 Git 历史，CI 会重复检查。提交使用公开署名和 GitHub 提供的 noreply 邮箱；新的公开署名需加入 `.privacy-policy.json` 的允许名单。
+
+发布脚本还会检查程序和 ZIP 内部内容，无法读取或不支持的容器会中止打包。检查 PyInstaller 程序时，使用与构建时相同的 Python 小版本，以读取压缩代码对象的源码路径。
+
+图片需先检查画面，再将最终文件的 SHA-256 加入 `.privacy-policy.json`。图片改变后，摘要未经审核就不能通过检查。凭证、运行数据、客户日志和内部开发计划保存在仓库外。

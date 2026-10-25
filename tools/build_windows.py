@@ -7,11 +7,17 @@ import sys
 import importlib.metadata
 from create_icon import create_icon
 from build_receipt import write as write_receipt
+from privacy_guard import Guard
 
 def main():
     if sys.platform != 'win32':
         raise SystemExit('Build this executable on Windows.')
     root = Path(__file__).resolve().parent.parent
+    privacy = Guard(root)
+    privacy.tracked()
+    privacy.bundle_inputs()
+    if privacy.errors:
+        raise SystemExit('\n'.join(sorted(privacy.errors)))
     if tuple(map(int, importlib.metadata.version('certifi').split('.'))) < (2026, 10, 19):
         raise SystemExit('certifi 2026.10.19 or newer is required; reinstall requirements-build.txt.')
     ap = argparse.ArgumentParser()
@@ -44,6 +50,9 @@ def main():
     command += ['--add-data', f'{stage/"xid_catalog.json"}:.',
                 '--add-data', f'{root/"LICENSE"}:.', str(root/'app/main.py')]
     subprocess.run(command, cwd=root, env=env, check=True)
+    privacy.asset((root/'dist/XidLens.exe').read_bytes(), 'XidLens.exe')
+    if privacy.errors:
+        raise SystemExit('\n'.join(sorted(privacy.errors)))
     write_receipt(root)
 
 if __name__ == '__main__':

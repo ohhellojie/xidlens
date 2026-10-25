@@ -21,7 +21,8 @@ class BuildReceiptTests(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
         for name in ('app/online.py', 'requirements-desktop.txt', 'requirements-build.txt',
-                     'tools/build_windows.py', 'tools/build_receipt.py', 'packaging/windows-version.txt',
+                     'tools/build_windows.py', 'tools/build_receipt.py', 'tools/privacy_guard.py',
+                     '.privacy-policy.json', 'packaging/windows-version.txt',
                      'dist/XidLens.exe'):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -41,7 +42,7 @@ class BuildReceiptTests(unittest.TestCase):
         receipt.verify(self.root)
 
     def test_rejects_stale_source_and_replaced_executable(self):
-        for name in ('app/online.py', 'dist/XidLens.exe'):
+        for name in ('app/online.py', 'tools/privacy_guard.py', '.privacy-policy.json', 'dist/XidLens.exe'):
             with self.subTest(name=name):
                 path = self.root / name
                 path.write_bytes(b'changed')

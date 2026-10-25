@@ -11,7 +11,8 @@ def sha(path):
 def sources(root):
     paths = list((root / 'app').rglob('*.py'))
     paths += [root / name for name in ('requirements-desktop.txt', 'requirements-build.txt',
-              'tools/build_windows.py', 'tools/build_receipt.py', 'packaging/windows-version.txt')]
+              'tools/build_windows.py', 'tools/build_receipt.py', 'tools/privacy_guard.py',
+              '.privacy-policy.json', 'packaging/windows-version.txt')]
     return {p.relative_to(root).as_posix(): sha(p) for p in sorted(paths)}
 
 

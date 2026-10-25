@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 import zipfile
 from build_receipt import verify as verify_receipt
+from privacy_guard import Guard
 
 VERSION = '1.2.0'
 
@@ -14,6 +15,10 @@ def main():
     if not exe.is_file():
         raise SystemExit('Build dist/XidLens.exe first.')
     verify_receipt(root)
+    privacy = Guard(root)
+    privacy.asset(exe.read_bytes(), exe.name)
+    if privacy.errors:
+        raise SystemExit('\n'.join(sorted(privacy.errors)))
     if f'v{VERSION}' not in (root/'packaging/使用说明.txt').read_text(encoding='utf-8').splitlines()[0]:
         raise SystemExit('The bundled instructions version does not match the package version.')
     out = root/'dist/release'
@@ -54,6 +59,9 @@ def main():
         assert z.testzip() is None
         assert z.read('XidLens/XidLens.exe') == exe.read_bytes()
         assert len(z.namelist()) == len(files)
+    privacy.asset(archive.read_bytes(), archive.name)
+    if privacy.errors:
+        raise SystemExit('\n'.join(sorted(privacy.errors)))
     hashes = []
     for file in (out/'XidLens.exe', archive):
         with file.open('rb') as stream:

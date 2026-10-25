@@ -38,3 +38,9 @@ for name in filter(None, names):
 if errors:
     raise SystemExit('\n'.join(errors))
 print('Tracked source check passed')
+from privacy_guard import Guard
+privacy = Guard(root)
+privacy.tracked()
+if privacy.errors:
+    raise SystemExit('\n'.join(sorted(privacy.errors)))
+print('Public content privacy check passed')

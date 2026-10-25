@@ -8,6 +8,7 @@ import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'app'))
 from knowledge import checked
+from privacy_guard import Guard
 
 
 def main():
@@ -19,6 +20,10 @@ def main():
     pack=checked((args.input or ROOT/'app/knowledge'/(args.kind+'.json')).read_bytes(),args.kind)
     args.output.mkdir(parents=True,exist_ok=True)
     name='XidLens-'+args.kind+'.json';raw=(json.dumps(pack,ensure_ascii=False,indent=2)+'\n').encode('utf-8')
+    privacy=Guard(ROOT)
+    privacy.text(raw,name)
+    if privacy.errors:
+        raise SystemExit('\n'.join(sorted(privacy.errors)))
     (args.output/name).write_bytes(raw)
     (args.output/(args.kind+'-SHA256SUMS.txt')).write_text(hashlib.sha256(raw).hexdigest()+'  '+name+'\n',encoding='ascii')
     print('Validated reference package:',name)
