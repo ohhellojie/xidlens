@@ -1,0 +1,204 @@
+{
+  "public_companies": [
+    "XidLens",
+    "ohhellojie"
+  ],
+  "binary_format": "pyinstaller",
+  "owned_binaries": [
+    "XidLens.exe"
+  ],
+  "private_files": [
+    "AGENTS.md",
+    "docs/MVP.md"
+  ],
+  "reviewed_images": {
+    "app/logo.png": [
+      "657b0ffcf6608a7b696f2683f432507d9c4ca2a8c239976eb7fcb4a7847c7de0"
+    ],
+    "docs/images/checks.jpg": [
+      "2b3bdf356d941faab46f094103c766f5346d5fa7e82e97924518b72bb4220ce7"
+    ],
+    "docs/images/devices.jpg": [
+      "4bf21c93440475949acdb57e9895d8dbc42bd3eedbe0646e2fc52ecedf35ce62"
+    ],
+    "docs/images/errors.png": [
+      "356e4483d269755f96761424daf6bf874c6a46309fa5186f5c7d6da2221d2dc1"
+    ],
+    "docs/images/reader.jpg": [
+      "43449bcc95c6b530f165a67d9330c5b156c7c6103a161c18def5c80deb550341"
+    ],
+    "docs/images/status.png": [
+      "7daa3e39cc6f222144f6b944f1d9537aa69ef0bf5d206ee251c6a8ecfb2adc0d"
+    ],
+    "docs/images/topology.jpg": [
+      "b114526654acbc6af4f65a3e783b633f1724d52e1a157239c3816b6b9e543c61"
+    ],
+    "docs/images/checks.png": [
+      "06b9985f840138d11bdff329eb42cf0dcf336b0049c654784dc33e254c23c8f8",
+      "6db3c8569594bc22e2e8c9a8e4189726e0413bffecb16339dfadb82cb4a3853c"
+    ],
+    "docs/images/devices.png": [
+      "028d704a197e45d227d236d4b16f29798821c6b059c6c3909620f500511df91c",
+      "eefc1bc0421dcd53e04bdea90e5d18ac2e96866d5be7e93183b96b68ac8ff80b"
+    ],
+    "docs/images/topology.png": [
+      "dfe76da29173fcebb2cdb189510ed0e942e76068db1ade676dc0fc5638a67d15",
+      "ebf52718f19805dc536444d741ad0495e76e2df9f35bd28386da3fa3c515715b",
+      "fa0518704e6d26f2bff19ab0b46aa2121b1fdeea93b6aafd59ccba2863968931"
+    ]
+  },
+  "owned_python_modules": [
+    "catalog",
+    "desktop",
+    "diagnostics",
+    "file_export",
+    "gpu_summary_core",
+    "instance",
+    "knowledge",
+    "log_reader",
+    "main",
+    "online",
+    "parser",
+    "recovery",
+    "report_data",
+    "server",
+    "update_install",
+    "version",
+    "window_layout"
+  ],
+  "public_data_files": [
+    "analysis.js",
+    "app.js",
+    "diagnostics.css",
+    "diagnostics.js",
+    "index.html",
+    "knowledge/knowledge.js",
+    "knowledge/manual.json",
+    "knowledge/xid.json",
+    "reader/reader.js",
+    "xid_catalog.json"
+  ],
+  "public_git_names": [
+    "ohhellojie",
+    "GitHub",
+    "github-actions[bot]"
+  ],
+  "packaged_data_directories": [
+    "knowledge",
+    "reader"
+  ],
+  "dependency_data_prefixes": [
+    "PIL/",
+    "_tcl_data/",
+    "_tk_data/",
+    "certifi/",
+    "clr_loader/",
+    "pythonnet/",
+    "setuptools/",
+    "tcl8/",
+    "webview/"
+  ],
+  "dependency_root_files": [
+    "VCRUNTIME140.dll",
+    "VCRUNTIME140_1.dll",
+    "_asyncio.pyd",
+    "_bz2.pyd",
+    "_cffi_backend.cp313-win_amd64.pyd",
+    "_ctypes.pyd",
+    "_decimal.pyd",
+    "_elementtree.pyd",
+    "_hashlib.pyd",
+    "_lzma.pyd",
+    "_multiprocessing.pyd",
+    "_overlapped.pyd",
+    "_queue.pyd",
+    "_socket.pyd",
+    "_ssl.pyd",
+    "_tkinter.pyd",
+    "_uuid.pyd",
+    "_wmi.pyd",
+    "api-ms-win-core-console-l1-1-0.dll",
+    "api-ms-win-core-datetime-l1-1-0.dll",
+    "api-ms-win-core-debug-l1-1-0.dll",
+    "api-ms-win-core-errorhandling-l1-1-0.dll",
+    "api-ms-win-core-fibers-l1-1-0.dll",
+    "api-ms-win-core-fibers-l1-1-1.dll",
+    "api-ms-win-core-file-l1-1-0.dll",
+    "api-ms-win-core-file-l1-2-0.dll",
+    "api-ms-win-core-file-l2-1-0.dll",
+    "api-ms-win-core-handle-l1-1-0.dll",
+    "api-ms-win-core-heap-l1-1-0.dll",
+    "api-ms-win-core-interlocked-l1-1-0.dll",
+    "api-ms-win-core-kernel32-legacy-l1-1-1.dll",
+    "api-ms-win-core-libraryloader-l1-1-0.dll",
+    "api-ms-win-core-localization-l1-2-0.dll",
+    "api-ms-win-core-memory-l1-1-0.dll",
+    "api-ms-win-core-namedpipe-l1-1-0.dll",
+    "api-ms-win-core-processenvironment-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-0.dll",
+    "api-ms-win-core-processthreads-l1-1-1.dll",
+    "api-ms-win-core-profile-l1-1-0.dll",
+    "api-ms-win-core-rtlsupport-l1-1-0.dll",
+    "api-ms-win-core-string-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-1-0.dll",
+    "api-ms-win-core-synch-l1-2-0.dll",
+    "api-ms-win-core-sysinfo-l1-1-0.dll",
+    "api-ms-win-core-sysinfo-l1-2-0.dll",
+    "api-ms-win-core-timezone-l1-1-0.dll",
+    "api-ms-win-core-util-l1-1-0.dll",
+    "api-ms-win-crt-conio-l1-1-0.dll",
+    "api-ms-win-crt-convert-l1-1-0.dll",
+    "api-ms-win-crt-environment-l1-1-0.dll",
+    "api-ms-win-crt-filesystem-l1-1-0.dll",
+    "api-ms-win-crt-heap-l1-1-0.dll",
+    "api-ms-win-crt-locale-l1-1-0.dll",
+    "api-ms-win-crt-math-l1-1-0.dll",
+    "api-ms-win-crt-process-l1-1-0.dll",
+    "api-ms-win-crt-runtime-l1-1-0.dll",
+    "api-ms-win-crt-stdio-l1-1-0.dll",
+    "api-ms-win-crt-string-l1-1-0.dll",
+    "api-ms-win-crt-time-l1-1-0.dll",
+    "api-ms-win-crt-utility-l1-1-0.dll",
+    "base_library.zip",
+    "libcrypto-3.dll",
+    "libffi-8.dll",
+    "libssl-3.dll",
+    "pyexpat.pyd",
+    "python313.dll",
+    "select.pyd",
+    "tcl86t.dll",
+    "tk86t.dll",
+    "ucrtbase.dll",
+    "unicodedata.pyd",
+    "zlib1.dll"
+  ],
+  "bootstrap_modules": [
+    "pyi_rth__tkinter",
+    "pyi_rth_inspect",
+    "pyi_rth_multiprocessing",
+    "pyi_rth_pkgutil",
+    "pyi_rth_setuptools",
+    "pyiboot01_bootstrap",
+    "pyimod01_archive",
+    "pyimod02_importers",
+    "pyimod03_ctypes",
+    "pyimod04_pywin32",
+    "struct"
+  ],
+  "runtime_options": [
+    "pyi-contents-directory _internal"
+  ],
+  "dependency_opaque_files": {
+    "_tk_data/images/logo100.gif": "72f6b34d3c8f424ff0a290a793fcfbf34fd5630a916cd02e0a5dda0144b5957f",
+    "_tk_data/images/logo64.gif": "138c240382304f350383b02ed56c69103a9431c0544eb1ec5dcd7dec7a555dd9",
+    "_tk_data/images/logoLarge.gif": "0f404764d07a6ae2ef9e1e0e8eaac278b7d488d61cf1c084146f2f33b485f2ed",
+    "_tk_data/images/logoMed.gif": "4d0bd3228ab4cc3e5159f4337be969ec7b7334e265c99b7633e3daf3c3fcfb62",
+    "_tk_data/images/pwrdLogo100.gif": "bcc0e6458249433e8cba6c58122b7c0efa9557cbc8fb5f9392eed5d2579fc70b",
+    "_tk_data/images/pwrdLogo150.gif": "5fc25c30aee76477f1c4e922931cc806823df059525583ff5705705d9e913c1c",
+    "_tk_data/images/pwrdLogo175.gif": "62866e95501c436b329a15432355743c6efd64a37cfb65bcece465ab63ecf240",
+    "_tk_data/images/pwrdLogo200.gif": "bad9116386343f4a4c394bdb87146e49f674f687d52bb847bd9e8198fda382cc",
+    "_tk_data/images/pwrdLogo75.gif": "462a8ff8fd051a8100e8c6c086f497e4056ace5b20b44791f4aab964b010a448",
+    "_tk_data/images/tai-ku.gif": "e538f8f4934ca6e1ce29416d292171f28e67da6c72ed9d236ba42f37445ea41e",
+    "webview/lib/pywebview-android.jar": "3f9d3eeeda09ce58badbd742a981a463c067c339c8b4e70b404c00ebb4ec73a3"
+  }
+}
