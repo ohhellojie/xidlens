@@ -2,6 +2,7 @@
 .evidence-workspace{max-width:1260px;margin:0 auto;color:var(--text);font-size:14px;line-height:1.6}
 .evidence-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:26px}
 .evidence-heading h1{font-size:24px;margin:0 0 8px}.evidence-heading p{font-size:13px;color:var(--muted)}
+.evidence-assist{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}.evidence-assist .evidence-note{margin:8px 0 0}
 .evidence-layout{display:grid;grid-template-columns:minmax(230px,.8fr) minmax(360px,1.4fr);gap:30px;align-items:start}
 .evidence-list{min-width:0}.evidence-editing{min-width:0;border-left:1px solid var(--line);padding-left:30px}
 .evidence-section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px}

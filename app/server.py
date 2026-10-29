@@ -1,4 +1,4 @@
-"""仅监听本机的离线界面；不向外部服务发送日志。"""
+"""仅监听本机；模型辅助只发送用户明确确认的证据预览。"""
 from __future__ import annotations
 import argparse, concurrent.futures, errno, hashlib, json, os, secrets, select, sys, threading, time, uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,6 +14,7 @@ from report_data import normalize_report
 from log_reader import LogStore
 from sessions import SessionStore
 from evidence import EvidenceError, EvidenceStore
+import assistant
 import recovery
 
 ROOT=Path(__file__).resolve().parent
@@ -28,6 +29,7 @@ JSON_BODY_TIMEOUT=5
 EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
+ASSISTANT_LOCK=threading.Lock()
 CASE_CACHE={}
 RECOVERY={'recovered':0,'interrupted':0,'pending':0}
 INVALID_REPORTS=[]
@@ -385,6 +387,10 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
     def allowed(self):return self.headers.get('Host')==f'127.0.0.1:{self.server.server_port}'
     def authenticated(self):return self.allowed() and secrets.compare_digest(self.headers.get('X-Local-Token',''),TOKEN)
+    def assistant_authenticated(self):
+        origins=self.headers.get_all('Origin',[])
+        return (len(self.headers.get_all('Host',[]))==1 and len(self.headers.get_all('X-Local-Token',[]))==1
+                and len(origins)<=1 and (not origins or origins[0]==f'http://127.0.0.1:{self.server.server_port}') and self.authenticated())
     def read_json_body(self,limit=8192):
         lengths=self.headers.get_all('Content-Length',[])
         if len(lengths)!=1 or not lengths[0].isascii() or not lengths[0].isdecimal() or self.headers.get('Transfer-Encoding'):
@@ -421,10 +427,11 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError,ConnectionResetError,ConnectionAbortedError):pass
     def do_GET(self):
         url=urlparse(self.path)
+        if url.path.startswith('/api/assistant/') and not self.assistant_authenticated():return self.respond({'error':'拒绝访问','code':'forbidden'},403)
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
         if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).replace('__SIDEBAR_PINNED__',str(sidebar_pinned()).lower()).encode(),ctype='text/html; charset=utf-8')
         if url.path=='/reader.js':return self.respond((ROOT/'reader'/'reader.js').read_bytes(),ctype='application/javascript; charset=utf-8')
-        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/timeline.js','/timeline.css','/comparison.js','/evidence.js','/evidence.css','/structured.js','/structured.css','/demo.txt'):
+        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/timeline.js','/timeline.css','/comparison.js','/evidence.js','/evidence.css','/assistant.js','/assistant.css','/structured.js','/structured.css','/demo.txt'):
             kind='application/javascript' if url.path.endswith('.js') else 'text/css' if url.path.endswith('.css') else 'text/plain'
             return self.respond((ROOT/url.path[1:]).read_bytes(),ctype=kind+'; charset=utf-8')
         if url.path=='/diagnostics.js':return self.respond((ROOT/'diagnostics.js').read_bytes(),ctype='application/javascript; charset=utf-8')
@@ -434,6 +441,11 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
+        if url.path=='/api/assistant/protocol':
+            origin=self.headers.get('Origin')
+            if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求','code':'forbidden'},403)
+            if url.query:return self.respond({'error':'整理规则请求无效','code':'invalid_input'},400)
+            return self.respond(assistant.protocol())
         if url.path=='/api/evidence':
             origin=self.headers.get('Origin')
             if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
@@ -500,9 +512,36 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond({'error':'不存在的资源'},404)
     def do_POST(self):
         url=urlparse(self.path)
+        if url.path.startswith('/api/assistant/') and not self.assistant_authenticated():return self.respond({'error':'拒绝访问','code':'forbidden'},403)
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if url.path=='/api/assistant/run':
+            body=None;acquired=False
+            try:
+                if url.query:raise ValueError('unexpected query')
+                body=self.read_json_body(192*1024)
+                mode=body.get('mode','offline')
+                if mode=='offline':
+                    if set(body)-{'mode','input'} or 'input' not in body:raise ValueError('invalid offline input')
+                elif mode=='model':
+                    if set(body)-{'mode','confirmed','endpoint','apiKey','preview'} or not {'confirmed','endpoint','preview'}<=set(body):raise ValueError('invalid model input')
+                    acquired=ASSISTANT_LOCK.acquire(blocking=False)
+                    if not acquired:return self.respond({'error':'已有模型请求正在处理，请稍后重试','code':'busy'},409)
+                else:raise ValueError('invalid mode')
+                result=assistant.request_assistance(body)
+            except assistant.AssistanceError as exc:
+                status=504 if exc.code=='timeout' else 502 if exc.code in {'connection_failed','service_error','invalid_response','unknown_reference','incomplete_response','redirect_blocked','response_limit'} else 400
+                return self.respond({'error':str(exc),'code':exc.code},status)
+            except TimeoutError:return self.respond({'error':'请求传输超时，请重试','code':'request_timeout'},408)
+            except (ValueError,UnicodeError,TypeError,KeyError,RecursionError):return self.respond({'error':'证据辅助请求无效，请重新检查预览','code':'invalid_input'},400)
+            except Exception:return self.respond({'error':'证据辅助未完成，请稍后重试','code':'connection_failed'},500)
+            finally:
+                if isinstance(body,dict):body.pop('apiKey',None)
+                body=None
+                # Client cancellation never releases a still-running model request.
+                if acquired:ASSISTANT_LOCK.release()
+            return self.respond(result)
         if url.path in ('/api/evidence/save','/api/evidence/delete','/api/evidence/preview'):
             action=url.path.rsplit('/',1)[-1]
             if RECOVERY['pending'] and action!='delete':return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)

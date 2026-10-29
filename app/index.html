@@ -78,6 +78,7 @@ button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padd
 <link rel="stylesheet" href="/sessions.css">
 <link rel="stylesheet" href="/timeline.css">
 <link rel="stylesheet" href="/evidence.css">
+<link rel="stylesheet" href="/assistant.css">
 <link rel="stylesheet" href="/structured.css">
 </head>
 <body>
@@ -124,7 +125,7 @@ button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padd
    <button class="btn" id="manage-reports" data-page="reports">报告管理</button><button class="btn primary" data-action="import" id="import-button"></button><button class="btn" data-action="export" id="export-button" aria-haspopup="menu" aria-expanded="false"></button><span class="top-divider"></span><button class="btn quiet icon-btn theme-button" data-action="theme" aria-label="切换深色外观" title="切换外观" id="theme-button"></button>
   </header>
   <main class="content" id="content"></main>
-  <footer class="statusbar"><span id="status" role="status"></span><span>日志在本机处理</span></footer>
+  <footer class="statusbar"><span id="status" role="status"></span><span id="local-processing-note">日志在本机处理</span></footer>
  </div>
  <dialog class="drawer" id="drawer" aria-labelledby="drawer-title"></dialog>
  <div class="menu" id="export-menu" role="menu" aria-label="导出格式" hidden></div>
@@ -140,6 +141,7 @@ button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padd
 <script src="/timeline.js" defer></script>
 <script src="/sessions.js" defer></script>
 <script src="/evidence.js" defer></script>
+<script src="/assistant.js" defer></script>
 <script src="/structured.js" defer></script>
 <script src="/app.js" defer></script>
 </body>

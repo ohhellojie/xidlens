@@ -8,9 +8,9 @@
   <a href="README.en.md">English</a>
 </p>
 
-XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持完整日志阅读、设备信息提取、Xid 错误分析、状态检查和拓扑可视化。日志在本机解析。
+XidLens 在本机解析 NVIDIA GPU 日志，整理设备信息、错误和状态检查结果，并提供原文定位。支持多份日志联合分析、事件时间线、报告对比和脱敏片段分享。
 
-[![XidLens 主页：服务器信息、GPU 清单和设备详情](docs/images/devices.jpg)](docs/images/devices.jpg)
+[![设备信息：服务器信息、GPU 清单和设备详情](docs/images/devices.jpg)](docs/images/devices.jpg)
 
 *设备信息页。截图使用演示数据，点击查看原图。*
 
@@ -18,28 +18,41 @@ XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持完整日志阅
 
 1. 从 [Releases](https://github.com/ohhellojie/xidlens/releases/latest) 下载 Windows x64 ZIP 包。
 2. 解压，双击 `XidLens.exe`。
-3. 点击导入日志，选择日志文件。
+3. 点击导入日志，选择文件；也可先查看内置示例。
 
 支持 Windows 10 和 Windows 11，需安装 Microsoft Edge WebView2 Runtime。界面为中文。
 
-## 完整日志阅读
-
-搜索全文、跳转行号，右侧滚动条标出匹配项和异常位置。分析结果可直接跳到对应原文，支持专注阅读，切换页面或日志后保留阅读位置。
-
-[![完整日志阅读：全文搜索、行号跳转和右侧位置标记](docs/images/reader.jpg)](docs/images/reader.jpg)
-
-## 日志分析
+## 诊断与原文
 
 支持 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 的文本输出，以及 GZ、ZIP 和 TAR 压缩包。
 
-- **设备信息**：提取服务器信息和 GPU 清单，包括型号、序列号、UUID 和 PCI 地址。
-- **错误记录**：按设备归类 Xid、初始化失败和 PCIe 错误，保留原文和行号。
-- **状态解析**：解析 `nvidia-smi -q` 参数，提供字段说明，支持切换不同采集结果。
-- **异常检查**：检查 PCIe 链路、ECC 和行重映射等状态，标记错误、待核实项和缺失数据。
+- **诊断概览**：筛选重点发现，查看判断依据、证据和下一步。未见异常、数据缺失和字段冲突分别显示。
+- **设备与状态**：提取服务器和 GPU 身份，查看 `nvidia-smi -q` 采集块，检查 PCIe 链路、ECC 和行重映射等状态。
+- **事件时间线**：按设备、类型和时间筛选错误、驱动加载、明确的重置结果及状态快照，保留来源与启动分段。
 
 [![异常检查：在设备矩阵中选择 ECC 记录，右侧显示计数和判断依据](docs/images/checks.jpg)](docs/images/checks.jpg)
 
-检查结果附有判断依据和日志原文，数据不足的项目会单独标记。字段含义与采集方法见[状态与拓扑](docs/diagnostics.md)。
+分析结果可跳到对应原文。完整日志支持全文搜索、行号跳转和专注阅读，切换页面或报告后保留阅读位置。
+
+[![完整日志阅读：全文搜索、行号跳转和右侧位置标记](docs/images/reader.jpg)](docs/images/reader.jpg)
+
+## 多份日志与对比
+
+在报告管理中选择同次采集的文件建立联合分析，集中查看设备、事件、检查和时间线。每条来源都能打开对应报告的原始行。
+
+选择两份报告可对比设备参数、错误记录和计数字段。GPU 按唯一且一致的 SN 或 UUID 匹配；计数变化需满足可比条件，缺失、冲突和不可比原因分别保留。两侧原文可并排核对，操作与判断条件见[使用说明](docs/usage.md)。
+
+## 证据与分享
+
+在日志中选择行范围，保存带备注和标签的证据书签。选择书签后生成脱敏预览，检查或编辑片段、来源名和备注，确认后导出 TXT 或 JSON。
+
+证据辅助默认在本机摘录所选片段，不调用 AI。也可选择本机模型或自选 HTTPS 兼容 API，核对脱敏片段、补充说明、接口和模型后，点击确认发送。仅发送本次选中的内容；返回的观察、待核实事项和摘要附有引用，摘要可编辑、复制。配置与数据处理条件见[证据辅助](docs/evidence-assistant.md)。
+
+## DCGM 与事件格式
+
+导入 DCGM JSON 后，按结果、实体或测试名称筛选，多次运行时可按运行筛选。通过、失败、警告、跳过、未运行和未知结果分别显示，运行错误单列；详情保留原始行号和 JSON Pointer。
+
+NVSwitch SXid 与 GPU Xid 分开归属。GOE 为实验性解析，保留完整事件类型、作用范围和来源。支持格式与版本条件见[结构化诊断结果与事件](docs/structured-events.md)。
 
 ## 拓扑可视化
 
@@ -47,19 +60,16 @@ XidLens 是一款离线的 NVIDIA GPU 日志分析工具，支持完整日志阅
 
 [![机器拓扑：GPU 互联矩阵，右侧显示连接类型与亲和性](docs/images/topology.jpg)](docs/images/topology.jpg)
 
-连接树将上游未确认的设备集中列出。物理槽位按设备标签核对。
+上游未确认的设备单独列出。字段含义、采集命令和槽位核对方法见[状态与拓扑](docs/diagnostics.md)。
 
-## 对比与导出
+## 文档与更新
 
-按唯一的序列号或 UUID 匹配 GPU，对比设备参数和错误记录，并列出未匹配的设备。两份日志的原文可并排查看。
+设备清单可复制到 Excel 或导出为 TSV，日志摘要导出为 TXT，完整记录导出为 JSON。报告、日志副本、书签和设置保存在 `runtime` 文件夹，升级时需保留。
 
-设备清单可复制到 Excel 或导出为 TSV，日志摘要导出为 TXT，完整记录导出为 JSON。
-
-## 文档
-
-内置 Xid 说明和排查手册，可独立更新。软件支持后台检查新版本，更新由用户确认。报告、日志副本和设置保存在 `runtime` 文件夹，升级时需保留。
+内置 Xid 说明和排查手册可独立更新。软件默认联网检查新版本，可在设置中关闭；下载与安装由用户确认。
 
 - [使用说明](docs/usage.md) · [日志采集与判断范围](docs/diagnostics.md)
+- [结构化结果](docs/structured-events.md) · [证据辅助](docs/evidence-assistant.md)
 - [资料更新](docs/reference-packages.md) · [解析规则](docs/catalog.md)
 - [源码运行与构建](docs/development.md) · [贡献说明](CONTRIBUTING.md)
 

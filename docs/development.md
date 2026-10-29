@@ -2,7 +2,7 @@
 
 ## 从源码运行
 
-需要 Windows、Python 3.12 或更高版本，以及 Microsoft Edge WebView2 Runtime。
+桌面窗口需要 Windows、Python 3.12 或更高版本，以及 Microsoft Edge WebView2 Runtime。
 
 ```sh
 git clone https://github.com/ohhellojie/xidlens.git
@@ -15,26 +15,34 @@ python app/main.py
 
 ## 检查
 
-Python 测试使用上述依赖；前端测试与构建使用 Node.js 24.22.1 或更新的 24.x 和 npm。
-
-联网下载仅信任随应用打包的 certifi 公共证书库，要求版本为 2026.10.19 或更新版本。使用企业 HTTPS 代理时，其证书链也须通过该证书库校验。
+测试可在 Windows 和 Ubuntu 上执行。使用 Python 3.12 或更高版本、Node.js 24.22.1 或更新的 24.x；以下命令从仓库根目录运行。Python 依赖文件会按平台安装所需组件。
 
 ```sh
+python -m pip install -r requirements-desktop.txt
 python -m unittest discover -s tests -v
-node tests/test_analysis.cjs
-node tests/test_topology.cjs
-node tests/test_report_time.cjs
-node tests/test_exports.cjs
-node tests/test_diagnostics.cjs
-node tests/test_import_ui.cjs
-node tests/test_update_ui.cjs
-node tests/test_state_ui.cjs
-node tests/test_reader_ui.cjs
+python -c "from pathlib import Path; import subprocess; [subprocess.run(['node', str(path)], check=True) for path in sorted(Path('tests').glob('test_*.cjs'))]"
 python tools/check_repository.py
 git diff --check
 ```
 
+JavaScript 命令运行 `tests` 下全部 `test_*.cjs`，任一失败时退出并返回错误。测试覆盖解析、读取与恢复、报告管理、联合分析、时间线、对比、证据导出、结构化结果和证据辅助。模型测试使用合成片段、模拟响应和本机服务，不需要 API 密钥或外部模型。运行 API 测试时需允许本机回环连接。
+
+只验证对应功能时，可执行：
+
+```sh
+python -m unittest discover -s tests -p "test_structured*.py" -v
+node tests/test_structured_ui.cjs
+node tests/test_structured_views.cjs
+python -m unittest discover -s tests -p "test_assistant.py" -v
+node tests/test_assistant_ui.cjs
+node tests/test_evidence_assistant.cjs
+```
+
+功能修改还需运行相关宿主与来源跳转测试；完整回归使用上面的全部测试命令。
+
 ## 构建 Windows x64
+
+在 Windows 上执行。前端构建还需要 npm。
 
 ```sh
 python -m pip install -r requirements-build.txt
@@ -48,11 +56,13 @@ python tools/package_release.py
 
 EXE 位于 `dist/XidLens.exe`；便携 ZIP 和 SHA-256 清单位于 `dist/release`。自定义规则的构建方式见[规则说明](catalog.md)，独立中文资料包的生成方式见[资料更新](reference-packages.md)。
 
+软件和资料更新的 HTTPS 下载使用随应用打包的 certifi 公共证书库；版本要求由依赖文件固定。企业 HTTPS 代理的证书链也须通过该证书库校验。可选模型接口的连接与证书规则见[证据辅助](evidence-assistant.md)。
+
 ## 公开内容检查
 
 提交或发布前执行：
 
-```powershell
+```sh
 python tools/privacy_guard.py --install-hooks
 python tools/privacy_guard.py --history
 ```

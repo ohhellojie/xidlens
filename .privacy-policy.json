@@ -48,6 +48,7 @@
     ]
   },
   "owned_python_modules": [
+    "assistant",
     "catalog",
     "desktop",
     "diagnostics",
@@ -90,6 +91,8 @@
     "timeline.css",
     "evidence.js",
     "evidence.css",
+    "assistant.js",
+    "assistant.css",
     "structured.js",
     "structured.css"
   ],

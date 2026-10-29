@@ -4,13 +4,16 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;
 const categories={host:'主机名',serial:'序列号',uuid:'UUID',ip:'IP 地址',path:'路径'};
 const warning='自动脱敏不能覆盖全部自由文本。请检查预览中的名称、备注和原文，再下载分享。';
 const freshDraft=()=>({id:'',start:1,end:1,title:'',note:'',tags:''});
-let context=null,report=null,activeId='',activeScope='',revision=0,pendingRange=null;
-const state={data:null,loading:false,busy:false,message:'',error:'',draft:freshDraft(),dirty:false,selected:new Set(),deleteId:'',options:{host:true,serial:true,uuid:true,ip:true,path:true},extra:'',preview:null,format:'text',reviewed:false};
-function invalidate(){state.preview=null;state.reviewed=false;}
+let context=null,report=null,activeId='',activeScope='',revision=0,pendingRange=null,pendingDraft=null;
+const state={data:null,loading:false,busy:false,message:'',error:'',draft:freshDraft(),dirty:false,selected:new Set(),deleteId:'',options:{host:true,serial:true,uuid:true,ip:true,path:true},extra:'',preview:null,previewEdited:false,format:'text',reviewed:false};
+const scopeFor=(data,ctx)=>JSON.stringify([ctx?.caseId||ctx?.id||'',data?.contentSha256||'',ctx?.revision||'',data?.source||'',data?.sourceMember||'']);
+function invalidate(){state.preview=null;state.previewEdited=false;state.reviewed=false;}
 function repaint(){context?.render?.();}
 const api=(url,options)=>context.api(url,options);
 const post=(action,payload)=>api('/api/evidence/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:activeId,revision:state.data.revision,identity:state.data.identity,...payload})});
-function reset(){revision++;activeId='';activeScope='';pendingRange=null;Object.assign(state,{data:null,loading:false,busy:false,message:'',error:'',draft:freshDraft(),dirty:false,selected:new Set(),deleteId:'',options:{host:true,serial:true,uuid:true,ip:true,path:true},extra:'',preview:null,format:'text',reviewed:false});}
+function reset(){revision++;activeId='';activeScope='';pendingRange=null;pendingDraft=null;Object.assign(state,{data:null,loading:false,busy:false,message:'',error:'',draft:freshDraft(),dirty:false,selected:new Set(),deleteId:'',options:{host:true,serial:true,uuid:true,ip:true,path:true},extra:'',preview:null,previewEdited:false,format:'text',reviewed:false});}
+function captureDraft(){return state.data&&activeId?{caseId:activeId,revision:state.data.revision,identity:state.data.identity,draft:{...state.draft},dirty:state.dirty}:null;}
+function restoreDraft(value){pendingDraft=value;}
 function acceptData(result,id){
  if(result?.id!==id)throw Error('书签来源不匹配，请刷新后重试');
  const changed=state.data&&(result.revision!==state.data.revision||result.identity!==state.data.identity);
@@ -21,7 +24,7 @@ function acceptData(result,id){
 async function load(){
  if(!activeId||state.loading)return;
  const request=++revision,id=activeId;state.loading=true;state.error='';invalidate();repaint();
- try{const result=await api('/api/evidence?id='+encodeURIComponent(id));if(request!==revision)return;acceptData(result,id);}
+ try{const result=await api('/api/evidence?id='+encodeURIComponent(id));if(request!==revision)return;acceptData(result,id);if(pendingDraft){const saved=pendingDraft;pendingDraft=null;if(saved.caseId===id&&saved.revision===result.revision&&saved.identity===result.identity){state.draft={...saved.draft};state.dirty=saved.dirty;}else state.message='原文版本已变更，请重新核对标注。';}}
  catch(error){if(request===revision)state.error=error.message;}
  finally{if(request===revision){state.loading=false;repaint();}}
 }
@@ -41,7 +44,8 @@ async function ready(){
 async function run(action){
  if(state.busy||state.loading||!state.data)return;
  const id=activeId,request=revision;state.busy=true;state.error='';state.message='';repaint();
- const guard=()=>{if(activeId!==id||revision!==request)throw Error('已切换报告，请重新操作');};
+ const scope=activeScope;
+ const guard=()=>{if(activeId!==id||revision!==request||scopeFor(report,context)!==scope)throw Error('报告已变更，请重新操作');};
  try{await action(guard);}
  catch(error){if(activeId===id&&revision===request)state.error=error.message;}
  finally{if(activeId===id&&revision===request){state.busy=false;repaint();}}
@@ -50,7 +54,22 @@ async function refreshItems(guard){const data=await api('/api/evidence?id='+enco
 function serializeDraft(){const draft=state.draft;return {...draft,id:draft.id||undefined,start:Number(draft.start),end:Number(draft.end),tags:draft.tags.split(/[,，\n]/).map(s=>s.trim()).filter(Boolean)};}
 async function save(){return run(async guard=>{await ready();guard();const result=await post('save',{entry:serializeDraft()});guard();await refreshItems(guard);state.selected.add(result.item.id);state.draft={...result.item,tags:result.item.tags.join('，')};state.dirty=false;state.message='标注已保存';invalidate();});}
 async function remove(id){return run(async guard=>{await post('delete',{bookmarkId:id});guard();await refreshItems(guard);state.selected.delete(id);state.deleteId='';if(state.draft.id===id){state.draft=freshDraft();state.dirty=false;}state.message='书签已删除';invalidate();});}
-async function preview(){return run(async guard=>{if(state.dirty)throw Error('请先保存标注，再生成预览');if(!state.selected.size)throw Error('请先选择要分享的书签');if(state.selected.size>100)throw Error('每次最多导出 100 个书签，请减少选择');await ready();guard();const result=await post('preview',{ids:[...state.selected],options:{redact:state.options,extra:state.extra.split('\n').map(s=>s.trim()).filter(Boolean)}});guard();state.preview=result;state.reviewed=false;state.message='预览已生成，请检查后下载';});}
+const previewOptions=()=>({redact:{...state.options},extra:state.extra.split('\n').map(s=>s.trim()).filter(Boolean)});
+async function preview(){return run(async guard=>{if(state.dirty)throw Error('请先保存标注，再生成预览');if(!state.selected.size)throw Error('请先选择要分享的书签');if(state.selected.size>100)throw Error('每次最多导出 100 个书签，请减少选择');await ready();guard();const result=await post('preview',{ids:[...state.selected],options:previewOptions()});guard();state.preview=result;state.previewEdited=false;state.reviewed=false;state.message='预览已生成，请检查后下载';});}
+const assistNote=()=>state.previewEdited?'按已保存标注生成，不包含导出预览的临时编辑。进入后重新核对。':'按已保存标注生成，进入后逐条核对。';
+async function assist(){
+ if(typeof context?.onAssist!=='function')return;
+ return run(async guard=>{
+  if(state.dirty)throw Error('请先保存标注，再整理书签');
+  if(!state.selected.size||state.selected.size>32)throw Error('每次整理 1 至 32 个书签，请调整选择');
+  const ids=[...state.selected],options=previewOptions(),binding={caseId:activeId,revision:state.data.revision,identity:state.data.identity},exportEdited=state.previewEdited;
+  await ready();guard();
+  const result=await post('preview',{ids,options});guard();
+  if(!Array.isArray(result?.package?.items)||result.package.items.length!==ids.length)throw Error('书签预览不完整，请重新生成');
+  try{context.onAssist({package:result.package,binding,exportEdited});}
+  catch(error){throw Error(error?.assistantSafe?error.message:'整理未完成，请重新选择书签');}
+ });
+}
 function entryRow(item){
  return `<article class="evidence-bookmark ${state.draft.id===item.id?'is-selected':''}"><div class="evidence-bookmark-main"><input type="checkbox" id="evidence-select-${esc(item.id)}" data-evidence-select="${esc(item.id)}" aria-label="选择 ${esc(item.title||'第 '+item.start+' 行片段')}" ${state.selected.has(item.id)?'checked':''} ${item.stale||state.busy?'disabled':''}><button class="evidence-bookmark-open" data-evidence="edit" data-value="${esc(item.id)}"><strong>${esc(item.title||'证据片段')}</strong><span>第 ${item.start}–${item.end} 行</span>${item.tags.length?`<span class="evidence-tags">${item.tags.map(esc).join(' · ')}</span>`:''}</button></div>${item.note?`<p class="evidence-bookmark-note">${esc(item.note)}</p>`:''}${item.stale?'<p class="evidence-stale">原日志已变更，请重新选取片段。</p>':''}<div class="evidence-bookmark-actions"><button class="link-btn" data-evidence="source" data-value="${esc(item.id)}" ${item.stale?'disabled':''}>查看原文</button>${state.deleteId===item.id?`<span>删除此书签？</span><button class="link-btn" data-evidence="confirm-delete" data-value="${esc(item.id)}" ${state.busy?'disabled':''}>删除</button><button class="link-btn" data-evidence="cancel-delete">取消</button>`:`<button class="link-btn" data-evidence="delete" data-value="${esc(item.id)}" ${state.busy?'disabled':''}>删除</button>`}</div></article>`;
 }
@@ -60,7 +79,7 @@ function editor(){
 }
 function sharing(){
  const disabled=state.busy||state.loading||!state.data;
- return `<section class="evidence-sharing"><div class="evidence-section-heading"><h2>分享选中片段</h2><span>${state.selected.size} / 100 个书签</span></div><fieldset class="evidence-redactions" ${disabled?'disabled':''}><legend>脱敏字段</legend>${Object.entries(categories).map(([key,label])=>`<label><input type="checkbox" id="evidence-option-${key}" data-evidence-option="${key}" ${state.options[key]?'checked':''}>${label}</label>`).join('')}</fieldset><label class="evidence-field">其他需隐藏的文字<textarea rows="2" maxlength="20100" id="evidence-extra" data-evidence-input="extra" placeholder="每行一项，如自由文本中的名称" ${disabled?'disabled':''}>${esc(state.extra)}</textarea></label><p class="evidence-note">备注和标签一并脱敏。</p>${Object.values(state.options).some(v=>!v)?'<p class="evidence-stale">已关闭部分字段脱敏，请核对预览。</p>':''}${state.selected.size>100?'<p class="evidence-stale" role="status">每次最多导出 100 个书签，请减少选择。</p>':''}<button class="btn" data-evidence="preview" ${disabled||!state.selected.size||state.selected.size>100?'disabled':''}>生成预览</button></section>`;
+ return `<section class="evidence-sharing"><div class="evidence-section-heading"><h2>分享选中片段</h2><span>${state.selected.size} / 100 个书签</span></div><fieldset class="evidence-redactions" ${disabled?'disabled':''}><legend>脱敏字段</legend>${Object.entries(categories).map(([key,label])=>`<label><input type="checkbox" id="evidence-option-${key}" data-evidence-option="${key}" ${state.options[key]?'checked':''}>${label}</label>`).join('')}</fieldset><label class="evidence-field">其他需隐藏的文字<textarea rows="2" maxlength="20100" id="evidence-extra" data-evidence-input="extra" placeholder="每行一项，如自由文本中的名称" ${disabled?'disabled':''}>${esc(state.extra)}</textarea></label><p class="evidence-note">备注和标签一并脱敏。</p>${Object.values(state.options).some(v=>!v)?'<p class="evidence-stale">已关闭部分字段脱敏，请核对预览。</p>':''}${state.selected.size>100?'<p class="evidence-stale" role="status">每次最多导出 100 个书签，请减少选择。</p>':''}<button class="btn" data-evidence="preview" ${disabled||!state.selected.size||state.selected.size>100?'disabled':''}>生成预览</button>${typeof context?.onAssist==='function'?`<div class="evidence-assist"><button class="btn" data-evidence="assist" ${disabled||!state.selected.size||state.selected.size>32?'disabled':''}>按书签整理</button><p class="evidence-note" data-evidence-assist-note>${assistNote()}</p>${state.selected.size>32?'<p class="evidence-stale" role="status">每次最多整理 32 个书签，请减少选择。</p>':''}</div>`:''}</section>`;
 }
 function previewHtml(){
  if(!state.preview)return '';
@@ -71,8 +90,8 @@ function previewHtml(){
 function render(data,ctx){
  context=ctx;report=data;
  const id=ctx.caseId||ctx.id||'';
- const scope=JSON.stringify([id,data?.contentSha256||'',ctx.revision||'',data?.source||'',data?.sourceMember||'']);
- if(id!==activeId||scope!==activeScope){const range=pendingRange;reset();pendingRange=range;activeId=id;activeScope=scope;if(id)Promise.resolve().then(load);}
+ const scope=scopeFor(data,ctx);
+ if(id!==activeId||scope!==activeScope){const range=pendingRange,draft=pendingDraft;reset();pendingRange=range;pendingDraft=draft;activeId=id;activeScope=scope;if(id)Promise.resolve().then(load);}
  if(pendingRange){if(!pendingRange.caseId||pendingRange.caseId===id){state.draft={...freshDraft(),start:pendingRange.start,end:pendingRange.end};state.dirty=false;}pendingRange=null;}
  if(!data?.source||!id)return '<div class="evidence-workspace"><h1 tabindex="-1">证据与分享</h1><div class="live-empty"><h2>导入日志后标注证据</h2></div></div>';
  const items=state.data?.items||[];
@@ -81,11 +100,12 @@ function render(data,ctx){
 function selectRange(start,end=start,caseId=activeId){pendingRange={start:Number(start),end:Number(end),caseId};state.draft={...freshDraft(),start:pendingRange.start,end:pendingRange.end};state.dirty=false;state.error='';state.message='';invalidate();return state.draft;}
 function click(el){
  const action=el?.dataset?.evidence;if(!action||!context)return false;
- if((state.busy||state.loading)&&['refresh','edit','new','delete','confirm-delete','cancel-delete','select-all','save','preview','download'].includes(action))return true;
+ if((state.busy||state.loading)&&['refresh','edit','new','delete','confirm-delete','cancel-delete','select-all','save','preview','assist','download'].includes(action))return true;
  const id=el.dataset.value,item=state.data?.items.find(x=>x.id===id);
  if(action==='refresh'){invalidate();load();return true;}
  if(action==='save'){save();return true;}
  if(action==='preview'){preview();return true;}
+ if(action==='assist'){assist();return true;}
  if(action==='confirm-delete'){remove(id);return true;}
  if(action==='edit'&&item){state.draft={...item,tags:item.tags.join('，')};state.dirty=false;state.error='';}
  else if(action==='new')selectRange(1);
@@ -107,7 +127,7 @@ function input(el){
  const key=el?.dataset?.evidenceInput;if(!key)return false;
  if(state.busy||state.loading)return true;
  if(key==='extra'){state.extra=el.value;invalidate();if(typeof document!=='undefined')document.querySelector('.evidence-preview')?.remove();}
- else if(key==='preview'&&state.preview){state.preview[state.format==='json'?'json':'text']=el.value;state.reviewed=false;const check=typeof document==='undefined'?null:document.querySelector('[data-evidence-reviewed]');if(check)check.checked=false;const button=typeof document==='undefined'?null:document.querySelector('[data-evidence="download"]');if(button)button.disabled=true;}
+ else if(key==='preview'&&state.preview){state.preview[state.format==='json'?'json':'text']=el.value;state.previewEdited=true;state.reviewed=false;const note=typeof document==='undefined'?null:document.querySelector('[data-evidence-assist-note]');if(note)note.textContent=assistNote();const check=typeof document==='undefined'?null:document.querySelector('[data-evidence-reviewed]');if(check)check.checked=false;const button=typeof document==='undefined'?null:document.querySelector('[data-evidence="download"]');if(button)button.disabled=true;}
  else if(Object.hasOwn(state.draft,key)){state.draft[key]=el.value;state.dirty=true;invalidate();if(typeof document!=='undefined')document.querySelector('.evidence-preview')?.remove();}
  else return false;
  return true;
@@ -122,6 +142,6 @@ function change(el){
  else return false;
  repaint();return true;
 }
-const exported={render,click,input,change,reset,selectRange,load,save,preview,serializeDraft};
+const exported={render,click,input,change,reset,selectRange,load,save,preview,assist,serializeDraft,captureDraft,restoreDraft};
 if(typeof module!=='undefined'&&module.exports)module.exports={...exported,state,esc};else root.XidEvidence=exported;
 })(globalThis);
