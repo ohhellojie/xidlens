@@ -11,12 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Audit source history; Checks tests the platform-generated merge.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Test privacy checks
-        run: python -m unittest discover -s tests -p test_privacy_guard.py -v
+        run: python -m unittest discover -s tests -p 'test_privacy*.py' -v
       - name: Check public history
         run: python tools/privacy_guard.py --history
       - run: git diff --check
