@@ -259,7 +259,13 @@ class EvidenceApiTests(unittest.TestCase):
         item = self.save(note='文'*4000)
         options = {'extra': [str(index)+'文'*197 for index in range(100)]}
         self.assertEqual(200, self.preview(item, options=options)[0])
-        self.assertEqual(400, self.request('/api/evidence/save', raw=b' '*(128*1024+1))[0])
+        before = {path.name: path.read_bytes() for path in self.s.EVIDENCE.root.iterdir()}
+        # Oversized requests are rejected from headers before reading a body.
+        with patch.object(self.s.EVIDENCE, 'save') as save:
+            self.assertEqual(400, self.request('/api/evidence/save', method='POST',
+                headers={'Content-Length': str(128*1024+1)})[0])
+            save.assert_not_called()
+        self.assertEqual(before, {path.name: path.read_bytes() for path in self.s.EVIDENCE.root.iterdir()})
         for length in ('-1', '+20', 'invalid', '99999999999999999999'):
             self.assertEqual(400, self.request('/api/evidence/save', raw=b'{}', headers={'Content-Length': length})[0])
         self.assertEqual(400, self.request('/api/evidence/save', raw=b'{}', headers={'Transfer-Encoding': 'chunked'})[0])
