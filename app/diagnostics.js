@@ -33,6 +33,7 @@ const parameterInfo=f=>{const text=f.description&&!f.description.startsWith('设
 const split=(body,detail)=>`<div class="workspace-split diag-split ${state.detailHidden?'diag-wide':''}"><section class="workspace-main diag-main">${body}</section><aside class="inspector diag-detail" data-scroll-key="${context.state.page}-detail" ${state.detailHidden?'hidden':''}>${detail}</aside></div>`;
 const section=(title,body)=>`<div class="detail-section"><h3>${esc(title)}</h3>${body}</div>`;
 const checkList=address=>checksByAddress.get(address)||[];
+const checkTitle=c=>c.title+(/\/Volatile\//.test(c.path||'')?'（易失性）':/\/Aggregate\//.test(c.path||'')?'（累计）':'');
 function checkDetail(c){return c?`<div class="inspector-title">${badge(c.status)}<h2>${esc(c.title)}</h2><p class="mono">${esc(c.address||'报告')}</p></div>${section('观测结果',`<p>${esc(c.observation)}</p>`)}${section('判断依据',`<p>${esc(c.basis)}</p>`)}${evidence(c.evidence)}<div class="detail-actions">${c.address?button('locate',c.address,'定位到拓扑'):''}${c.snapshot?button('snapshot',c.snapshot,'查看状态字段'):''}</div>`:'<div class="live-empty">没有匹配的检查项</div>';}
 function gpuPicker(g){
  if(!g)return '';
@@ -60,7 +61,7 @@ function statusView(){
  const detail=f?`<div class="inspector-title"><h2>${esc(f.name)}</h2><p class="diag-value">${esc(f.value)}</p></div>${parameterInfo(f)}${related.length?section('检查结果',related.map(c=>`<p>${badge(c.status)} ${esc(c.title)}</p>${button('check',c.id,'查看检查')}`).join('')):''}<div class="field-references">${evidence([f.evidence])}<a href="https://docs.nvidia.com/deploy/nvidia-smi/index.html" target="_blank" rel="noopener noreferrer">参数文档 ↗</a></div>`:'<div class="live-empty">没有可显示的参数</div>';
  return cards+split(body+pager(fields,'fieldPage'),detail);
 }
-const checkColumns={read:'字段读取',link:'PCIe 链路',CESta:'CESta',UESta:'UESta',DevSta:'DevSta',driver:'驱动绑定',health:'状态参数',aer:'AER',report:'报告检查',other:'其他检查'};
+const checkColumns={health:'状态参数',read:'字段读取',link:'PCIe 链路',CESta:'CESta',UESta:'UESta',DevSta:'DevSta',driver:'驱动绑定',aer:'AER',report:'报告检查',other:'其他检查'};
 const checkKinds={gpu:'GPU',nic:'NIC',other:'其他 PCIe 设备',report:'报告'};
 const priority={error:0,review:1,missing:2,ok:3};
 const checkIcon=name=>context.icon?context.icon(name,'small-icon'):'';
@@ -97,8 +98,8 @@ function checkCell(row,col){
 }
 function checkStatus(status,text){return `<span class="check-state check-state-${esc(status)}">${checkIcon(status==='error'?'errors':status==='review'?'info':status==='ok'?'check':status==='missing'?'info':'rows')}<span>${esc(text)}</span></span>`;}
 function checkCellContent(cell,col){
- if(['collected','na','filtered','none'].includes(cell.status))return '';
- if(cell.status==='ok')return col==='driver'?`<span class="check-plain-value">${esc(cell.items.map(c=>c.observation).filter(Boolean).join(' / '))}</span>`:'';
+ if(['collected','na','filtered','none'].includes(cell.status))return `<span class="check-neutral-state">${esc(cell.text)}</span>`;
+ if(cell.status==='ok')return col==='driver'?`<span class="check-plain-value">${esc(cell.items.map(c=>c.observation).filter(Boolean).join(' / '))}</span>`:checkStatus('ok','未见异常');
  return checkStatus(cell.status,cell.text);
 }
 function checkCollectedDetail(row,col){
@@ -157,7 +158,7 @@ function nodeDetail(address){
  const n=report.nodes[address],g=report.gpus.find(g=>g.pci===address),edge=report.diagnostics.topology.find(x=>x.address===address);
  if(!n&&!g)return '<div class="live-empty">未选择设备</div>';
  const refs=[...(n?.evidence?[n.evidence]:[]),...Object.values(n?.fields||{}).flat().map(v=>v.evidence),...(edge?.evidence||[])];
- return `<div class="inspector-title"><h2>${esc(g?.label||(n?.kind==='vf'?'SR-IOV 虚拟功能':n?.kind)||'PCIe 设备')}</h2><p>${esc(n?.description||g?.model)}</p><p class="mono">${esc(address)}</p></div>${section('连接参数',`${n?.physicalFunction?`<p>由物理功能提供的 SR-IOV 虚拟功能（VF）。</p>`:''}<p>${n?.physicalFunction?'所属 PF':'上游'}：${esc(edge?.ambiguous?'关联有歧义':edge?.parent||'未提供')}</p><p>NUMA：${esc(fieldValue(n,'numa')||'未提供')}</p><p>当前链路：${esc(fieldValue(n,'link')||'未提供')}</p><p>最大能力：${esc(fieldValue(n,'link_max')||'未提供')}</p><p>驱动：${esc(fieldValue(n,'driver')||'未提供')}</p>`)}${checkList(address).length?section('相关检查',checkList(address).map(c=>button('check',c.id,c.title)).join('')):''}${g?`<div class="detail-actions">${button('status',g.id,'查看 GPU 状态')}</div>`:''}${evidence(refs)}`;
+ return `<div class="inspector-title"><h2>${esc(g?.label||(n?.kind==='vf'?'SR-IOV 虚拟功能':n?.kind)||'PCIe 设备')}</h2><p>${esc(n?.description||g?.model)}</p><p class="mono">${esc(address)}</p></div>${section('连接参数',`${n?.physicalFunction?`<p>由物理功能提供的 SR-IOV 虚拟功能（VF）。</p>`:''}<p>${n?.physicalFunction?'所属 PF':'上游'}：${esc(edge?.ambiguous?'关联有歧义':edge?.parent||'未提供')}</p><p>NUMA：${esc(fieldValue(n,'numa')||'未提供')}</p><p>当前链路：${esc(fieldValue(n,'link')||'未提供')}</p><p>最大能力：${esc(fieldValue(n,'link_max')||'未提供')}</p><p>驱动：${esc(fieldValue(n,'driver')||'未提供')}</p>`)}${checkList(address).length?section('相关检查',checkList(address).map(c=>button('check',c.id,checkTitle(c))).join('')):''}${g?`<div class="detail-actions">${button('status',g.id,'查看 GPU 状态')}</div>`:''}${evidence(refs)}`;
 }
 function treeView(){
  const d=report.diagnostics,parents=new Map(d.topology.map(n=>[n.address,n.parent]));

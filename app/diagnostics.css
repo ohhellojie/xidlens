@@ -269,3 +269,5 @@
 .field-references{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;padding-top:14px}.field-references .source-reference{padding-top:0}.field-references>a{font-size:12px;white-space:nowrap}
 
 .source-reference-list .source-location{width:100%;gap:10px}.source-location>span:first-child{flex-shrink:0}.source-preview{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:11px/1.5 var(--mono)}
+
+.check-neutral-state{font-size:11px;line-height:1.55;color:var(--muted);white-space:normal}.check-cell .check-state-ok{font-size:11px}

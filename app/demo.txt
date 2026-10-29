@@ -1,0 +1,47 @@
+NVIDIA bug report log file
+XidLens synthetic demonstration data
+*** dmidecode -t system
+System Information
+    Manufacturer: Example
+    Product Name: Demo Server
+    Serial Number: DEMO-SERVER-001
+*** lspci -Dnnvv
+0000:41:00.0 3D controller: NVIDIA A100 [10de:20b0]
+    Kernel driver in use: nvidia
+0000:81:00.0 3D controller: NVIDIA Example GPU [10de:20b0]
+    Kernel driver in use: nvidia
+0000:c1:00.0 3D controller: NVIDIA A100 [10de:20b0]
+    Kernel driver in use: nvidia
+*** nvidia-smi --query-gpu=index,pci.bus_id,uuid --format=csv
+index, pci.bus_id, uuid
+0, 00000000:41:00.0, GPU-DEMO-001
+1, 00000000:81:00.0, GPU-DEMO-002
+2, 00000000:c1:00.0, GPU-DEMO-003
+*** nvidia-smi -q
+Attached GPUs : 3
+GPU 00000000:41:00.0
+    Product Name : NVIDIA A100
+    GPU UUID : GPU-DEMO-001
+    ECC Errors
+        Volatile
+            DRAM Uncorrectable : 0
+    Remapped Rows
+        Pending : No
+        Remapping Failure Occurred : No
+GPU 00000000:c1:00.0
+    Product Name : NVIDIA A100
+    GPU UUID : GPU-DEMO-003
+    ECC Errors
+        Volatile
+            DRAM Uncorrectable : 2
+        Aggregate
+            DRAM Uncorrectable : 5
+    Remapped Rows
+        Pending : Yes
+*** /proc/driver/nvidia/gpus/0000:c1:00.0/information
+Model: NVIDIA H100
+GPU UUID: GPU-DEMO-003
+*** dmesg
+[ 12.345] NVRM: Xid (PCI:0000:c1:00): 79, GPU has fallen off the bus.
+[ 12.456] NVRM: Xid (PCI:0000:c1:00): 79, GPU has fallen off the bus.
+[ 13.123] NVRM: Xid (PCI:0000:c1:00): 999, example unknown event.
