@@ -58,6 +58,32 @@ function focusTests(){
  const search=node({},'overview-search'),searchKey=env.focusKey(search),replacement=node({},'overview-search');
  dom.push(replacement);env.restoreFocus(searchKey);assert.equal(replacement.focused,true,'Search input focus still works');
 }
+async function reportStateTests(){
+ const remember=source.slice(source.indexOf('function rememberCaseView('),source.indexOf('function openSource('));
+ const load=source.slice(source.indexOf('async function loadCase('),source.indexOf('async function refreshCases('));
+ const elements=new Map(),reports={a:{source:'a.log',contentSha256:'hash-a',gpus:[]},b:{source:'b.log',contentSha256:'hash-b',gpus:[]}};
+ let overview={selected:'a-error',filter:'error',query:'GPU',page:1,collect:true,evidenceLimit:40};
+ const savedA=structuredClone(overview);
+ const env={loadRequest:0,loadedCase:'a',loading:false,data:structuredClone(reports.a),state:{page:'overview',compareBase:'',drawer:false},
+  caseViews:new Map(),viewPositions:new Map(),renderedView:'',comparisonRequest:0,comparisonData:null,comparisonLoading:false,comparisonError:'',
+  readerReturn:null,pendingSource:null,structuredClone,saveViewPosition(){},closeMenu(){},closeDrawer(){},status(){},toast(){},render(){},
+  $(id){if(!elements.has(id))elements.set(id,{setAttribute(){}});return elements.get(id);},
+  api:async path=>{const report=reports[path.split('/').at(-1)];if(!report)throw Error('missing');return structuredClone(report);},
+  XidDiagnostics:{capture(){return {};},reset(){},restore(){}},
+  XidOverview:{capture(){return structuredClone(overview);},reset(){overview={selected:'',filter:'all'};},restore(value){overview=structuredClone(value);}},
+ };
+ vm.createContext(env);vm.runInContext(remember+load,env);
+ await env.loadCase('b');assert.equal(overview.selected,'');assert.equal(overview.filter,'all');
+ overview={selected:'b-missing',filter:'missing'};
+ await env.loadCase('a');assert.deepEqual(overview,savedA,'Returning to the same content restores overview selection and filters');
+ await env.loadCase('b');assert.equal(overview.selected,'b-missing');
+ reports.a.contentSha256='new-hash-a';await env.loadCase('a');
+ assert.equal(overview.selected,'','Changed content does not reuse old line-related state');assert.equal(overview.filter,'all');
+ overview={selected:'new-error',filter:'error'};await env.loadCase('a',true);
+ assert.equal(overview.selected,'','Forced reparse resets the overview');
+ overview={selected:'keep-this',filter:'conflict'};assert.equal(await env.loadCase('missing'),false);
+ assert.equal(env.loadedCase,'a');assert.equal(overview.selected,'keep-this','A failed report load preserves the current overview');
+}
 (async()=>{
  // A second click must not start another fetch or replace an active import dialog.
  {
@@ -98,5 +124,6 @@ function focusTests(){
   assert.equal(env.opened,0);assert.equal(env.imports,0);assert.equal(env.demoPending,false);
  }
  focusTests();
- console.log('Overview host: demo concurrency, failure recovery, import isolation and focus restoration passed');
+ await reportStateTests();
+ console.log('Overview host: demo concurrency, failure recovery, import isolation, focus and report state passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});

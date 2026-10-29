@@ -12,6 +12,7 @@ from knowledge import KnowledgeStore
 from version import VERSION
 from report_data import normalize_report
 from log_reader import LogStore
+from sessions import SessionStore
 import recovery
 
 ROOT=Path(__file__).resolve().parent
@@ -22,6 +23,7 @@ for p in (RUNTIME,RESULTS,UPLOADS,SOURCES):p.mkdir(parents=True,exist_ok=True)
 TOKEN=secrets.token_urlsafe(24);JOBS={};LOCK=threading.Lock()
 MAX_JOBS=128
 IMPORT_IDLE_TIMEOUT=30
+JSON_BODY_TIMEOUT=5
 EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
@@ -181,6 +183,15 @@ def read_case(key):
     except (ValueError,RecursionError) as exc:raise ValueError('报告数据损坏，请重新导入原日志') from exc
     report['id']=key
     return report,hashlib.sha256(raw).hexdigest()
+
+
+def session_report(key):
+    # SessionStore holds its own lock before calling this reader. Never acquire
+    # a session lock while holding RESULTS_LOCK elsewhere in the server.
+    with RESULTS_LOCK:return read_case(key)
+
+
+SESSIONS=SessionStore(RUNTIME/'sessions',session_report)
 
 
 def source_path(ref):
@@ -354,6 +365,33 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self,*args):pass
     def allowed(self):return self.headers.get('Host')==f'127.0.0.1:{self.server.server_port}'
     def authenticated(self):return self.allowed() and secrets.compare_digest(self.headers.get('X-Local-Token',''),TOKEN)
+    def read_json_body(self,limit=8192):
+        lengths=self.headers.get_all('Content-Length',[])
+        if len(lengths)!=1 or not lengths[0].isascii() or not lengths[0].isdecimal() or self.headers.get('Transfer-Encoding'):
+            raise ValueError('无效请求长度')
+        length=int(lengths[0])
+        if not 0<length<=limit:raise ValueError('无效请求长度')
+        old_timeout=self.connection.gettimeout();deadline=time.monotonic()+JSON_BODY_TIMEOUT
+        try:
+            chunks=[];remaining=length
+            while remaining:
+                wait=deadline-time.monotonic()
+                if wait<=0:raise TimeoutError('request timeout')
+                self.connection.settimeout(wait)
+                chunk=self.rfile.read(min(remaining,8192))
+                if not chunk:raise ValueError('请求未完成')
+                chunks.append(chunk);remaining-=len(chunk)
+            def pairs(items):
+                result={}
+                for key,value in items:
+                    if key in result:raise ValueError('重复字段')
+                    result[key]=value
+                return result
+            def constant(value):raise ValueError('无效数字')
+            body=json.loads(b''.join(chunks),object_pairs_hook=pairs,parse_constant=constant)
+            if not isinstance(body,dict):raise ValueError('无效请求')
+            return body
+        finally:self.connection.settimeout(old_timeout)
     def respond(self,data,status=200,ctype='application/json; charset=utf-8'):
         body=json.dumps(data,ensure_ascii=False).encode('utf-8') if ctype.startswith('application/json') else data
         self.send_response(status);self.send_header('Content-Type',ctype);self.send_header('Content-Length',str(len(body)))
@@ -366,7 +404,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
         if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).replace('__SIDEBAR_PINNED__',str(sidebar_pinned()).lower()).encode(),ctype='text/html; charset=utf-8')
         if url.path=='/reader.js':return self.respond((ROOT/'reader'/'reader.js').read_bytes(),ctype='application/javascript; charset=utf-8')
-        if url.path in ('/overview.js','/overview.css','/demo.txt'):
+        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/demo.txt'):
             kind='application/javascript' if url.path.endswith('.js') else 'text/css' if url.path.endswith('.css') else 'text/plain'
             return self.respond((ROOT/url.path[1:]).read_bytes(),ctype=kind+'; charset=utf-8')
         if url.path=='/diagnostics.js':return self.respond((ROOT/'diagnostics.js').read_bytes(),ctype='application/javascript; charset=utf-8')
@@ -376,6 +414,18 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
+        if url.path=='/api/sessions' or url.path.startswith('/api/session/'):
+            origin=self.headers.get('Origin')
+            if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+            try:
+                if url.path=='/api/sessions':return self.respond(SESSIONS.list())
+                key=url.path.removeprefix('/api/session/')
+                if not re_id(key):return self.respond({'error':'关联记录不存在'},404)
+                return self.respond(SESSIONS.get(key))
+            except FileNotFoundError:return self.respond({'error':'关联记录不存在'},404)
+            except (ValueError,TypeError,KeyError,RecursionError):return self.respond({'error':'关联记录数据损坏，请重新建立关联'},422)
+            except OSError:return self.respond({'error':'关联记录暂时无法读取，请重试'},503)
+            except Exception:return self.respond({'error':'关联读取失败，请重试'},500)
         if url.path.startswith('/api/log/'):
             q=parse_qs(url.query);value=lambda name,default='':q.get(name,[default])[0]
             key=value('id');revision=value('revision')
@@ -422,6 +472,22 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if url.path in ('/api/sessions/create','/api/sessions/refresh','/api/sessions/delete'):
+            if RECOVERY['pending'] and url.path!='/api/sessions/delete':
+                return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)
+            try:
+                body=self.read_json_body()
+                if url.path.endswith('/create'):
+                    if set(body)-{'ids','name'}:raise ValueError('无效字段')
+                    return self.respond(SESSIONS.create(body.get('ids'),body.get('name','')),201)
+                if set(body)!={'id'}:raise ValueError('无效字段')
+                result=SESSIONS.refresh(body['id']) if url.path.endswith('/refresh') else SESSIONS.delete(body['id'])
+                return self.respond(result)
+            except FileNotFoundError:return self.respond({'error':'关联或成员报告不存在'},404)
+            except (ValueError,UnicodeError,TypeError,KeyError,RecursionError):return self.respond({'error':'关联请求无效，请检查所选报告、名称与记录编号'},400)
+            except TimeoutError:return self.respond({'error':'关联请求传输超时，请重试'},408)
+            except OSError:return self.respond({'error':'关联记录读取或保存失败，请重试'},503)
+            except Exception:return self.respond({'error':'关联操作失败，请重试'},500)
         if url.path in ('/api/sidebar/pin','/api/sidebar/unpin'):
             try:
                 with LOCK:

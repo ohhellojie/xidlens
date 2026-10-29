@@ -64,7 +64,8 @@
     "server",
     "update_install",
     "version",
-    "window_layout"
+    "window_layout",
+    "sessions"
   ],
   "public_data_files": [
     "analysis.js",
@@ -79,7 +80,9 @@
     "knowledge/manual.json",
     "knowledge/xid.json",
     "reader/reader.js",
-    "xid_catalog.json"
+    "xid_catalog.json",
+    "sessions.js",
+    "sessions.css"
   ],
   "public_git_names": [
     "ohhellojie",

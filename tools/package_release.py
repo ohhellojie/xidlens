@@ -7,7 +7,7 @@ import zipfile
 from build_receipt import verify as verify_receipt
 from privacy_guard import Guard
 
-VERSION = '1.3.0'
+VERSION = '1.4.0'
 
 def main():
     root = Path(__file__).resolve().parent.parent
