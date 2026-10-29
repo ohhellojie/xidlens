@@ -98,6 +98,54 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(len(view['deviceGroups']), 2)
         self.assertEqual(view['links'], [])
 
+    def test_snapshots_keep_each_source_and_field_line_without_counting_as_errors(self):
+        for key, (current, _) in self.data.items():
+            current['diagnostics']['snapshots'] = [{'id': 's0', 'address': '0000:41:00.0', 'line': 21,
+                'evidence': {'line': 21, 'text': 'GPU 0000:41:00.0', 'time': {'kind': 'uptime_seconds', 'raw': '14'}},
+                'fields': [{'path': 'ECC Errors', 'value': '0', 'evidence': {'line': 23, 'text': 'ECC Errors: 0'}}]}]
+        before = copy.deepcopy(self.data)
+        view = self.create()['view']
+        self.assertEqual(view['counts']['events'], 2)
+        self.assertEqual(view['counts']['snapshots'], 2)
+        self.assertEqual([row['reportId'] for row in view['snapshots']], [A, B])
+        self.assertNotEqual(view['snapshots'][0]['id'], view['snapshots'][1]['id'])
+        second = view['snapshots'][1]
+        self.assertEqual(second['sourceMember'], 'logs/second.log')
+        self.assertEqual(second['evidence']['line'], 21)
+        self.assertEqual(second['fields'][0]['evidence']['reportId'], B)
+        self.assertEqual(second['fields'][0]['evidence']['line'], 23)
+        self.assertEqual(self.data, before)
+        with patch('sessions.MAX_SNAPSHOTS', 1):
+            limited = self.create()['view']
+        self.assertEqual(len(limited['snapshots']), 1)
+        self.assertEqual(limited['counts']['snapshots'], 2)
+        self.assertTrue(any(row['kind'] == 'limit' and '状态快照' in row['message'] for row in limited['warnings']))
+        self.assertFalse(limited['complete'])
+
+    def test_occurrences_and_row_limits_are_separate(self):
+        self.data[A][0]['events'][0]['occurrenceCount'] = 0
+        self.data[B][0]['events'][0]['occurrenceCount'] = 5
+        view = self.create()['view']
+        self.assertEqual(view['counts']['events'], 5)
+        self.assertEqual([member['events'] for member in view['members']], [0, 5])
+        self.assertEqual(view['events'][0]['occurrenceCount'], 0)
+        self.assertFalse(any(row['kind'] == 'limit' for row in view['warnings']))
+        self.data[B][0]['events'][0]['occurrenceCount'] = 0
+        with patch('sessions.MAX_EVENTS', 1):
+            view = self.create()['view']
+        self.assertEqual(view['counts']['events'], 0)
+        self.assertTrue(any(row['kind'] == 'limit' for row in view['warnings']))
+
+    def test_unavailable_or_duplicate_sources_do_not_project_snapshots(self):
+        for current, _ in self.data.values():
+            current['diagnostics']['snapshots'] = [{'id': 's0', 'line': 21}]
+            current['contentSha256'] = '1' * 64
+        created = self.create()
+        self.assertEqual(len(created['view']['snapshots']), 1)
+        self.data[A] = self.data[A][0], 'new-revision'
+        del self.data[B]
+        self.assertEqual(self.store.get(created['manifest']['id'])['view']['snapshots'], [])
+
     def test_unique_uuid_or_serial_links_only_when_other_identity_agrees(self):
         self.data[A][0]['gpus'][0]['fields'].pop('serial')
         self.data[A][0]['gpus'][0]['sn'] = ''

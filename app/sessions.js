@@ -5,7 +5,7 @@
   const states = {ready:'可用', missing:'报告缺失', changed:'报告已变化', duplicate:'重复内容'};
   const checkStates = {error:'发现错误', review:'待核实', missing:'数据缺失', ok:'未见异常', conflict:'字段冲突'};
   const timeStates = {uptime_seconds:'启动后秒数', calendar_without_year_or_zone:'年份和时区未记录', calendar_without_zone:'时区未记录', unknown:'时间未记录', calendar:'日历时间'};
-  const tabs = {sources:'来源文件', devices:'设备关联', events:'事件', checks:'检查'};
+  const tabs = {sources:'来源文件', devices:'设备关联', events:'事件', timeline:'时间线', checks:'检查'};
   const state = {id:'', tab:'sources', page:0, source:'all', selected:''};
   let context = {}, bundle = null;
   const PAGE_SIZE = 100;
@@ -85,7 +85,7 @@
     if (!result?.manifest || !result?.view) return list(ctx.sessions || [],ctx.unreadable);
     const {manifest,view}=result;
     if (state.id!==manifest.id) Object.assign(state,{id:manifest.id,tab:'sources',page:0,source:'all',selected:''});
-    return `<section class="session-page"><header class="session-heading"><div><h1 tabindex="-1">${esc(manifest.name)}</h1><p>${view.members.length} 份来源 · ${view.counts.events} 条事件 · 人工关联</p></div><div class="actions">${action('list','','关联列表')}${action('refresh',manifest.id,'刷新成员')}${action('delete',manifest.id,'移除关联')}</div></header>${warnings(view)}<nav class="session-tabs" aria-label="联合分析视图">${Object.entries(tabs).map(([key,label])=>`<button class="btn" data-session="tab" data-value="${key}" aria-pressed="${state.tab===key}">${label}</button>`).join('')}</nav>${state.tab==='sources'?sources(view):state.tab==='devices'?devices(view):records(view,state.tab)}</section>`;
+    return `<section class="session-page"><header class="session-heading"><div><h1 tabindex="-1">${esc(manifest.name)}</h1><p>${view.members.length} 份来源 · ${view.counts.events} 条事件 · 人工关联</p></div><div class="actions">${action('list','','关联列表')}${action('refresh',manifest.id,'刷新成员')}${action('delete',manifest.id,'移除关联')}</div></header>${warnings(view)}<nav class="session-tabs" aria-label="联合分析视图">${Object.entries(tabs).map(([key,label])=>`<button class="btn" data-session="tab" data-value="${key}" aria-pressed="${state.tab===key}">${label}</button>`).join('')}</nav>${state.tab==='sources'?sources(view):state.tab==='devices'?devices(view):state.tab==='timeline'?(context.renderTimeline?.(result)||''):records(view,state.tab)}</section>`;
   }
   function rerender() { context.render?.(); }
   function click(target) {

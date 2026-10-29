@@ -14,6 +14,7 @@ from gpu_summary_core import timestamp
 MAX_MEMBERS = 32
 MAX_EVENTS = 50000
 MAX_CHECKS = 10000
+MAX_SNAPSHOTS = 10000
 ID = re.compile(r'^[a-f0-9]{32}$')
 UNAVAILABLE = {'', '冲突', '多个采集值', 'unknown', 'n/a', 'none', '—', '0', 'not specified'}
 
@@ -86,11 +87,17 @@ def machine_conflict(a, b):
     return a.get('conflicted', False) or b.get('conflicted', False) or any(a[key] and b[key] and a[key] != b[key] for key in ('sn', 'uuid'))
 
 
+def occurrence_count(event):
+    count = event.get('occurrenceCount', 1)
+    return count if type(count) is int and count >= 0 else 1
+
+
 def combine(manifest, loaded):
     """Build a source-aware view; never rewrite or concatenate member reports."""
-    members, devices, events, lifecycle_events, checks, warnings = [], [], [], [], [], []
+    members, devices, events, lifecycle_events, snapshots, checks, warnings = [], [], [], [], [], [], []
     seen_content, active, report_machines = {}, {}, {}
-    counts = {'reports': len(manifest['members']), 'available': 0, 'devices': 0, 'events': 0, 'lifecycleEvents': 0, 'checks': 0}
+    counts = {'reports': len(manifest['members']), 'available': 0, 'devices': 0, 'events': 0, 'lifecycleEvents': 0, 'snapshots': 0, 'checks': 0}
+    row_counts = {'events': 0, 'lifecycleEvents': 0, 'snapshots': 0, 'checks': 0}
     incomplete = False
     for member in manifest['members']:
         key = member['reportId']
@@ -105,7 +112,7 @@ def combine(manifest, loaded):
         item.update(source=report['source'], currentRevision=revision,
                     state='ready' if revision == member['revision'] else 'changed',
                     complete=report.get('complete', True), time=text(report.get('server', {}).get('time'), 500),
-                    gpus=len(report.get('gpus', [])), events=len(report.get('events', [])))
+                    gpus=len(report.get('gpus', [])), events=sum(occurrence_count(event) for event in report.get('events', [])))
         server = report.get('server', {})
         item['machine'] = {field: text(server.get(field), 500) for field in ('sn', 'uuid', 'host')}
         item['machineEvidence'] = {field: [{**deepcopy(row), 'evidence': reference(key, report, row.get('evidence'))}
@@ -144,7 +151,8 @@ def combine(manifest, loaded):
             devices.append(device)
         counts['devices'] += len(report.get('gpus', []))
         for name, target in (('events', events), ('lifecycleEvents', lifecycle_events)):
-            counts[name] += len(report.get(name, []))
+            counts[name] += sum(occurrence_count(event) for event in report.get(name, []))
+            row_counts[name] += len(report.get(name, []))
             for event in report.get(name, [])[:max(0, MAX_EVENTS - len(target))]:
                 row = deepcopy(event)
                 row.update(id=f'{key}:{event.get("id", "")}', reportId=key, source=report['source'],
@@ -157,8 +165,22 @@ def combine(manifest, loaded):
                     row['association']['refs'] = [{**ref, 'evidence': reference(key, report, ref.get('evidence'))}
                                                    for ref in row['association']['refs']]
                 target.append(row)
+        source_snapshots = report.get('diagnostics', {}).get('snapshots', [])
+        counts['snapshots'] += len(source_snapshots)
+        row_counts['snapshots'] += len(source_snapshots)
+        for snapshot in source_snapshots[:max(0, MAX_SNAPSHOTS - len(snapshots))]:
+            row = deepcopy(snapshot)
+            row.update(id=f'{key}:{snapshot.get("id", "")}', sourceSnapshotId=snapshot.get('id', ''),
+                       reportId=key, source=report['source'],
+                       evidence=reference(key, report, snapshot.get('evidence') or {'line': snapshot.get('line', 0)}))
+            if report.get('sourceMember'):
+                row['sourceMember'] = report['sourceMember']
+            for field in row.get('fields', []):
+                field['evidence'] = reference(key, report, field.get('evidence'))
+            snapshots.append(row)
         source_checks = report.get('diagnostics', {}).get('checks', [])
         counts['checks'] += len(source_checks)
+        row_counts['checks'] += len(source_checks)
         for check in source_checks[:max(0, MAX_CHECKS - len(checks))]:
             row = deepcopy(check)
             row.update(id=f'{key}:{check.get("id", "")}', reportId=key, source=report['source'],
@@ -250,10 +272,10 @@ def combine(manifest, loaded):
             if machine_conflict(report_machines[first], report_machines[second]):
                 warnings.append({'kind': 'machine-conflict', 'reportIds': [first, second],
                                  'message': '机器身份字段不同；人工归组不表示同一台机器或同次启动。'})
-    for name, limit, rows in (('events', MAX_EVENTS, events), ('lifecycleEvents', MAX_EVENTS, lifecycle_events), ('checks', MAX_CHECKS, checks)):
-        if counts[name] > len(rows):
+    for name, limit, rows in (('events', MAX_EVENTS, events), ('lifecycleEvents', MAX_EVENTS, lifecycle_events), ('snapshots', MAX_SNAPSHOTS, snapshots), ('checks', MAX_CHECKS, checks)):
+        if row_counts[name] > len(rows):
             incomplete = True
-            label = {'events': '事件', 'lifecycleEvents': '动作记录', 'checks': '检查'}[name]
+            label = {'events': '事件', 'lifecycleEvents': '动作记录', 'snapshots': '状态快照', 'checks': '检查'}[name]
             warnings.append({'kind': 'limit', 'message': f'联合视图最多显示 {limit} 条{label}，完整记录保留在各来源报告中。'})
     all_events = events + lifecycle_events
     fully_anchored = bool(all_events) and all(row['timeInfo']['utc'] for row in all_events)
@@ -263,7 +285,7 @@ def combine(manifest, loaded):
     else:
         warnings.append({'kind': 'time', 'message': '部分时间缺少年份、时区或仅为启动后秒数；按来源及原文顺序展示，不推断跨文件先后。'})
     return {'members': members, 'devices': devices, 'deviceGroups': groups, 'links': links,
-            'fieldDifferences': differences, 'events': events, 'lifecycleEvents': lifecycle_events, 'checks': checks, 'counts': counts,
+            'fieldDifferences': differences, 'events': events, 'lifecycleEvents': lifecycle_events, 'snapshots': snapshots, 'checks': checks, 'counts': counts,
             'timeOrder': 'calendar' if fully_anchored else 'source', 'complete': not incomplete,
             'warnings': warnings}
 

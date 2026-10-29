@@ -1,4 +1,4 @@
-"""Bind a release executable to the current TLS policy and build sources."""
+"""Bind a release executable to application sources, assets and TLS policy."""
 import hashlib
 import json
 from pathlib import Path
@@ -9,10 +9,12 @@ def sha(path):
 
 
 def sources(root):
-    paths = list((root / 'app').rglob('*.py'))
+    paths = [p for p in (root / 'app').rglob('*') if p.is_file()
+             and '__pycache__' not in p.relative_to(root / 'app').parts
+             and p.suffix not in {'.pyc', '.pyo'}]
     paths += [root / name for name in ('requirements-desktop.txt', 'requirements-build.txt',
               'tools/build_windows.py', 'tools/build_receipt.py', 'tools/privacy_guard.py',
-              '.privacy-policy.json', 'packaging/windows-version.txt')]
+              'tools/create_icon.py', 'LICENSE', '.privacy-policy.json', 'packaging/windows-version.txt')]
     return {p.relative_to(root).as_posix(): sha(p) for p in sorted(paths)}
 
 

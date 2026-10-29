@@ -27,6 +27,13 @@ HEADER_GPU = re.compile(r'^\s*(?:NVIDIA GPU Details\s*\|\s*|\|\s*)(NVIDIA[^,]+),
 LSPCI_RE = re.compile(r'^(' + BDF + r')\s+(?:3D controller|VGA compatible controller|Display controller).*?(?:NVIDIA|\[10de:)', re.I)
 SMI_GPU_RE = re.compile(r'^GPU\s+(' + BDF + r')\s*$')
 GPU_AT_RE = re.compile(r'NVRM:\s*GPU at PCI:(' + BDF + r'):\s*(GPU-[\w-]+)', re.I)
+# NVSentinel janitor result and the kernel module's loading banner are observed
+# records, not commands or proof that a device passed a later health check.
+# https://github.com/NVIDIA/NVSentinel/blob/main/health-monitors/syslog-health-monitor/pkg/xid/types.go
+# https://github.com/NVIDIA/open-gpu-kernel-modules/blob/main/kernel-open/nvidia/nv.c
+GPU_RESET_RE = re.compile(r'\bGPU reset executed:\s*(GPU-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}),\s*success:\s*(true|false)(?![\w])', re.I)
+DRIVER_LOAD_RE = re.compile(r'NVRM:\s*loading\s+NVIDIA\s+[^\r\n]{0,160}?Kernel Module[^\r\n]{0,100}?\s(\d{3,}\.\d+(?:\.\d+)?)(?=\s|$)', re.I)
+RECOVERY_ACTION_RE = re.compile(r'GPU recovery action changed from\s+(0x[0-9a-f]+)\s*\(([^)\r\n]+)\)\s+to\s+(0x[0-9a-f]+)\s*\(([^)\r\n]+)\)', re.I)
 KNOWN_XIDS = {13: '图形引擎异常', 31: 'GPU 内存访问页错误', 45: '应用清理记录',
               48: '不可纠正 ECC 错误', 79: 'GPU 经 PCIe 不可访问',
               119: 'GSP RPC 超时', 120: 'GSP 异常', 154: '恢复动作通知'}
@@ -74,13 +81,13 @@ def clean(text):
 
 def timestamp(line):
     # 保留原始时区/年份缺失；不把 uptime 换算成故障发生日期。
-    m = re.match(r'^(\d{4}-\d\d-\d\d[T ][\d:.]+(?:Z|[+-]\d\d:\d\d)?)', line)
+    m = re.match(r'^(\d{4}-\d\d-\d\d[T ]\d\d:\d\d:\d\d(?:\.\d+)?(Z|[+-]\d\d:?\d\d)?)(?=\s|$)', line)
     if m:
-        return {'kind': 'calendar', 'raw': m[1]}
+        return {'kind': 'calendar', 'raw': m[1], 'timezone': m[2] or None}
     m = re.match(r'^([A-Z][a-z]{2}\s+\d{1,2}\s+\d\d:\d\d:\d\d)', line)
     if m:
         return {'kind': 'calendar_without_year_or_zone', 'raw': m[1]}
-    m = re.match(r'^\[\s*(\d+\.\d+)\]', line)
+    m = re.match(r'^\[\s*(\d+(?:\.\d+)?)\]', line)
     if m:
         return {'kind': 'uptime_seconds', 'raw': m[1]}
     return {'kind': 'unknown', 'raw': ''}
@@ -93,7 +100,8 @@ class Parser:
         self.r = {'source': source, 'complete': True, 'bytes_read': 0, 'lines_read': 0,
                   'sha256_content': None, 'warnings': [], 'collection_time': [],
                   'driver_versions': [], 'gpu_inventory': {}, 'pci_gpu_addresses': [],
-                  'smi_snapshots': [], 'health_counters': [], 'events': [], 'recognized': False}
+                  'smi_snapshots': [], 'health_counters': [], 'events': [],
+                  'lifecycle_records': [], 'recognized': False}
         self.max_bytes, self.max_groups = max_bytes, max_groups
         self.groups, self.pci = {}, set()
         self.section = '输入正文'
@@ -146,6 +154,14 @@ class Parser:
             group['samples'].append(ev)
         group['last_sample'] = ev
 
+    def lifecycle(self, kind, n, line, **metadata):
+        self.r['recognized'] = True
+        if len(self.r['lifecycle_records']) >= 10000:
+            self.r['complete'] = False
+            self.warn('动作记录达到 10000 条，后续记录未保存。')
+            return
+        self.r['lifecycle_records'].append({'kind': kind, 'evidence': self.evidence(n, line), **metadata})
+
     def consume(self, line, n):
         s = line.strip()
         if section_boundary(line):
@@ -173,6 +189,13 @@ class Parser:
         driver = nvidia_driver_version(line)
         if driver and driver not in self.r['driver_versions']:
             self.r['driver_versions'].append(driver)
+        reset = GPU_RESET_RE.search(line) if 'GPU reset executed:' in line else None
+        if reset:
+            self.lifecycle('reset', n, line, targetUUID=reset[1],
+                           outcome='completed' if reset[2].lower() == 'true' else 'failed')
+        loading = DRIVER_LOAD_RE.search(line) if 'NVRM:' in line else None
+        if loading:
+            self.lifecycle('driver_load', n, line, driverVersion=loading[1], outcome='observed')
         m = HEADER_GPU.match(line) if n < 200 else None
         if m:
             address = bdf(m[3])
@@ -245,7 +268,7 @@ class Parser:
             if 'fallen off the bus' in line.lower() and not XID_RE.search(line):
                 m = BDF_RE.search(line)
                 self.event('fallen', bdf(m[1]) if m else None, '', n, line)
-            if re.search(r'(?:channel.*timed?\s*out|channel.*timeout)', line, re.I):
+            if not XID_RE.search(line) and re.search(r'(?:channel.*timed?\s*out|channel.*timeout)', line, re.I):
                 m = BDF_RE.search(line)
                 self.event('channel', bdf(m[1]) if m else None, '', n, line)
         if 'AER:' in line or 'PCIe Bus Error:' in line:
@@ -257,7 +280,7 @@ class Parser:
         if re.search(r'Unable to determine the device handle|Failed: No devices were found|NVIDIA-SMI has failed|^No devices were found', line, re.I):
             m = BDF_RE.search(line)
             self.event('smi_error', bdf(m[1]) if m else None, '', n, line)
-        if 'NVRM:' in line and re.search(r'uncorrectable.*ECC|ECC.*uncorrectable|double.bit.*ECC', line, re.I):
+        if 'NVRM:' in line and not XID_RE.search(line) and re.search(r'uncorrectable.*ECC|ECC.*uncorrectable|double.bit.*ECC', line, re.I):
             m = BDF_RE.search(line)
             self.event('ecc', bdf(m[1]) if m else None, '', n, line)
         if 'Error Code =' in line or 'Nonmemory error code' in line or 'NONMEMORY FAILURE' in line:

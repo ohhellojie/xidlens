@@ -404,7 +404,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
         if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).replace('__SIDEBAR_PINNED__',str(sidebar_pinned()).lower()).encode(),ctype='text/html; charset=utf-8')
         if url.path=='/reader.js':return self.respond((ROOT/'reader'/'reader.js').read_bytes(),ctype='application/javascript; charset=utf-8')
-        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/demo.txt'):
+        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/timeline.js','/timeline.css','/demo.txt'):
             kind='application/javascript' if url.path.endswith('.js') else 'text/css' if url.path.endswith('.css') else 'text/plain'
             return self.respond((ROOT/url.path[1:]).read_bytes(),ctype=kind+'; charset=utf-8')
         if url.path=='/diagnostics.js':return self.respond((ROOT/'diagnostics.js').read_bytes(),ctype='application/javascript; charset=utf-8')

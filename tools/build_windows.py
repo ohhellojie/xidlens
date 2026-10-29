@@ -39,7 +39,7 @@ def main():
                '--exclude-module', 'webview.platforms.cef',
                '--exclude-module', 'numpy', '--exclude-module', 'lxml',
                '--exclude-module', 'PyQt5', '--exclude-module', 'PySide6']
-    for name in ('index.html', 'app.js', 'analysis.js', 'diagnostics.js', 'diagnostics.css', 'overview.js', 'overview.css', 'sessions.js', 'sessions.css', 'demo.txt', 'logo.png'):
+    for name in ('index.html', 'app.js', 'analysis.js', 'diagnostics.js', 'diagnostics.css', 'overview.js', 'overview.css', 'sessions.js', 'sessions.css', 'timeline.js', 'timeline.css', 'demo.txt', 'logo.png'):
         command += ['--add-data', f'{root/"app"/name}:.']
     command += ['--add-data', f'{root/"app/knowledge"}:knowledge', '--add-data', f'{root/"app/reader"}:reader']
     # A stage preserves the expected filename for optional local catalogs.

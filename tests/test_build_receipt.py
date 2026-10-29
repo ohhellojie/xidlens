@@ -20,9 +20,11 @@ class BuildReceiptTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        for name in ('app/online.py', 'requirements-desktop.txt', 'requirements-build.txt',
+        for name in ('app/online.py', 'app/index.html', 'app/app.js', 'app/overview.css',
+                     'app/demo.txt', 'app/logo.png', 'app/xid_catalog.json', 'app/reader/reader.js',
+                     'app/knowledge/manual.json', 'requirements-desktop.txt', 'requirements-build.txt',
                      'tools/build_windows.py', 'tools/build_receipt.py', 'tools/privacy_guard.py',
-                     '.privacy-policy.json', 'packaging/windows-version.txt',
+                     'tools/create_icon.py', 'LICENSE', '.privacy-policy.json', 'packaging/windows-version.txt',
                      'dist/XidLens.exe'):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -57,6 +59,33 @@ class BuildReceiptTests(unittest.TestCase):
         path.write_text(json.dumps(value), encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'outdated CA dependency'):
             receipt.verify(self.root)
+
+    def test_rejects_changed_frontend_assets_catalog_and_icon_inputs(self):
+        for name in ('app/index.html', 'app/app.js', 'app/overview.css', 'app/demo.txt',
+                     'app/logo.png', 'app/xid_catalog.json', 'app/reader/reader.js',
+                     'app/knowledge/manual.json', 'tools/create_icon.py', 'LICENSE'):
+            with self.subTest(name=name):
+                path = self.root / name
+                path.write_bytes(b'changed')
+                with self.assertRaisesRegex(ValueError, 'rebuild before packaging'):
+                    receipt.verify(self.root)
+                path.write_bytes(b'fixture')
+
+    def test_rejects_added_and_removed_application_files(self):
+        added = self.root / 'app/new-feature.css'
+        added.write_bytes(b'new asset')
+        with self.assertRaisesRegex(ValueError, 'rebuild before packaging'):
+            receipt.verify(self.root)
+        added.unlink()
+        (self.root / 'app/reader/reader.js').unlink()
+        with self.assertRaisesRegex(ValueError, 'rebuild before packaging'):
+            receipt.verify(self.root)
+
+    def test_python_bytecode_caches_do_not_invalidate_build(self):
+        cached = self.root / 'app/__pycache__/online.cpython-313.pyc'
+        cached.parent.mkdir()
+        cached.write_bytes(b'local bytecode cache')
+        receipt.verify(self.root)
 
     def test_rejects_missing_or_ambiguous_packaged_ca(self):
         for names in ({}, {'certifi/cacert.pem': None, 'certifi\\cacert.pem': None}):

@@ -25,3 +25,9 @@ assert.ok(html.includes('role="status"'));assert.ok(html.includes('2 份关联�
 html=ui.render(null,{...ctx,sessions:[],unreadable:1});assert.ok(html.includes('1 份关联记录无法读取'));assert.ok(html.includes('尚未建立联合分析'));assert.ok(html.includes('data-page="reports"'));
 html=ui.render(null,{...ctx,unreadable:'<script>'});assert.ok(!html.includes('<script>'));
 console.log('Session UI: source-specific jumps, escaping, explicit missing state, filters and bounded pages passed');
+ui.reset();let embedded;
+const timelineContext={...ctx,renderTimeline:result=>{embedded=result;return '<section class="timeline-embedded">Timeline records</section>';}};
+ui.render(data,timelineContext);ui.click({dataset:{session:'tab',value:'timeline'}});html=ui.render(data,timelineContext);
+assert.equal(embedded,data);assert.ok(html.includes('Timeline records'));assert.equal((html.match(/<h1 /g)||[]).length,1);
+assert.ok(html.includes('data-value="timeline" aria-pressed="true"'));
+ui.render({...data,view:{...data.view,counts:{events:3}}},timelineContext);assert.ok(embedded.view.counts.events===3,'Refreshing the same session keeps its timeline tab and passes the replacement data');

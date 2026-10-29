@@ -98,6 +98,24 @@ class SessionApiTests(unittest.TestCase):
         status,value=self.request('/api/sessions/refresh',{'id':key});self.assertEqual(200,status)
         self.assertEqual(2,len(value['manifest']['members']));self.assertEqual('missing',value['view']['members'][1]['state'])
 
+    def test_timeline_projection_survives_normalized_api_read(self):
+        value=self.read(B)
+        value['lifecycleEvents']=[{'id':'l0','kind':'driver_load','line':20,'raw':'[13.000] NVRM: loading NVIDIA UNIX Kernel Module',
+                                  'timeInfo':{'kind':'uptime_seconds','raw':'13.000'}}]
+        value['diagnostics']['snapshots']=[{'id':'s0','address':'0000:41:00.0','line':23,
+            'evidence':{'line':23,'text':'GPU 0000:41:00.0','time':{'kind':'uptime_seconds','raw':'14.000'}},
+            'fields':[{'path':'ECC Errors','value':'0','evidence':{'line':25,'text':'ECC Errors: 0'}}]}]
+        self.write(B,value)
+        original=(self.s.RESULTS/(B+'.json')).read_bytes()
+        view=self.create()['view']
+        self.assertEqual((2,1,1),(view['counts']['events'],view['counts']['lifecycleEvents'],view['counts']['snapshots']))
+        action=view['lifecycleEvents'][0];snapshot=view['snapshots'][0]
+        self.assertEqual((B,20,'uptime_seconds'),(action['reportId'],action['line'],action['timeInfo']['kind']))
+        self.assertEqual((B,'second.log',23),(snapshot['reportId'],snapshot['source'],snapshot['evidence']['line']))
+        self.assertEqual('logs/second.log',snapshot['sourceMember'])
+        self.assertEqual((B,25),(snapshot['fields'][0]['evidence']['reportId'],snapshot['fields'][0]['evidence']['line']))
+        self.assertEqual(original,(self.s.RESULTS/(B+'.json')).read_bytes())
+
     def test_reparsed_revision_requires_explicit_refresh(self):
         created=self.create();key=created['manifest']['id'];old=created['manifest']['members'][1]['revision']
         report_b=self.read(B);report_b['gpus'][0]['model']='Synthetic new parser value';self.write(B,report_b)
@@ -208,7 +226,7 @@ class SessionApiTests(unittest.TestCase):
         worker.join(3);self.assertFalse(worker.is_alive());self.assertEqual([200],results)
 
     def test_static_assets_have_expected_types_and_remain_host_bound(self):
-        for name in ('sessions.js','sessions.css'):
+        for name in ('sessions.js','sessions.css','timeline.js','timeline.css'):
             status,content=self.request('/'+name,headers={'X-Local-Token':''})
             self.assertEqual(200,status);self.assertTrue(content)
             self.assertEqual(403,self.request('/'+name,headers={'Host':'evil.invalid'})[0])

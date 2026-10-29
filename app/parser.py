@@ -215,6 +215,33 @@ def sampled(fields,key):
     value=one(fields,key)
     return '多个采集值' if value=='冲突' else value
 
+def lifecycle_events(r,gpus,cancel_event=None):
+    rows=[]
+    for i,record in enumerate(r.get('lifecycle_records',[])):
+        core.check_cancel(cancel_event)
+        ev=record['evidence']
+        row={key:value for key,value in record.items() if key!='evidence'}
+        row.update(id=f'l{i}',gpu=None,address='',code='',line=ev['line'],raw=ev['text'],
+                   time=ev['time']['raw'] or '—',timeInfo={**ev['time'],'boot':ev['boot_marker']},
+                   section=ev['section'],boot=ev['boot_marker'],source=r['source'],
+                   truncated=ev.get('truncated',False))
+        if row['kind']=='reset':
+            row['title']='GPU 重置完成' if row['outcome']=='completed' else 'GPU 重置失败'
+            target=row['targetUUID'].lower()
+            candidates=[gpu for gpu in gpus if any(str(ref['value']).lower()==target
+                        for ref in gpu['fields'].get('uuid',[]))]
+            if len(candidates)==1 and candidates[0]['uuid'].lower()==target:
+                # UUID links identity only. The reset line does not establish a BDF.
+                gpu=candidates[0]
+                row['gpu']=gpu['id']
+                row['association']={'method':'uuid','refs':refs(gpu['fields'],'uuid')}
+        else:
+            row['title']='驱动加载记录'
+        if 'source_member' in r:row['sourceMember']=r['source_member']
+        rows.append(row)
+    return rows
+
+
 def convert(r,container_warnings=(),cancel_event=None,catalog=None):
     catalog = CATALOG if catalog is None else catalog
     inventory=r['gpu_inventory'];nodes=r['pci_nodes']
@@ -252,6 +279,12 @@ def convert(r,container_warnings=(),cancel_event=None,catalog=None):
         ev=e['evidence'];item=catalog['codes'].get(e['code']) if e['kind']=='xid' else None
         title=item['title'] if item else (f"未收录 Xid {e['code']}" if e['kind']=='xid' else core.LABELS.get(e['kind'],e['kind']))
         row={'id':f'e{i}','gpu':ids.get(e['address']),'address':e['address'] or '', 'kind':e['kind'],'code':e['code'],'time':ev['time']['raw'] or '—','title':title,'description':item['description'] if item else '', 'actions':item['actions'] if item else [],'line':ev['line'],'raw':ev['text'],'truncated':ev.get('truncated',False),'section':ev['section'],'boot':ev['boot_marker'],'manual':item,'source':r['source']}
+        row['timeInfo']={**ev['time'],'boot':ev['boot_marker']}
+        if e['kind']=='xid' and e['code']=='154':
+            action=core.RECOVERY_ACTION_RE.search(ev['text'])
+            if action:
+                row['recoveryAction']={'previous':{'code':action[1],'label':action[2].strip()},
+                                       'current':{'code':action[3],'label':action[4].strip()}}
         events.append(row)
         if row['gpu'] is not None:gpus[row['gpu']]['errors']+=1
     sf=r['server_fields'];server={k:one(sf,k) for k in ('model','sn','host','os','manufacturer','uuid')}
@@ -261,6 +294,7 @@ def convert(r,container_warnings=(),cancel_event=None,catalog=None):
     warnings=list(dict.fromkeys(list(container_warnings)+r['warnings']))
     if any(g['status']=='有冲突' for g in gpus):warnings.append('设备字段存在冲突，可在来源中核对。')
     result={'source':r['source'],'server':server,'gpus':gpus,'events':events,'nodes':nodes,'topologyRaw':raw,'warnings':warnings,'complete':r['complete'],'recognized':r['recognized'],'lines':r['lines_read'],'bytes':r['bytes_read'],'smiCounts':[s['attached'] for s in r['smi_snapshots']],'catalog':{k:catalog[k] for k in ('file','sha256','importFile','sourceSha256','origin') if k in catalog},'contentSha256':r['sha256_content']}
+    result['lifecycleEvents']=lifecycle_events(r,gpus,cancel_event)
     if 'source_member' in r:result['sourceMember']=r['source_member']
     if collector:result['diagnostics']=diagnostics.finish(r,collector,gpus,events,cancel_event)
     return result

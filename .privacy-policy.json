@@ -82,7 +82,9 @@
     "reader/reader.js",
     "xid_catalog.json",
     "sessions.js",
-    "sessions.css"
+    "sessions.css",
+    "timeline.js",
+    "timeline.css"
   ],
   "public_git_names": [
     "ohhellojie",
