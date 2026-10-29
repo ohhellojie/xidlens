@@ -70,6 +70,7 @@ button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padd
 .source-entry-heading h3{min-width:0;font-weight:500}
 .source-entry-links{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
 @media(max-width:700px){.page-actions{justify-content:flex-start}.source-entry-heading{align-items:flex-start;flex-wrap:wrap}}
+.comparison-delta{display:block;color:var(--text)}.comparison-notices{flex-shrink:0;font-size:12px;margin:0 0 14px}.comparison-notices summary,.comparison-conditions summary{cursor:pointer}.comparison-notices ul,.comparison-conditions ul{margin:8px 0;padding-left:20px}.comparison-notices li+li,.comparison-conditions li+li{margin-top:5px}.comparison-conditions{font-size:12px;padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid var(--line)}.comparison-conditions details{margin-top:12px}.comparison-periods{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:12px}.comparison-periods>div{min-width:0;overflow-wrap:anywhere}.comparison-periods pre{white-space:pre-wrap;overflow-wrap:anywhere}.comparison-conditions .comparison-evidence pre{max-height:160px;overflow:auto}.comparison-source>.source-location{margin-top:12px}@media(max-width:600px){.comparison-periods{grid-template-columns:1fr;gap:14px}}
 </style>
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="stylesheet" href="/diagnostics.css">
@@ -129,6 +130,7 @@ button.prototype-tag{display:flex;align-items:center;gap:8px;font-size:12px;padd
  <div class="toast" id="toast" role="status" hidden></div>
 </div>
 <script src="/analysis.js" defer></script>
+<script src="/comparison.js" defer></script>
 <script src="/knowledge.js" defer></script>
 <script src="/diagnostics.js" defer></script>
 <script src="/reader.js" defer></script>

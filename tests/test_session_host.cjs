@@ -27,7 +27,7 @@ function fixture(){
   goto(page){env.state.page=page;navigations.push({page,caseId:env.loadedCase});},
   openDialog(_title,_html,_footer,kind){env.dialogRevision++;elements.get('dialog').open=true;elements.get('dialog').dataset.kind=kind;elements.set('session-name',{...node(),value:''});elements.set('session-error',node());elements.set('confirm-session',node());},
   closeDialog(){elements.get('dialog').open=false;},
-  rememberCaseView(){},saveViewPosition(){},closeMenu(){},closeDrawer(){},status(){},
+  rememberCaseView(){},saveViewPosition(){},closeMenu(){},closeDrawer(){},status(){},comparisonReader(){return null;},
   XidDiagnostics:{reset(){},restore(){},openMatrix(){}},XidOverview:{reset(){},restore(){}},
   XidSessions:{render(result,context){env.lastRenderContext=context;return result?'detail':'list';}},
  };

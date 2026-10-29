@@ -69,6 +69,7 @@
   ],
   "public_data_files": [
     "analysis.js",
+    "comparison.js",
     "app.js",
     "diagnostics.css",
     "diagnostics.js",
