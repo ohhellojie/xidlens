@@ -94,13 +94,13 @@ function buildModel(data){
  const eventGroups=new Map();
  const checkedLines=new Set(checks.filter(c=>c.status==='error'||c.status==='review').flatMap(c=>(c.evidence||[]).map(e=>JSON.stringify([c.address,e.line]))));
  for(const e of data.events||[]){
-  if(e.kind==='init'||checkedLines.has(JSON.stringify([e.address,e.line])))continue;
+  if(checkedLines.has(JSON.stringify([e.address,e.line])))continue;
   const key=JSON.stringify([e.address,e.kind,e.code,e.title]);
   if(!eventGroups.has(key))eventGroups.set(key,[]);eventGroups.get(key).push(e);
  }
  for(const [key,events] of eventGroups){
   const e=events[0],xid=e.kind==='xid';
-  add({id:'event:'+key,address:e.address||'',device:device(e.address),status:'error',title:xid?'Xid '+e.code+' · '+(e.title||'错误记录'):e.title||'错误记录',observation:events.length+' 条记录',basis:e.description||'日志记录了此事件。需结合设备状态和上下文核对。',next:'结合下列建议核对原文；事件本身不确定硬件故障原因。',actions:e.actions||[],event:e,evidence:events.map(x=>({line:x.line,text:x.raw,time:x.time,section:x.section,boot_marker:x.boot,source:x.source,caseId:x.caseId})),count:events.length});
+  add({id:'event:'+key,address:e.address||'',device:device(e.address),status:'error',title:xid?'Xid '+e.code+' · '+(e.title||'错误记录'):e.title||(e.kind==='init'?'初始化失败':'错误记录'),observation:events.length+' 条记录',basis:e.description||'日志记录了此事件。需结合设备状态和上下文核对。',next:'结合下列建议核对原文；事件本身不确定硬件故障原因。',actions:e.actions||[],event:e,evidence:events.map(x=>({line:x.line,text:x.raw,time:x.time,section:x.section,boot_marker:x.boot,source:x.source,caseId:x.caseId})),count:events.length});
  }
  if(data.complete===false&&!checks.some(c=>c.rule==='incomplete')){gaps.add('complete');add({id:'missing:complete',device:'报告',address:'',status:'missing',title:'日志读取不完整',observation:'结果仅覆盖已读取内容。',basis:'未读取内容无法判断。',next:'查看读取提示，保留完整日志后重新导入。',gaps:['complete']});}
  if(!data.diagnostics&&data.source){gaps.add('reparse');add({id:'missing:legacy',device:'报告',address:'',status:'missing',title:'此报告需要重新解析',observation:'旧报告未包含结构化检查结果。',basis:'重新解析后可显示状态检查和采集缺口。',next:'在报告管理中选择此报告并重新解析。',gaps:['reparse']});}

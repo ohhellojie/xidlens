@@ -27,6 +27,7 @@ jobs:
       - run: node tests/test_exports.cjs
       - run: node tests/test_diagnostics.cjs
       - run: node tests/test_overview.cjs
+      - run: node tests/test_overview_host.cjs
       - run: node tests/test_import_ui.cjs
       - run: node tests/test_update_ui.cjs
       - run: node tests/test_state_ui.cjs

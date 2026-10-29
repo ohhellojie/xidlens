@@ -50,7 +50,7 @@ test('equal identity values do not conflict; changing measurements are not ident
 test('events retain members and do not double count diagnostic evidence',()=>{
  const d=base();d.events=[{id:'a',kind:'xid',code:'79',address:a,line:300,raw:'NVRM: Xid 79',title:'GPU event'},{id:'b',kind:'xid',code:'79',address:a,line:301,raw:'NVRM: Xid 79',title:'GPU event'},{id:'c',kind:'init',address:a,line:302,raw:'init'},{id:'d',kind:'aer',address:a,line:303,raw:'AER',title:'PCIe AER'}];
  d.diagnostics.checks.push({id:'aer',rule:'aer',address:a,status:'error',title:'AER',evidence:[ref(303,'AER')]});
- const m=ui.buildModel(d);assert.equal(m.counts.error,2);const e=m.findings.find(f=>f.event);assert.equal(e.count,2);assert.equal(e.evidence.length,2);
+ const m=ui.buildModel(d);assert.equal(m.counts.error,3);assert.ok(m.findings.some(f=>f.title==='初始化失败'));const e=m.findings.find(f=>f.event);assert.equal(e.count,2);assert.equal(e.evidence.length,2);
  ui.reset();assert.doesNotThrow(()=>ui.render(d,ctx));
 });
 test('all raw values, conflict sources and collection markup are escaped',()=>{
