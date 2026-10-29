@@ -66,16 +66,21 @@
   const link=Number.isSafeInteger(line)&&line>0?`<button class="link-btn" data-structured="source" data-value="${esc(row.key)}">${esc(row.source||'原始结果')} · 第 ${line}${Number.isSafeInteger(end)&&end>line?'–'+end:''} 行 ${context.icon?.('external','small-icon')||''}</button>`:'<span class="source-meta">原始行号未记录</span>';
   return `<div class="structured-source">${link}${typeof ev.jsonPointer==='string'?`<code>${esc(ev.jsonPointer||'/')}</code>`:''}</div>`;
  }
- function messages(title,value){
+ function clippedNotice(row,summaryIndex=null,label='预览已截断。'){
+  const evidence=(summaryIndex===null?row:row.summaries[summaryIndex])?.evidence,line=evidence?.line;
+  return `<p class="source-meta">${label}${Number.isSafeInteger(line)&&line>0?` <button class="link-btn" data-structured="message-source" data-value="${esc(JSON.stringify([row.key,summaryIndex]))}">查看完整原文</button>`:' 完整内容需核对来源。'}</p>`;
+ }
+ function messages(title,value,row,summaryIndex=null){
   const rows=Array.isArray(value)?value:value==null||value===''?[]:[value];if(!rows.length)return '';
-  return `<section class="structured-messages"><h3>${title}</h3><ul>${rows.slice(0,20).map(row=>`<li>${esc(json(typeof row==='object'&&row!==null?(row.warning??row.message??row):row,4000).text)}</li>`).join('')}</ul>${rows.length>20?'<p class="source-meta">其余内容见原始结果。</p>':''}</section>`;
+  const shown=rows.slice(0,20).map(item=>json(typeof item==='object'&&item!==null?(item.warning??item.message??item):item,4000));
+  return `<section class="structured-messages"><h3>${title}</h3><ul>${shown.map(item=>`<li>${esc(item.text)}${item.truncated?'…':''}</li>`).join('')}</ul>${shown.some(item=>item.truncated)||rows.length>20?clippedNotice(row,summaryIndex,rows.length>20?'仅显示前 20 条，部分内容未显示。':'预览已截断。'):''}</section>`;
  }
  function detail(row){
   if(!row)return '<p class="source-meta">没有匹配结果。</p>';
   const run=active.runs.find(item=>item.run===row.run),status=labels[row.status]+(row.status==='unknown'&&row.statusRaw!=null?' · '+json(row.statusRaw,200).text:'');
-  const raw=state.raw?json(row.raw):null;
-  const summary=row.summaries.length?`<details class="structured-summary"><summary>测试汇总</summary>${row.summaries.map(item=>`<p>${esc(labels[item.status]||labels.unknown)}</p>${messages('说明',item.warnings)}`).join('')}</details>`:'';
-  return `<h2>${esc(row.test||'未命名测试')}</h2><p class="structured-outcome">${esc(status)}</p><dl class="structured-meta">${row.category?`<dt>类别</dt><dd>${esc(row.category)}</dd>`:''}<dt>实体</dt><dd>${esc(row.entityLabel)}</dd><dt>运行</dt><dd>${esc(row.run??'未记录')}${run?.version?' · DCGM '+esc(run.version):''}</dd></dl>${row.status==='error'?`<pre class="structured-message">${esc(json(row.runtimeError,8000).text)}</pre><p class="source-meta">诊断未完成，未生成的测试结果保持未知。</p>`:''}${messages('警告',row.warnings)}${messages('说明',row.info)}${summary}${source(row)}<button class="btn" data-structured="raw" data-value="${esc(row.key)}" aria-expanded="${state.raw}">${state.raw?'收起原始结果':'原始结果'}</button>${raw?`<pre class="structured-raw" tabindex="0" aria-label="所选结果的原始 JSON">${esc(raw.text)}</pre>${raw.truncated?'<p class="source-meta">预览已截断，完整内容见来源。</p>':''}`:''}`;
+  const raw=state.raw?json(row.raw):null,runtime=row.status==='error'?json(row.runtimeError,8000):null;
+  const summary=row.summaries.length?`<details class="structured-summary"><summary>测试汇总</summary>${row.summaries.map((item,index)=>`<p>${esc(labels[item.status]||labels.unknown)}</p>${messages('说明',item.warnings,row,index)}`).join('')}</details>`:'';
+  return `<h2>${esc(row.test||'未命名测试')}</h2><p class="structured-outcome">${esc(status)}</p><dl class="structured-meta">${row.category?`<dt>类别</dt><dd>${esc(row.category)}</dd>`:''}<dt>实体</dt><dd>${esc(row.entityLabel)}</dd><dt>运行</dt><dd>${esc(row.run??'未记录')}${run?.version?' · DCGM '+esc(run.version):''}</dd></dl>${row.status==='error'?`<pre class="structured-message">${esc(runtime.text)}${runtime.truncated?'…':''}</pre>${runtime.truncated?clippedNotice(row):''}<p class="source-meta">诊断未完成，未生成的测试结果保持未知。</p>`:''}${messages('警告',row.warnings,row)}${messages('说明',row.info,row)}${summary}${source(row)}<button class="btn" data-structured="raw" data-value="${esc(row.key)}" aria-expanded="${state.raw}">${state.raw?'收起原始结果':'原始结果'}</button>${raw?`<pre class="structured-raw" tabindex="0" aria-label="所选结果的原始 JSON">${esc(raw.text)}</pre>${raw.truncated?'<p class="source-meta">预览已截断，完整内容见来源。</p>':''}`:''}`;
  }
  function versions(){
   return `<details class="structured-versions"><summary>版本与格式</summary><p>支持 DCGM Diagnostic 与 DCGM GPU Diagnostic 字段结构；按字段读取，版本号不保证全部字段兼容。</p><p>通过仅对应本结果中的测试与实体。实体编号仅用于本结果。</p>${active.runs.map(run=>`<div><strong>运行 ${esc(run.run)}</strong><span>DCGM ${esc(run.version||'版本未记录')}${run.driverVersion?' · 驱动 '+esc(run.driverVersion):''}</span></div>`).join('')}${active.parserVersion?`<p class="source-meta">解析器 ${esc(active.parserVersion)}</p>`:''}</details>`;
@@ -108,6 +113,12 @@
  }
  function click(target){
   const action=target?.dataset?.structured,value=target?.dataset?.value;if(!action)return false;
+  if(action==='message-source'){
+   let ref;try{ref=JSON.parse(value);}catch(_){return true;}
+   if(!Array.isArray(ref)||ref.length!==2||typeof ref[0]!=='string'||(ref[1]!==null&&(!Number.isSafeInteger(ref[1])||ref[1]<0)))return true;
+   const row=active?.index.get(ref[0]),line=(ref[1]===null?row:row?.summaries[ref[1]])?.evidence?.line;
+   if(Number.isSafeInteger(line)&&line>0)context.openSource?.(line,row.reportId);return true;
+  }
   if(action==='source'){const row=active?.index.get(value),line=row?.evidence?.line;if(Number.isSafeInteger(line)&&line>0)context.openSource?.(line,row.reportId);return true;}
   if(action==='select'&&active?.index.has(value)){state.selected=value;state.raw=false;}
   else if(action==='raw'&&value===state.selected)state.raw=!state.raw;

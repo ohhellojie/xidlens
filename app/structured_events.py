@@ -194,7 +194,6 @@ def _dcgm(document, max_records):
     bundle['recognized'] = True
     bundle['rawDocument'] = root  # Includes unknown fields; never silently drop them.
     bundle['dcgm']['overallResult'] = root.get('Overall Result')
-    bundle['warnings'].append('DCGM JSON 随版本变化；通过仅适用于记录中的测试和实体，未出现的测试不计为通过。')
     def add(row, pointer, run, category, name, result_kind='entity'):
         rows = bundle['dcgm']['results'] if result_kind == 'entity' else bundle['dcgm']['summaries']
         if len(bundle['dcgm']['results']) + len(bundle['dcgm']['summaries']) >= max_records:

@@ -116,4 +116,17 @@ test('embedded results do not repeat the host heading',()=>{
 test('unserializable local payload does not break the results screen',()=>{
  const cycle={};cycle.self=cycle;const data=report([row('a','unknown',{raw:cycle})]);ui.render(data,ctx);click('raw','result:0');assert.ok(ui.render(data,ctx).includes('无法显示此原始值'));
 });
+test('long warnings and info disclose clipping and preserve exact summary source',()=>{
+ const warning='<script>'+('W'.repeat(4000))+'TAIL',data=report([row('a','warn',{warnings:[warning],info:['I'.repeat(4000)]})]);
+ data.structured.dcgm.summaries=[row('s','warn',{resultKind:'summary',entity:{},warnings:['S'.repeat(4001)],evidence:{line:75,jsonPointer:'/test_summary'}})];
+ const html=ui.render(data,ctx);assert.equal((html.match(/预览已截断。/g)||[]).length,2,'Only the warning and summary exceed their limit');assert.ok(!html.includes('<script>'));assert.ok(!html.includes('TAIL'));assert.ok(html.includes('查看完整原文'));
+ click('message-source',JSON.stringify(['result:0',null]));assert.deepEqual(calls.at(-1),['source',10,A]);click('message-source',JSON.stringify(['result:0',0]));assert.deepEqual(calls.at(-1),['source',75,A]);
+ const before=calls.length;for(const value of ['bad','{}',JSON.stringify(['result:0',-1]),JSON.stringify(['result:0',9]),JSON.stringify(['missing',null])])click('message-source',value);assert.equal(calls.length,before);
+});
+test('clipped runtime errors and omitted messages keep reachable original lines',()=>{
+ const data=report([]);Object.assign(data.structured.dcgm.runs[0],{runtimeError:'R'.repeat(8001),runtimeEvidence:{line:28}});
+ let html=ui.render(data,ctx);assert.ok(html.includes('预览已截断。'));assert.ok(html.includes('查看完整原文'));click('message-source',JSON.stringify(['runtime:0',null]));assert.deepEqual(calls.at(-1),['source',28,A]);
+ ui.reset();const many=report([row('a','warn',{warnings:Array.from({length:21},(_,i)=>'Warning '+i)})]);html=ui.render(many,ctx);assert.ok(html.includes('仅显示前 20 条'));assert.ok(!html.includes('<li>Warning 20</li>'));click('message-source',JSON.stringify(['result:0',null]));assert.deepEqual(calls.at(-1),['source',10,A]);
+ ui.reset();html=ui.render(report([row('a','warn',{warnings:['W'.repeat(4001)],evidence:{line:0}})]),ctx);assert.ok(html.includes('预览已截断。'));assert.ok(!html.includes('data-structured="message-source"'));
+});
 console.log('Structured UI: '+passed+' tests passed');

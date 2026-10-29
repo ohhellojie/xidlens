@@ -61,6 +61,7 @@ class DcgmTests(unittest.TestCase):
                              ['pass', 'fail', 'warn', 'skip', 'not_run'])
             self.assertEqual(result['dcgm']['runs'][0]['version'], '3.3.9' if legacy else '4.6.0')
             self.assertTrue(result['complete'])
+            self.assertEqual(result['warnings'], [], 'Valid versioned output has no generic read warning')
 
     def test_unknown_fields_and_error_metadata_are_preserved(self):
         original = dcgm()
