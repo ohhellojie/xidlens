@@ -51,6 +51,7 @@
     "catalog",
     "desktop",
     "diagnostics",
+    "evidence",
     "file_export",
     "gpu_summary_core",
     "instance",
@@ -85,7 +86,9 @@
     "sessions.js",
     "sessions.css",
     "timeline.js",
-    "timeline.css"
+    "timeline.css",
+    "evidence.js",
+    "evidence.css"
   ],
   "public_git_names": [
     "ohhellojie",

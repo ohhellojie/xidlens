@@ -1,5 +1,10 @@
 export const clamp=(n,low,high)=>Math.min(high,Math.max(low,n));
 export const defaults=()=>({top:1,offset:0,left:0,selected:1,query:'',wrap:false});
+export function lineSelection(anchor,focus,total){
+ const last=Math.max(1,Math.trunc(Number(total))||1),bound=value=>clamp(Math.trunc(Number(value))||1,1,last);
+ const a=bound(anchor),f=bound(focus);
+ return {anchor:a,focus:f,start:Math.min(a,f),end:Math.max(a,f),count:total>0?Math.abs(a-f)+1:0};
+}
 export function sanitize(value,total){return {...defaults(),...value,top:clamp(Math.trunc(value?.top)||1,1,Math.max(1,total)),selected:clamp(Math.trunc(value?.selected)||1,1,Math.max(1,total)),offset:Math.max(0,Number(value?.offset)||0),query:typeof value?.query==='string'?value.query.slice(0,512):''};}
 export function advance(position,delta,total,height){
  let top=clamp(position.top,1,Math.max(1,total)),offset=position.offset+delta;

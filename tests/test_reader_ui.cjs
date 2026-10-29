@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {pathToFileURL}=require('node:url');
 (async()=>{
- const {advance,endPosition,boundPosition,sanitize,expandTabs,highlightParts}=await import(pathToFileURL(require.resolve('../frontend/src/reader/model.js')));
+ const {advance,endPosition,boundPosition,sanitize,expandTabs,highlightParts,lineSelection}=await import(pathToFileURL(require.resolve('../frontend/src/reader/model.js')));
  const h=()=>26,total=20_000_000;
  assert.deepEqual(advance({top:1,offset:0},-900,total,h),{top:1,offset:0});
  assert.deepEqual(advance({top:12_000_000,offset:8},60,total,h),{top:12_000_002,offset:16});
@@ -15,6 +15,12 @@ const {pathToFileURL}=require('node:url');
  assert.equal(sanitize({top:99,selected:200,query:'x'.repeat(900)},10).top,10);
  assert.equal(sanitize({selected:200},10).selected,10);
  assert.equal(sanitize({query:'x'.repeat(900)},10).query.length,512);
+ assert.deepEqual(lineSelection(12,4,20),{anchor:12,focus:4,start:4,end:12,count:9});
+ assert.deepEqual(lineSelection(12,25,20),{anchor:12,focus:20,start:12,end:20,count:9});
+ assert.deepEqual(lineSelection(12,-3,20),{anchor:12,focus:1,start:1,end:12,count:12});
+ assert.equal(lineSelection(1,300,500).count,300,'Long selections stay explicit instead of silently truncating');
+ assert.equal(lineSelection(1,1,0).count,0);
+ assert.deepEqual(lineSelection(undefined,NaN,10),{anchor:1,focus:1,start:1,end:1,count:1});
  assert.equal(expandTabs('a\tb'),'a       b');
  const raw='<img onerror=x> [A].*';assert.deepEqual(highlightParts(raw,'[a].*'),['<img onerror=x> ',{match:'[A].*'},'']);
  const long='a'.repeat(1024*1024),parts=highlightParts(long,'a');assert.ok(parts.length<=4001);assert.equal(parts.map(p=>typeof p==='string'?p:p.match).join(''),long,'Highlight limit preserves every original character');

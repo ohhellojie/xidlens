@@ -32,4 +32,6 @@
 .reader-page:not(.focus-mode) .reading-workspace{margin-top:20px}
 .reader-toolbar .back-analysis{flex-shrink:0;margin-right:6px;white-space:nowrap}
 .focus-trigger{margin-left:auto}
+.log-row.range-selected,.log-row.range-selected .line-number{background:var(--selected)}
+.evidence-trigger{flex-shrink:0}
 @media(max-width:800px){.reader-page:not(.focus-mode) .reading-workspace{margin-top:14px}}

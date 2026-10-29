@@ -13,6 +13,7 @@ from version import VERSION
 from report_data import normalize_report
 from log_reader import LogStore
 from sessions import SessionStore
+from evidence import EvidenceError, EvidenceStore
 import recovery
 
 ROOT=Path(__file__).resolve().parent
@@ -295,7 +296,15 @@ def delete_cases(ids):
                 CASE_CACHE.pop(key,None);READER.drop(key);READER_SOURCES.pop(key,None);deleted.append(key)
             except OSError:failed.append(key)
         prune_sources(refs)
-    return {'deleted':deleted,'failed':failed}
+    # A save holding the evidence lock either fails its final report check or
+    # finishes before this cleanup. Never acquire that lock under RESULTS_LOCK.
+    cleanup_failed=[]
+    for key in deleted:
+        try:EVIDENCE.remove_report(key)
+        except Exception:cleanup_failed.append(key)
+    result={'deleted':deleted,'failed':failed}
+    if cleanup_failed:result['evidenceCleanupFailed']=cleanup_failed
+    return result
 
 def run_job(job):
     try:
@@ -360,6 +369,17 @@ def reader_source(key):
 
 READER=LogStore(RUNTIME/'reader-cache',reader_source)
 
+def evidence_source(key):
+    # Keep identity fields for redaction and use the reader's revision for lines.
+    # EvidenceStore acquires its own lock before resolving; never call it while
+    # holding RESULTS_LOCK from another server path.
+    with RESULTS_LOCK:
+        report,_=read_case(key)
+        path,_,revision=reader_source(key)
+        return path,report,revision
+
+EVIDENCE=EvidenceStore(RUNTIME/'evidence',evidence_source,READER.lines)
+
 class Handler(BaseHTTPRequestHandler):
     rbufsize=0
     def log_message(self,*args):pass
@@ -404,7 +424,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
         if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).replace('__SIDEBAR_PINNED__',str(sidebar_pinned()).lower()).encode(),ctype='text/html; charset=utf-8')
         if url.path=='/reader.js':return self.respond((ROOT/'reader'/'reader.js').read_bytes(),ctype='application/javascript; charset=utf-8')
-        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/timeline.js','/timeline.css','/comparison.js','/demo.txt'):
+        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/timeline.js','/timeline.css','/comparison.js','/evidence.js','/evidence.css','/demo.txt'):
             kind='application/javascript' if url.path.endswith('.js') else 'text/css' if url.path.endswith('.css') else 'text/plain'
             return self.respond((ROOT/url.path[1:]).read_bytes(),ctype=kind+'; charset=utf-8')
         if url.path=='/diagnostics.js':return self.respond((ROOT/'diagnostics.js').read_bytes(),ctype='application/javascript; charset=utf-8')
@@ -414,6 +434,17 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
+        if url.path=='/api/evidence':
+            origin=self.headers.get('Origin')
+            if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+            query=parse_qs(url.query,keep_blank_values=True)
+            if set(query)!={'id'} or len(query['id'])!=1 or not re_id(query['id'][0]):return self.respond({'error':'报告编号无效'},400)
+            try:return self.respond(EVIDENCE.list(query['id'][0]))
+            except EvidenceError as exc:return self.respond({'error':str(exc)},exc.status)
+            except FileNotFoundError:return self.respond({'error':'报告或原日志不存在'},404)
+            except (ValueError,TypeError,KeyError,RecursionError):return self.respond({'error':'报告无法读取，请重新导入原日志'},422)
+            except OSError:return self.respond({'error':'证据记录暂时无法读取，请重试'},503)
+            except Exception:return self.respond({'error':'证据读取失败，请重试'},500)
         if url.path=='/api/sessions' or url.path.startswith('/api/session/'):
             origin=self.headers.get('Origin')
             if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
@@ -472,6 +503,24 @@ class Handler(BaseHTTPRequestHandler):
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
+        if url.path in ('/api/evidence/save','/api/evidence/delete','/api/evidence/preview'):
+            action=url.path.rsplit('/',1)[-1]
+            if RECOVERY['pending'] and action!='delete':return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)
+            try:
+                body=self.read_json_body(128*1024)
+                required={'id','revision','identity'}|({'entry'} if action=='save' else {'bookmarkId'} if action=='delete' else {'ids'})
+                optional={'options'} if action=='preview' else set()
+                if set(body)-required-optional or required-set(body):raise ValueError('无效字段')
+                if action=='save':result=EVIDENCE.save(body['id'],body['revision'],body['identity'],body['entry'])
+                elif action=='delete':result=EVIDENCE.delete(body['id'],body['revision'],body['identity'],body['bookmarkId'])
+                else:result=EVIDENCE.preview(body['id'],body['revision'],body['identity'],body['ids'],body.get('options'))
+                return self.respond(result)
+            except EvidenceError as exc:return self.respond({'error':str(exc)},exc.status)
+            except FileNotFoundError:return self.respond({'error':'报告或原日志不存在'},404)
+            except (ValueError,UnicodeError,TypeError,KeyError,RecursionError):return self.respond({'error':'证据请求无效，请核对报告与原文后重试'},400)
+            except TimeoutError:return self.respond({'error':'证据请求传输超时，请重试'},408)
+            except OSError:return self.respond({'error':'证据记录读取或保存失败，请重试'},503)
+            except Exception:return self.respond({'error':'证据操作失败，请重试'},500)
         if url.path in ('/api/sessions/create','/api/sessions/refresh','/api/sessions/delete'):
             if RECOVERY['pending'] and url.path!='/api/sessions/delete':
                 return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)
