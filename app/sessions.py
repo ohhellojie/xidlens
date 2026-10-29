@@ -157,13 +157,24 @@ def combine(manifest, loaded):
                 row = deepcopy(event)
                 row.update(id=f'{key}:{event.get("id", "")}', reportId=key, source=report['source'],
                            sourceEventId=event.get('id', ''), timeInfo=event_time(event))
-                if event.get('gpu') is not None:
+                if event.get('kind') == 'sxid' or event.get('deviceNamespace') == 'nvswitch':
+                    row.update(gpu=None, deviceNamespace='nvswitch', deviceKey=f'{key}:nvswitch:{event.get("address", "")}')
+                elif event.get('gpu') is not None:
                     row['deviceKey'] = f'{key}:{event["gpu"]}'
+                elif event.get('kind') == 'goe':
+                    target_uuid = event.get('targetUUID') or event.get('structured', {}).get('deviceUUID', '')
+                    row.update(deviceNamespace='gpu', targetUUID=target_uuid, deviceKey=f'{key}:gpu-uuid:{target_uuid}')
                 if report.get('sourceMember'):
                     row['sourceMember'] = report['sourceMember']
                 if row.get('association', {}).get('refs'):
                     row['association']['refs'] = [{**ref, 'evidence': reference(key, report, ref.get('evidence'))}
                                                    for ref in row['association']['refs']]
+                if isinstance(row.get('structured'), dict):
+                    structured = row['structured']
+                    if 'evidence' in structured:
+                        structured['evidence'] = reference(key, report, structured['evidence'])
+                    if 'representations' in structured:
+                        structured['representations'] = [reference(key, report, ref) for ref in structured['representations']]
                 target.append(row)
         source_snapshots = report.get('diagnostics', {}).get('snapshots', [])
         counts['snapshots'] += len(source_snapshots)

@@ -40,5 +40,8 @@ jobs:
       - run: node tests/test_reader_ui.cjs
       - run: node tests/test_evidence_ui.cjs
       - run: node tests/test_evidence_host.cjs
+      - run: node tests/test_structured_ui.cjs
+      - run: node tests/test_structured_views.cjs
+      - run: node tests/test_structured_host.cjs
       - run: python tools/check_repository.py
       - run: git diff --check

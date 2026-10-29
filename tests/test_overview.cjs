@@ -84,4 +84,18 @@ test('matrix exposes quiet state meanings and places health results before wide 
  const model=diagnostics.checksModel(d);assert.equal(model.columns[0],'health');
  diagnostics.reset();const html=diagnostics.render(d,{...ctx,state:{page:'checks',gpu:0},heading:()=>''});assert.ok(html.includes('check-neutral-state'));assert.ok(html.includes('未采集'));assert.ok(html.includes('nvidia'));
 });
+test('structured event findings keep namespace, count and every source pointer',()=>{
+ const d={source:'synthetic.json',gpus:[gpu(0,a)],nodes:{},server:{},diagnostics:{snapshots:[],checks:[]},events:[
+  {id:'s',gpu:0,address:a,kind:'sxid',code:'119',line:5,raw:'Synthetic switch',occurrenceCount:1,structured:{switch:2,representations:[{line:5}]}},
+  {id:'g',gpu:null,address:a,kind:'goe',code:'1',line:7,raw:'Synthetic GOE',occurrenceCount:1,representationCount:2,targetUUID:'GPU-SYNTHETIC',structured:{moduleSignature:'GPU-GSP',category:1,moduleEventCode:1,severity:'Fatal',severityDomain:'host-cper',scope:'HOST',legacyXid:119,representations:[{line:7,jsonPointer:'/events/0'},{line:7,jsonPointer:'/events/1'}]}},
+  {id:'x',gpu:0,address:a,kind:'xid',code:'119',line:8,raw:'Synthetic Xid'}]};
+ const m=ui.buildModel(d),events=m.findings.filter(f=>f.event),goe=events.find(f=>f.event.kind==='goe');
+ assert.equal(events.length,3);assert.equal(events.find(f=>f.event.kind==='sxid').device,'NVSwitch 2');assert.equal(goe.device,'GPU-SYNTHETIC');assert.equal(goe.status,'review');assert.equal(goe.count,1);assert.equal(goe.evidence.length,2);assert.match(goe.observation,/1 次事件 · 2 处来源/);assert.match(goe.basis,/主机 CPER 严重性/);assert.match(goe.basis,/HOST/);assert.match(goe.basis,/仅关联提示，未合并/);
+ const other={...d.events[1],id:'g2',structured:{...d.events[1].structured,moduleEventCode:2}};d.events.push(other);assert.equal(ui.buildModel(d).findings.filter(f=>f.event?.kind==='goe').length,2);
+ ui.reset();ui.render(d,ctx);ui.click({dataset:{overview:'select',value:goe.id}});const html=ui.render(d,ctx);assert.ok(html.includes('/events/0'));assert.ok(html.includes('/events/1'));assert.ok(html.includes('GOE · 实验性'));
+});
+test('DCGM passes do not become normal GPU state or a missing test claim',()=>{
+ const d={source:'synthetic.json',structured:{format:'dcgm-json'},gpus:[],events:[],server:{},nodes:{},diagnostics:{checks:[{id:'p',rule:'dcgm',status:'ok',address:'',title:'DCGM memory',observation:'GPU 0 · 通过'}],snapshots:[]}};
+ assert.equal(ui.buildModel(d).counts.ok,0);ui.reset();const html=ui.render(d,ctx);assert.ok(html.includes('data-page="structured"'));assert.ok(!html.includes('日志未提供检查所需的数据'));assert.ok(!html.includes('0 块 GPU'));
+});
 console.log('Overview: '+results.length+' tests passed');

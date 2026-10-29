@@ -1,12 +1,13 @@
 /* Source-aware collections. Cross-file navigation always carries the report ID. */
 ((root) => {
   'use strict';
+  const eventTools=typeof module!=='undefined'&&module.exports?require('./analysis.js'):root.XidAnalysis;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const states = {ready:'可用', missing:'报告缺失', changed:'报告已变化', duplicate:'重复内容'};
   const checkStates = {error:'发现错误', review:'待核实', missing:'数据缺失', ok:'未见异常', conflict:'字段冲突'};
   const timeStates = {uptime_seconds:'启动后秒数', calendar_without_year_or_zone:'年份和时区未记录', calendar_without_zone:'时区未记录', unknown:'时间未记录', calendar:'日历时间'};
   const tabs = {sources:'来源文件', devices:'设备关联', events:'事件', timeline:'时间线', checks:'检查'};
-  const state = {id:'', tab:'sources', page:0, source:'all', selected:''};
+  const state = {id:'', tab:'sources', page:0, source:'all', selected:'', evidencePage:0};
   let context = {}, bundle = null;
   const PAGE_SIZE = 100;
 
@@ -64,19 +65,31 @@
     const shown = rows.slice(state.page*PAGE_SIZE,(state.page+1)*PAGE_SIZE);
     const selected = shown.find(row => row.id===state.selected) || shown[0];
     state.selected = selected?.id || '';
-    const selectedName = row => kind==='events' ? `${row.kind==='xid'?'Xid '+row.code:row.title || row.kind}` : row.title || row.status;
-    const filters = `<div class="session-toolbar"><label>来源<select class="select" data-session-change="source" aria-label="筛选联合分析来源"><option value="all">全部来源</option>${view.members.filter(member=>member.state==='ready').map(member=>`<option value="${esc(member.reportId)}" ${state.source===member.reportId?'selected':''}>${esc(member.source)}</option>`).join('')}</select></label><span class="source-meta">${rows.length} 条${kind==='events' ? ` · ${view.timeOrder==='calendar'?'按带时区的日历时间排序':'按来源及原文顺序'}` : ''}</span></div>`;
-    const main = shown.length ? `<div class="session-record-list">${shown.map(row=>`<button class="session-record ${selected?.id===row.id?'is-selected':''}" data-session="select" data-value="${esc(row.id)}" aria-pressed="${selected?.id===row.id}"><div><strong>${esc(selectedName(row))}</strong>${kind==='checks'?`<span>${esc(checkStates[row.status] || row.status)}</span>`:`<span class="mono">${esc(row.timeInfo?.raw || '时间未记录')}</span>`}</div><span class="mono">${esc(row.address || '报告')}</span><small>${esc(row.source)}${row.line?` · 第 ${row.line} 行`:''}</small></button>`).join('')}</div>` : '<div class="live-empty"><h2>没有匹配记录</h2></div>';
+    const selectedName = row => kind==='events' ? eventTools.eventTitle(row) : row.title || row.status;
+    const deviceLabel = row => row.kind==='sxid'||row.deviceNamespace==='nvswitch'?'NVSwitch'+(row.structured?.switch==null?'':' '+row.structured.switch)+(row.address?' · '+row.address:''):row.address||row.targetUUID||'报告';
+    const filters = `<div class="session-toolbar"><label>来源<select class="select" data-session-change="source" aria-label="筛选联合分析来源"><option value="all">全部来源</option>${view.members.filter(member=>member.state==='ready').map(member=>`<option value="${esc(member.reportId)}" ${state.source===member.reportId?'selected':''}>${esc(member.source)}</option>`).join('')}</select></label><span class="source-meta">${kind==='events'?eventTools.countEvents(rows):rows.length} 条${kind==='events' ? ` · ${view.timeOrder==='calendar'?'按带时区的日历时间排序':'按来源及原文顺序'}` : ''}</span></div>`;
+    const main = shown.length ? `<div class="session-record-list">${shown.map(row=>`<button class="session-record ${selected?.id===row.id?'is-selected':''}" data-session="select" data-value="${esc(row.id)}" aria-pressed="${selected?.id===row.id}"><div><strong>${esc(selectedName(row))}</strong>${kind==='checks'?`<span>${esc(checkStates[row.status] || row.status)}</span>`:`<span class="mono">${esc(row.timeInfo?.raw || '时间未记录')}</span>`}</div><span class="mono">${esc(deviceLabel(row))}</span><small>${esc(row.source)}${row.line?` · 第 ${row.line} 行`:''}</small></button>`).join('')}</div>` : '<div class="live-empty"><h2>没有匹配记录</h2></div>';
     let detail = '<p class="source-meta">选择一条记录查看来源。</p>';
     if (selected) {
-      detail = `<h2>${esc(selectedName(selected))}</h2><p class="mono">${esc(selected.address || '报告')}</p>`;
+      detail = `<h2>${esc(selectedName(selected))}</h2><p class="mono">${esc(deviceLabel(selected))}</p>`;
       if (kind === 'events') {
-        detail += `<p>${esc(timeStates[selected.timeInfo?.kind] || '时间未记录')}${selected.timeInfo?.boot?` · ${esc(selected.timeInfo.boot)}`:''}</p><pre>${esc(selected.raw || '')}</pre>${location(selected.reportId,selected.line,`${selected.source} · 第 ${selected.line} 行`)}`;
+        detail += eventDetails(selected);
+        detail += `<p>${esc(timeStates[selected.timeInfo?.kind] || '时间未记录')}${selected.timeInfo?.boot?` · ${esc(selected.timeInfo.boot)}`:''}</p><pre>${esc(selected.raw || '')}</pre>${eventSources(selected)}`;
       } else {
         detail += `${selected.observation?`<h3>观测结果</h3><p>${esc(selected.observation)}</p>`:''}${selected.basis?`<h3>判断依据</h3><p>${esc(selected.basis)}</p>`:''}${(selected.evidence || []).map(ref=>`<section class="session-check-reference"><pre>${esc(ref.text || '')}</pre>${location(ref.reportId,ref.line,`${ref.source} · 第 ${ref.line} 行`)}</section>`).join('')}`;
       }
     }
     return filters + `<div class="session-split"><section>${main}${pager(rows.length)}</section><aside class="session-detail">${detail}</aside></div>`;
+  }
+  function eventDetails(row) {
+    return eventTools.eventMetadata(row).map(([label,value])=>`<p><strong>${esc(label)}</strong> ${esc(value)}</p>`).join('');
+  }
+  function eventSources(row) {
+    const refs=eventTools.sourceEvidence(row);
+    if (!refs.length) return location(row.reportId,row.line,`${row.source} · 第 ${row.line} 行`);
+    state.evidencePage=Math.min(state.evidencePage,Math.max(0,Math.ceil(refs.length/PAGE_SIZE)-1));
+    const page=state.evidencePage;
+    return `<div class="session-evidence-list session-event-sources">${refs.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE).map(ref=>`<div>${location(ref.reportId,ref.line,`${ref.source} · 第 ${ref.line}${ref.endLine>ref.line?'–'+ref.endLine:''} 行`)}${ref.jsonPointer?`<small class="mono">${esc(ref.jsonPointer)}</small>`:''}</div>`).join('')}</div>${refs.length>PAGE_SIZE?`<nav class="session-pagination" aria-label="来源记录分页"><span>${page*PAGE_SIZE+1}–${Math.min((page+1)*PAGE_SIZE,refs.length)} / ${refs.length}</span><div>${action('evidencePage',page-1,'上一页',page===0?'disabled':'')}${action('evidencePage',page+1,'下一页',(page+1)*PAGE_SIZE>=refs.length?'disabled':'')}</div></nav>`:''}`;
   }
   function render(result, ctx={}) {
     context=ctx;bundle=result;
@@ -84,7 +97,7 @@
     if (ctx.error) return `<section class="session-page"><h1 tabindex="-1">联合分析</h1><p role="alert">${esc(ctx.error)}</p>${action('list','','返回关联列表')}</section>`;
     if (!result?.manifest || !result?.view) return list(ctx.sessions || [],ctx.unreadable);
     const {manifest,view}=result;
-    if (state.id!==manifest.id) Object.assign(state,{id:manifest.id,tab:'sources',page:0,source:'all',selected:''});
+    if (state.id!==manifest.id) Object.assign(state,{id:manifest.id,tab:'sources',page:0,source:'all',selected:'',evidencePage:0});
     return `<section class="session-page"><header class="session-heading"><div><h1 tabindex="-1">${esc(manifest.name)}</h1><p>${view.members.length} 份来源 · ${view.counts.events} 条事件 · 人工关联</p></div><div class="actions">${action('list','','关联列表')}${action('refresh',manifest.id,'刷新成员')}${action('delete',manifest.id,'移除关联')}</div></header>${warnings(view)}<nav class="session-tabs" aria-label="联合分析视图">${Object.entries(tabs).map(([key,label])=>`<button class="btn" data-session="tab" data-value="${key}" aria-pressed="${state.tab===key}">${label}</button>`).join('')}</nav>${state.tab==='sources'?sources(view):state.tab==='devices'?devices(view):state.tab==='timeline'?(context.renderTimeline?.(result)||''):records(view,state.tab)}</section>`;
   }
   function rerender() { context.render?.(); }
@@ -92,9 +105,10 @@
     const actionName=target?.dataset?.session;
     if (!actionName) return false;
     const value=target.dataset.value || '';
-    if (actionName==='tab' && tabs[value]) {Object.assign(state,{tab:value,page:0,selected:''});rerender();}
-    else if (actionName==='select') {state.selected=value;rerender();}
-    else if (actionName==='page') {state.page=Math.max(0,Number(value)||0);rerender();}
+    if (actionName==='tab' && tabs[value]) {Object.assign(state,{tab:value,page:0,selected:'',evidencePage:0});rerender();}
+    else if (actionName==='select') {state.selected=value;state.evidencePage=0;rerender();}
+    else if (actionName==='page') {state.page=Math.max(0,Number(value)||0);state.evidencePage=0;rerender();}
+    else if (actionName==='evidencePage') {state.evidencePage=Math.max(0,Number(value)||0);rerender();}
     else if (actionName==='source') {
       const reportId=target.dataset.report, line=Number(target.dataset.line);
       if (/^[a-f0-9]{32}$/.test(reportId || '') && Number.isInteger(line) && line>0) context.onSource?.(reportId,line);
@@ -107,9 +121,9 @@
   }
   function change(target) {
     if (target?.dataset?.sessionChange!=='source') return false;
-    state.source=target.value;state.page=0;state.selected='';rerender();return true;
+    state.source=target.value;state.page=0;state.selected='';state.evidencePage=0;rerender();return true;
   }
-  function reset() { Object.assign(state,{id:'',tab:'sources',page:0,source:'all',selected:''}); }
+  function reset() { Object.assign(state,{id:'',tab:'sources',page:0,source:'all',selected:'',evidencePage:0}); }
   const api={render,click,change,reset};
   if (typeof module!=='undefined'&&module.exports) module.exports={...api,esc,rowsFor};
   else root.XidSessions=api;

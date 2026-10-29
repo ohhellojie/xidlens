@@ -1,10 +1,11 @@
 /* Time domains remain separate until their source supplies an explicit anchor. */
 ((root) => {
   'use strict';
+  const eventTools=typeof module!=='undefined'&&module.exports?require('./analysis.js'):root.XidAnalysis;
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const kindLabels={xid:'Xid',aer:'PCIe AER',ecc:'ECC 错误',channel:'通道超时',fallen:'GPU 不可访问',smi_error:'nvidia-smi 错误',lockup:'内核软锁死',mods:'MODS 错误',thermal:'温度告警',init:'初始化记录',reset:'重置记录',counter_reset:'计数清零',driver_load:'驱动加载',driver_reload:'驱动重载',recovery:'恢复记录',snapshot:'状态快照',sxid:'SXid',dcgm:'DCGM',goe:'GOE',unknown:'未分类文本',text:'文本记录',log:'文本记录'};
   const timeLabels={calendar:'带时区的日历时间','calendar-unzoned':'日历时间，时区未记录','calendar-partial':'年份或时区未记录',uptime:'启动后秒数',unknown:'时间未记录'};
-  const defaults=identity=>({identity,device:'all',kind:'all',clock:'all',from:'',to:'',query:'',mode:'records',page:0,selected:'',group:'',memberPage:0});
+  const defaults=identity=>({identity,device:'all',kind:'all',clock:'all',from:'',to:'',query:'',mode:'records',page:0,selected:'',group:'',memberPage:0,evidencePage:0});
   const state=defaults(''),views=new Map();
   const PAGE_SIZE=100;
   let context={},activeModel=null,lastReport=null,cache=null,filterCache=null;
@@ -23,7 +24,7 @@
     const saved=defaults(identity);
     for (const key of ['device','kind','clock','from','to','query','selected','group']) if (typeof value[key]==='string') saved[key]=value[key].slice(0,key==='group'?16384:4000);
     saved.mode=value.mode==='groups'?'groups':'records';
-    for (const key of ['page','memberPage']) if (Number.isSafeInteger(value[key])&&value[key]>=0) saved[key]=value[key];
+    for (const key of ['page','memberPage','evidencePage']) if (Number.isSafeInteger(value[key])&&value[key]>=0) saved[key]=value[key];
     views.set(identity,saved);
     if (state.identity===identity) {Object.assign(state,saved);filterCache=null;}
     return true;
@@ -58,7 +59,7 @@
     return parsed;
   }
   function label(row) {
-    return row.kind==='xid'?'Xid '+row.code:row.kind==='sxid'?'SXid '+row.code:row.title||kindLabels[row.kind]||row.kind;
+    return ['xid','sxid','goe'].includes(row.kind)?eventTools.eventTitle(row):row.title||kindLabels[row.kind]||row.kind;
   }
   function model(report) {
     const input=report?.view||report||{},defaultId=report?.id||report?.manifest?.id||report?.source||'current';
@@ -84,10 +85,12 @@
       }
     }
     for (const row of records) {
-      const candidates=deviceIndex.get(row.sourceKey+(row.gpu!=null?'|id:'+row.gpu:'|pci:'+row.address))||[];
+      const namespace=eventTools.eventNamespace(row),target=row.targetUUID||row.structured?.deviceUUID||'';
+      const candidates=namespace==='nvswitch'||(row.kind==='goe'&&row.gpu==null)?[]:deviceIndex.get(row.sourceKey+(row.gpu!=null?'|id:'+row.gpu:'|pci:'+row.address))||[];
       const device=candidates.length===1?candidates[0]:null;
-      row.deviceKey=row.deviceKey||device?.key||String(row.sourceKey)+'|'+(device?.pci||row.address||row.targetUUID||'');
-      row.deviceLabel=device?.pci||row.address||row.targetUUID||'';
+      row.deviceKey=namespace==='nvswitch'?String(row.sourceKey)+'|nvswitch|'+(row.address||''):
+        row.deviceKey||device?.key||String(row.sourceKey)+'|'+(device?.pci||target||row.address||'');
+      row.deviceLabel=namespace==='nvswitch'?'NVSwitch'+(row.structured?.switch==null?'':' '+row.structured.switch)+(row.address?' · '+row.address:''):device?.pci||target||row.address||'';
       if (!bySource.has(row.sourceKey)) bySource.set(row.sourceKey,[]);
       bySource.get(row.sourceKey).push(row);
     }
@@ -133,12 +136,13 @@
     for (const row of records) {
       const heuristic=['unknown','text','log'].includes(row.kind),template=heuristic?pattern(row.raw):'';
       const severity=row.kind==='aer'?(/severity=([^,]+)/i.exec(row.raw||'')?.[1]||row.title||''):'';
-      const key=JSON.stringify([row.segmentId,row.clock.kind,row.deviceKey,row.kind,row.code||'',severity,row.outcome||'',row.recoveryAction?.current||null,
-        row.kind==='snapshot'?row.id:heuristic?template:['xid','sxid'].includes(row.kind)?'':row.title||'']);
+      const key=JSON.stringify([row.segmentId,row.clock.kind,row.deviceKey,eventTools.eventNamespace(row),row.kind,eventTools.eventType(row),severity,row.outcome||'',row.recoveryAction?.current||null,
+        ['sxid','goe'].includes(row.kind)?[row.structured?.severityDomain,row.structured?.severity,row.structured?.scope,row.structured?.link]:null,
+        row.kind==='snapshot'?row.id:heuristic?template:['xid','sxid','goe'].includes(row.kind)?'':row.title||'']);
       if (!groups.has(key)) groups.set(key,{key,records:[],first:row,last:row,heuristic,template});
       const item=groups.get(key);item.records.push(row);item.last=row;
     }
-    return [...groups.values()].map(item=>({...item,count:item.records.length}));
+    return [...groups.values()].map(item=>({...item,count:eventTools.countEvents(item.records),recordCount:item.records.length}));
   }
   function filtered(data,filters=state) {
     const query=String(filters.query||'').trim().toLowerCase(),from=String(filters.from||'').trim(),to=String(filters.to||'').trim();
@@ -158,7 +162,7 @@
       if (filters.device!=='all'&&filters.device&&row.deviceKey!==filters.device) return false;
       if (filters.kind!=='all'&&filters.kind&&row.kind!==filters.kind) return false;
       if (filters.clock!=='all'&&filters.clock&&row.clock.kind!==filters.clock) return false;
-      if (query&&!`${row.raw} ${row.title} ${row.code} ${row.address} ${row.source}`.toLowerCase().includes(query)) return false;
+      if (query&&!`${row.raw} ${label(row)} ${row.address} ${row.targetUUID||''} ${row.source}`.toLowerCase().includes(query)) return false;
       if (!error&&(low!==null||high!==null)) {
         const value=filters.clock==='calendar'?BigInt(row.clock.order):Number(row.clock.order);
         if ((low!==null&&value<low)||(high!==null&&value>high)) return false;
@@ -174,13 +178,20 @@
   function pager(length,key='page') {
     if (length<=PAGE_SIZE) return '';
     const page=state[key];
-    return `<nav class="timeline-pager" aria-label="${key==='memberPage'?'组内原始记录分页':'时间线分页'}"><span>${page*PAGE_SIZE+1}–${Math.min((page+1)*PAGE_SIZE,length)} / ${length}</span><div><button class="btn" data-timeline="${key}" data-value="${page-1}" ${page===0?'disabled':''}>上一页</button><button class="btn" data-timeline="${key}" data-value="${page+1}" ${(page+1)*PAGE_SIZE>=length?'disabled':''}>下一页</button></div></nav>`;
+    return `<nav class="timeline-pager" aria-label="${key==='memberPage'?'组内原始记录分页':key==='evidencePage'?'来源记录分页':'时间线分页'}"><span>${page*PAGE_SIZE+1}–${Math.min((page+1)*PAGE_SIZE,length)} / ${length}</span><div><button class="btn" data-timeline="${key}" data-value="${page-1}" ${page===0?'disabled':''}>上一页</button><button class="btn" data-timeline="${key}" data-value="${page+1}" ${(page+1)*PAGE_SIZE>=length?'disabled':''}>下一页</button></div></nav>`;
+  }
+  function evidenceSources(row) {
+    const refs=eventTools.sourceEvidence(row);
+    if (!refs.length) return source(row);
+    state.evidencePage=Math.min(state.evidencePage,Math.max(0,Math.ceil(refs.length/PAGE_SIZE)-1));
+    return `<div class="timeline-evidence">${refs.slice(state.evidencePage*PAGE_SIZE,(state.evidencePage+1)*PAGE_SIZE).map((ref,index)=>`<div>${ref.line>0?`<button class="link-btn" data-timeline="evidence" data-value="${esc(row.id)}" data-evidence-index="${state.evidencePage*PAGE_SIZE+index}">${esc(ref.source||'原日志')} · 第 ${ref.line}${ref.endLine>ref.line?'–'+ref.endLine:''} 行</button>`:'<span class="source-meta">原始行号未记录</span>'}${ref.jsonPointer?`<small class="mono">${esc(ref.jsonPointer)}</small>`:''}</div>`).join('')}</div>${pager(refs.length,'evidencePage')}`;
   }
   function detail(row) {
     if (!row) return '<div class="live-empty"><h2>没有匹配记录</h2></div>';
+    const metadata=eventTools.eventMetadata(row).map(([key,value])=>`<dt>${esc(key)}</dt><dd>${esc(value)}</dd>`).join('');
     const action=row.recoveryAction?`<dt>恢复动作</dt><dd>${esc(row.recoveryAction.previous?.label)} → ${esc(row.recoveryAction.current?.label)}</dd>`:'';
     const time=row.clock.raw?`${esc(row.clock.raw)}<small>${esc(timeLabels[row.clock.kind])}</small>`:esc(timeLabels[row.clock.kind]);
-    return `<h2>${esc(label(row))}</h2><p class="mono">${esc(row.address||row.targetUUID||'报告')}</p><dl class="timeline-meta"><dt>时间</dt><dd>${time}</dd><dt>启动分段</dt><dd>${esc(row.boot||'标识未记录')}</dd>${action}</dl>${row.kind==='snapshot'?`<p>${row.fields.length} 个状态字段</p><div class="timeline-snapshot-fields">${row.fields.slice(0,12).map(field=>`<div><span>${esc(field.path||field.name)}</span><strong>${esc(field.value)}</strong></div>`).join('')}</div>${row.fields.length>12?'<p class="source-meta">其余字段见原文。</p>':''}`:`<pre>${esc(row.raw||'')}</pre>`}${source(row)}${row.kind==='reset'&&row.outcome==='completed'?'<p class="source-meta">恢复情况需结合后续验证。</p>':''}`;
+    return `<h2>${esc(label(row))}</h2><p class="mono">${esc(row.deviceLabel||row.address||row.targetUUID||'报告')}</p><dl class="timeline-meta"><dt>时间</dt><dd>${time}</dd><dt>启动分段</dt><dd>${esc(row.boot||'标识未记录')}</dd>${action}${metadata}</dl>${row.kind==='snapshot'?`<p>${row.fields.length} 个状态字段</p><div class="timeline-snapshot-fields">${row.fields.slice(0,12).map(field=>`<div><span>${esc(field.path||field.name)}</span><strong>${esc(field.value)}</strong></div>`).join('')}</div>${row.fields.length>12?'<p class="source-meta">其余字段见原文。</p>':''}`:`<pre>${esc(row.raw||'')}</pre>`}${row.truncated?'<p class="source-meta">原文预览已截断，完整内容见来源。</p>':''}${evidenceSources(row)}${row.kind==='reset'&&row.outcome==='completed'?'<p class="source-meta">恢复情况需结合后续验证。</p>':''}`;
   }
   function render(report,ctx={}) {
     context=ctx;
@@ -207,16 +218,16 @@
     const limits=[...new Set((report?.view?.warnings||[]).filter(warning=>warning.kind==='limit').map(warning=>warning.message))];
     const filters=`<div class="timeline-filters"><label>设备<select class="select" data-timeline-change="device" aria-label="筛选时间线设备"><option value="all">全部设备</option>${activeModel.devices.map(device=>`<option value="${esc(device.key)}" ${state.device===device.key?'selected':''}>${esc(device.address||'报告')}${activeModel.multipleSources?' · '+esc(device.source):''}</option>`).join('')}</select></label><label>类型<select class="select" data-timeline-change="kind" aria-label="筛选时间线类型"><option value="all">全部类型</option>${activeModel.kinds.map(kind=>`<option value="${esc(kind)}" ${state.kind===kind?'selected':''}>${esc(kindLabels[kind]||kind)}</option>`).join('')}</select></label><label>时间<select class="select" data-timeline-change="clock" aria-label="筛选时间类型"><option value="all">全部时间类型</option>${Object.entries(timeLabels).map(([key,text])=>`<option value="${key}" ${state.clock===key?'selected':''}>${text}</option>`).join('')}</select></label><label class="timeline-search">搜索<input class="select" type="search" id="timeline-query" data-timeline-input="query" aria-label="搜索时间线" value="${esc(state.query)}" placeholder="内容、代码或来源"></label></div>`;
     const ranges=['calendar','uptime'].includes(state.clock)?`<div class="timeline-range"><label>开始<input class="select" id="timeline-from" data-timeline-input="from" aria-label="开始时间" value="${esc(state.from)}" placeholder="${state.clock==='uptime'?'0.000':'完整日期、时间和时区'}"></label><label>结束<input class="select" id="timeline-to" data-timeline-input="to" aria-label="结束时间" value="${esc(state.to)}" placeholder="${state.clock==='uptime'?'120.000':'完整日期、时间和时区'}"></label><span class="source-meta">${state.clock==='uptime'?'各启动分段分别筛选，保留分段。':'仅筛选带时区的日历时间。'}</span></div>`:'';
-    const toolbar=`<div class="timeline-toolbar"><span>${rows.length} 条记录${state.mode==='groups'?' · '+groups.length+' 组':''}</span><div class="segments" aria-label="时间线视图"><button data-timeline="mode" data-value="records" aria-pressed="${state.mode==='records'}">时间顺序</button><button data-timeline="mode" data-value="groups" aria-pressed="${state.mode==='groups'}">重复聚合</button></div></div>`;
+    const toolbar=`<div class="timeline-toolbar"><span>${rows.length} 条记录${eventTools.countEvents(rows)!==rows.length?' · '+eventTools.countEvents(rows)+' 次事件':''}${state.mode==='groups'?' · '+groups.length+' 组':''}</span><div class="segments" aria-label="时间线视图"><button data-timeline="mode" data-value="records" aria-pressed="${state.mode==='records'}">时间顺序</button><button data-timeline="mode" data-value="groups" aria-pressed="${state.mode==='groups'}">重复聚合</button></div></div>`;
     let previousSegment='';
     const listing=visible.map(item=>{
       const row=state.mode==='groups'?item.first:item,segment=activeModel.segmentIndex.get(row.segmentId);
       const separator=previousSegment!==row.segmentId?`<div class="timeline-segment"><strong>${esc(segment.source||'当前来源')}</strong><span>${esc(segment.reason)} · ${esc(segment.orderReason)}</span></div>`:'';
       previousSegment=row.segmentId;
       const timeNote=state.mode==='groups'&&item.heuristic?'文本模式 · 启发式分组':row.clock.raw?timeLabels[row.clock.kind]:'';
-      return separator+`<button class="timeline-record ${(state.mode==='groups'?state.group===item.key:state.selected===row.id)?'is-selected':''}" data-timeline="${state.mode==='groups'?'group':'select'}" data-value="${esc(state.mode==='groups'?item.key:row.id)}" aria-pressed="${state.mode==='groups'?state.group===item.key:state.selected===row.id}"><span class="timeline-clock mono">${esc(row.clock.raw||'时间未记录')}</span><span class="timeline-record-main"><strong>${esc(label(row))}${state.mode==='groups'?' · '+item.count+' 条':''}</strong><span class="mono">${esc(row.address||row.targetUUID||'报告')}</span>${timeNote?`<small>${esc(timeNote)}</small>`:''}</span></button>`;
+      return separator+`<button class="timeline-record ${(state.mode==='groups'?state.group===item.key:state.selected===row.id)?'is-selected':''}" data-timeline="${state.mode==='groups'?'group':'select'}" data-value="${esc(state.mode==='groups'?item.key:row.id)}" aria-pressed="${state.mode==='groups'?state.group===item.key:state.selected===row.id}"><span class="timeline-clock mono">${esc(row.clock.raw||'时间未记录')}</span><span class="timeline-record-main"><strong>${esc(label(row))}${state.mode==='groups'?' · '+item.count+' 条':''}</strong><span class="mono">${esc(row.deviceLabel||row.address||row.targetUUID||'报告')}</span>${timeNote?`<small>${esc(timeNote)}</small>`:''}</span></button>`;
     }).join('');
-    const groupMembers=selectedGroup?`<section class="timeline-group-members"><h3>组内原始记录 · ${selectedGroup.count} 条</h3>${selectedGroup.heuristic?`<p class="source-meta">按文本中的可变数字归组，不表示同一原因。</p><pre>${esc(selectedGroup.template)}</pre>`:''}<div data-scroll-key="timeline-members">${selectedGroup.records.slice(state.memberPage*PAGE_SIZE,(state.memberPage+1)*PAGE_SIZE).map(row=>`<button class="link-btn ${selected?.id===row.id?'timeline-member-selected':''}" data-timeline="select" data-value="${esc(row.id)}">第 ${row.line||'?'} 行 · ${esc(row.clock.raw||'时间未记录')}</button>`).join('')}</div>${pager(selectedGroup.count,'memberPage')}</section>`:'';
+    const groupMembers=selectedGroup?`<section class="timeline-group-members"><h3>组内原始记录 · ${selectedGroup.recordCount} 条</h3>${selectedGroup.heuristic?`<p class="source-meta">按文本中的可变数字归组，不表示同一原因。</p><pre>${esc(selectedGroup.template)}</pre>`:''}<div data-scroll-key="timeline-members">${selectedGroup.records.slice(state.memberPage*PAGE_SIZE,(state.memberPage+1)*PAGE_SIZE).map(row=>`<button class="link-btn ${selected?.id===row.id?'timeline-member-selected':''}" data-timeline="select" data-value="${esc(row.id)}">第 ${row.line||'?'} 行 · ${esc(row.clock.raw||'时间未记录')}</button>`).join('')}</div>${pager(selectedGroup.recordCount,'memberPage')}</section>`:'';
     return `<section class="timeline-page${ctx.embedded?' timeline-embedded':''}" aria-label="事件时间线">${ctx.embedded?'':'<header><h1 tabindex="-1">事件时间线</h1></header>'}${limits.length&&!ctx.embedded?`<p class="source-meta" role="status">${limits.map(esc).join(" ")}</p>`:""}${empty?'<div class="live-empty"><h2>暂无事件或状态快照</h2></div>':`${filters}${ranges}${filteredResult.error?`<p class="timeline-filter-error" role="alert">${esc(filteredResult.error)} 时间范围暂未应用。</p>`:''}${toolbar}<div class="timeline-split"><section><div class="timeline-records" data-scroll-key="timeline-records">${listing||'<p class="source-meta">没有匹配记录。</p>'}</div>${pager(items.length)}</section><aside class="timeline-detail">${detail(selected)}${groupMembers}</aside></div>`}</section>`;
   }
   function keepVisible(element) {
@@ -236,9 +247,9 @@
     if (!selector) return;
     const candidates=Array.from(document.querySelectorAll(selector));
     let replacement=candidates.find(element=>
-      data.timeline?element.dataset.timeline===data.timeline&&element.dataset.value===data.value:
+      data.timeline?element.dataset.timeline===data.timeline&&element.dataset.value===data.value&&element.dataset.evidenceIndex===data.evidenceIndex:
       data.timelineChange?element.dataset.timelineChange===data.timelineChange:element.dataset.timelineInput===data.timelineInput);
-    if (['page','memberPage'].includes(data.timeline)) replacement=candidates.find(element=>element.dataset.timeline===data.timeline&&element.textContent===target.textContent&&!element.disabled)||candidates.find(element=>element.dataset.timeline===data.timeline&&!element.disabled);
+    if (['page','memberPage','evidencePage'].includes(data.timeline)) replacement=candidates.find(element=>element.dataset.timeline===data.timeline&&element.textContent===target.textContent&&!element.disabled)||candidates.find(element=>element.dataset.timeline===data.timeline&&!element.disabled);
     if (replacement?.disabled) return;
     replacement?.focus({preventScroll:true});
     keepVisible(replacement);
@@ -247,24 +258,26 @@
   function click(target) {
     const action=target?.dataset?.timeline,value=target?.dataset?.value;
     if (!action) return false;
-    if (action==='mode'&&['records','groups'].includes(value)) Object.assign(state,{mode:value,page:0,selected:'',group:'',memberPage:0});
-    else if (action==='select') state.selected=value;
-    else if (action==='group') Object.assign(state,{group:value,selected:'',memberPage:0});
-    else if (action==='page'||action==='memberPage') {state[action]=Math.max(0,Number(value)||0);state.selected='';if(action==='page')state.memberPage=0;}
+    if (action==='mode'&&['records','groups'].includes(value)) Object.assign(state,{mode:value,page:0,selected:'',group:'',memberPage:0,evidencePage:0});
+    else if (action==='select') {state.selected=value;state.evidencePage=0;}
+    else if (action==='group') Object.assign(state,{group:value,selected:'',memberPage:0,evidencePage:0});
+    else if (action==='page'||action==='memberPage') {state[action]=Math.max(0,Number(value)||0);state.selected='';state.evidencePage=0;if(action==='page')state.memberPage=0;}
+    else if (action==='evidencePage') state.evidencePage=Math.max(0,Number(value)||0);
+    else if (action==='evidence') {const row=activeModel?.records.find(row=>row.id===value),index=Number(target.dataset.evidenceIndex);const ref=row&&Number.isInteger(index)&&index>=0?eventTools.sourceEvidence(row)[index]:null;if(ref?.line>0)context.openSource?.(ref.line,ref.reportId);return true;}
     else if (action==='source') {const row=activeModel?.records.find(row=>row.id===value);if(row?.line>0)context.openSource?.(row.line,row.reportId);return true;}
     update(target);return true;
   }
   function change(target) {
     const key=target?.dataset?.timelineChange;
     if (!['device','kind','clock'].includes(key)) return false;
-    state[key]=target.value;Object.assign(state,{page:0,selected:'',group:'',memberPage:0});
+    state[key]=target.value;Object.assign(state,{page:0,selected:'',group:'',memberPage:0,evidencePage:0});
     if (key==='clock') {state.from='';state.to='';}
     update(target);return true;
   }
   function input(target) {
     const key=target?.dataset?.timelineInput;
     if (!['query','from','to'].includes(key)) return false;
-    state[key]=target.value;Object.assign(state,{page:0,selected:'',group:'',memberPage:0});update(target);return true;
+    state[key]=target.value;Object.assign(state,{page:0,selected:'',group:'',memberPage:0,evidencePage:0});update(target);return true;
   }
   function reset(identity) {
     if (identity) {views.delete(identity);if(state.identity!==identity)return;}

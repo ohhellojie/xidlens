@@ -1,4 +1,4 @@
-XidLens · Windows x64 v1.7.0
+XidLens · Windows x64 v1.8.0
 
 解压后双击 XidLens.exe 启动，点击导入日志选择文件。
 升级时先退出软件，用新版 EXE 替换原文件，保留同目录 runtime 文件夹。

@@ -124,7 +124,7 @@ async function deleteTests(){
 }
 
 function renderTests(){
- const {env,elements}=fixture();
+ const {env,elements}=fixture();env.XidAnalysis=require('../app/analysis.js');
  const fileContext=node(),statuses=[];env.status=text=>statuses.push(text);env.document.querySelector=selector=>selector==='.file-context'?fileContext:node();env.data.events=[{},{},{}];
  const $=env.$;env.$=id=>['reader-host','knowledge-host'].includes(id)?null:$(id);
  Object.assign(env,{busy:false,window:{XidReader:{unmount(){}},XidKnowledge:{unmount(){}}},renderNav(){},focusKey(){},restoreFocus(){},restoreViewPosition(){},renderDrawer(){},syncReportControls(){},renderDevices:()=>'<p>devices</p>'});
@@ -134,7 +134,7 @@ function renderTests(){
  assert.equal(fileContext.style.visibility,'hidden','The loaded single report context is hidden in sessions');
  assert.equal(statuses.at(-1),'2 份来源 · 6 条事件','The status bar uses session totals');
  assert.equal(elements.get('content').innerHTML,'detail');assert.equal(env.lastRenderContext.onSource,env.openSessionSource);
- env.state.page='devices';env.render();assert.equal(elements.get('export-button').hidden,false);assert.equal(fileContext.style.visibility,'');assert.ok(statuses.at(-1).includes('3 条错误记录'));
+ env.state.page='devices';env.render();assert.equal(elements.get('export-button').hidden,false);assert.equal(fileContext.style.visibility,'');assert.ok(statuses.at(-1).includes('3 次事件'));
 }
 
 const watchdog=setTimeout(()=>{throw Error('Session host test timed out with an unresolved request');},5000);

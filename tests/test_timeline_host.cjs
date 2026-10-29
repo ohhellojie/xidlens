@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 const host=fs.readFileSync(require.resolve('../app/app.js'),'utf8');
 const timeline=fs.readFileSync(require.resolve('../app/timeline.js'),'utf8');
 const sessions=fs.readFileSync(require.resolve('../app/sessions.js'),'utf8');
+const analysis=fs.readFileSync(require.resolve('../app/analysis.js'),'utf8');
 const section=(from,to)=>host.slice(host.indexOf(from),host.indexOf(to));
 const A='a'.repeat(32),B='b'.repeat(32),S='c'.repeat(32);
 const plain=value=>JSON.parse(JSON.stringify(value));
@@ -20,7 +21,7 @@ function fixture(){
   closeMenu(){},closeDrawer(){},closeDialog(){},saveViewPosition(){},status(){},toast(){},icon(){return '';},
   XidDiagnostics:{reset(){},restore(){},capture(){return {};},leave(){},openMatrix(){}},XidOverview:{reset(){},restore(){},capture(){return {};}}
  };
- vm.createContext(env);vm.runInContext(timeline+sessions+
+ vm.createContext(env);vm.runInContext(analysis+timeline+sessions+
   section('const sessionState=','function render(preserveScroll')+
   section('function rememberCaseView()','function openSource(')+
   section('function openSource(',"document.addEventListener('click',event=>{const target=event.target.closest('[data-source-line]')")+

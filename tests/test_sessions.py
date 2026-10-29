@@ -136,6 +136,36 @@ class SessionTests(unittest.TestCase):
         self.assertEqual(view['counts']['events'], 0)
         self.assertTrue(any(row['kind'] == 'limit' for row in view['warnings']))
 
+    def test_switch_namespace_and_structured_source_representations_remain_separate(self):
+        for current, _ in self.data.values():
+            current['events'].append({'id': 'switch', 'kind': 'sxid', 'code': '119', 'gpu': 0,
+                'address': '0000:41:00.0', 'line': 21, 'raw': '[13] synthetic switch event',
+                'timeInfo': {'kind': 'uptime_seconds', 'raw': '13'}, 'occurrenceCount': 1,
+                'representationCount': 2, 'structured': {'kind': 'sxid', 'switch': 2,
+                    'evidence': {'line': 21, 'text': 'synthetic header'},
+                    'representations': [{'line': 21, 'text': 'synthetic header'}, {'line': 22, 'text': 'synthetic detail'}]}})
+        before = copy.deepcopy(self.data)
+        view = self.create()['view']
+        switches = [row for row in view['events'] if row['kind'] == 'sxid']
+        self.assertEqual(view['counts']['events'], 4)
+        self.assertTrue(all(row['gpu'] is None and row['deviceNamespace'] == 'nvswitch' for row in switches))
+        self.assertNotEqual(switches[0]['deviceKey'], view['devices'][0]['key'])
+        self.assertNotEqual(switches[0]['deviceKey'], switches[1]['deviceKey'])
+        second = switches[1]['structured']
+        self.assertEqual(second['evidence']['reportId'], B)
+        self.assertEqual([row['line'] for row in second['representations']], [21, 22])
+        self.assertTrue(all(row['reportId'] == B and row['sourceMember'] == 'logs/second.log' for row in second['representations']))
+        self.assertEqual(self.data, before)
+
+    def test_unassigned_goe_uuid_is_preserved_without_device_matching(self):
+        self.data[A][0]['events'].append({'id': 'goe', 'kind': 'goe', 'code': 'GPU-GSP/0x0001/0x0001',
+            'gpu': None, 'address': '', 'line': 30, 'raw': 'synthetic GOE', 'time': '2026-10-30T01:00:00Z',
+            'structured': {'deviceUUID': 'GPU-DEMO-UNASSIGNED', 'evidence': {'line': 30}}})
+        event = next(row for row in self.create()['view']['events'] if row['kind'] == 'goe')
+        self.assertIsNone(event['gpu'])
+        self.assertEqual(event['targetUUID'], 'GPU-DEMO-UNASSIGNED')
+        self.assertEqual(event['deviceKey'], A + ':gpu-uuid:GPU-DEMO-UNASSIGNED')
+
     def test_unavailable_or_duplicate_sources_do_not_project_snapshots(self):
         for current, _ in self.data.values():
             current['diagnostics']['snapshots'] = [{'id': 's0', 'line': 21}]

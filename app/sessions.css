@@ -3,3 +3,5 @@
 .session-table td:first-child>strong{display:block}
 .session-record-list,.session-device-list{max-height:min(65vh,720px);overflow:auto}
 @media(max-width:960px){.session-record-list,.session-device-list{max-height:360px}}
+
+.session-event-sources{max-height:280px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.session-event-sources>div{padding:6px 0;border-bottom:1px solid var(--line)}.session-event-sources small{display:block;color:var(--muted);overflow-wrap:anywhere}

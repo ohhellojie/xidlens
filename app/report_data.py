@@ -62,6 +62,131 @@ def diagnostics(data):
     for row in data['cpuRows']: defaults(row, {'CPU': '', 'NODE': '', 'SOCKET': ''}, 'cpuRow')
 
 
+def optional_types(record, fields, path):
+    require(record, dict, path)
+    for key, kind in fields.items():
+        if key in record: require(record[key], kind, path + '.' + key)
+
+
+def bounded_integer(value, path, minimum=0):
+    require(value, int, path)
+    if value < minimum or value > 9007199254740991: raise ValueError('记录整数超出范围')
+
+
+def event_clock(value):
+    optional_types(value, {'kind': str, 'raw': str, 'epochMicroseconds': str}, 'time')
+    require(value.get('kind'), str, 'time.kind')
+    require(value.get('raw'), str, 'time.raw')
+    for key in ('boot', 'utc'):
+        if value.get(key) is not None: require(value[key], str, 'time.' + key)
+
+
+def structured_evidence(value):
+    optional_types(value, {'line': int, 'endLine': int, 'text': str, 'source': str, 'section': str,
+                           'jsonPointer': str, 'truncated': bool}, 'structured.evidence')
+    for key in ('line', 'endLine'):
+        if key in value:
+            bounded_integer(value[key], 'evidence.' + key)
+            if value[key] > 2147483647: raise ValueError('来源行号超出范围')
+    if 'time' in value: event_clock(value['time'])
+    if value.get('boot_marker') is not None: require(value['boot_marker'], str, 'evidence.boot_marker')
+
+
+def recovery_action(value):
+    require(value, dict, 'recoveryAction')
+    for key in ('previous', 'current'):
+        if key in value: optional_types(value[key], {'code': str, 'label': str}, 'recoveryAction.' + key)
+
+
+def association(value):
+    optional_types(value, {'method': str, 'refs': list}, 'association')
+    for row in value.get('refs', []):
+        require(row, dict, 'association.ref')
+        if 'evidence' in row: structured_evidence(row['evidence'])
+
+
+def structured_event(value):
+    optional_types(value, {'kind': str, 'address': str, 'code': str, 'message': str,
+        'moduleSignature': str, 'deviceUUID': str, 'instanceId': str, 'originator': str,
+        'traceId': str, 'groupCursor': str, 'driverVersion': str, 'experimental': bool,
+        'identityConflict': bool, 'representations': list, 'rawFields': dict}, 'structured.event')
+    for key in ('evidence',):
+        if key in value: structured_evidence(value[key])
+    for item in value.get('representations', []): structured_evidence(item)
+    if 'timestamp' in value: event_clock(value['timestamp'])
+    for key in ('category', 'moduleEventCode', 'switch', 'occurrences'):
+        if key in value: bounded_integer(value[key], 'structured.event.' + key)
+
+
+def lifecycle_events(value):
+    require(value, list, 'lifecycleEvents')
+    ids = set()
+    for row in value:
+        require(row, dict, 'lifecycleEvent')
+        for key in ('id', 'kind', 'raw'):
+            require(row.get(key), str, 'lifecycleEvent.' + key)
+        if row['id'] in ids: raise ValueError('动作记录编号重复')
+        ids.add(row['id'])
+        optional_types(row, {'address': str, 'title': str, 'time': str, 'outcome': str,
+                            'targetUUID': str, 'source': str, 'section': str}, 'lifecycleEvent')
+        bounded_integer(row.get('line'), 'lifecycleEvent.line')
+        if row.get('gpu') is not None: bounded_integer(row['gpu'], 'lifecycleEvent.gpu')
+        if row.get('boot') is not None: require(row['boot'], str, 'lifecycleEvent.boot')
+        if 'timeInfo' in row: event_clock(row['timeInfo'])
+        if 'association' in row: association(row['association'])
+        if 'recoveryAction' in row: recovery_action(row['recoveryAction'])
+
+
+def structured_data(value):
+    require(value, dict, 'structured')
+    require(value.get('format'), str, 'structured.format')
+    optional_types(value, {'source': str, 'parserVersion': str, 'recognized': bool,
+        'complete': bool, 'warnings': list, 'events': list, 'experimental': bool,
+        'deduplicationScope': str}, 'structured')
+    for warning in value.get('warnings', []): require(warning, str, 'structured.warning')
+    for row in value.get('events', []): structured_event(row)
+    if value['format'] == 'dcgm-json' or 'dcgm' in value:
+        dcgm = require(value.get('dcgm'), dict, 'structured.dcgm')
+        for key in ('runs', 'results', 'summaries'): require(dcgm.get(key), list, 'dcgm.' + key)
+        for run in dcgm['runs']:
+            optional_types(run, {'version': str, 'driverVersion': str, 'metadata': dict, 'rawPointer': str}, 'dcgm.run')
+            bounded_integer(run.get('run'), 'dcgm.run', 1)
+            if 'evidence' in run: structured_evidence(run['evidence'])
+            if run.get('runtimeEvidence') is not None: structured_evidence(run['runtimeEvidence'])
+        for row in dcgm['results'] + dcgm['summaries']:
+            optional_types(row, {'id': str, 'category': str, 'test': str, 'entity': dict,
+                'resultKind': str, 'status': str, 'statusLabel': str}, 'dcgm.result')
+            bounded_integer(row.get('run'), 'dcgm.result.run', 1)
+            if 'evidence' in row: structured_evidence(row['evidence'])
+    # Raw documents, payloads and unknown extensions remain untouched.
+
+
+def incomplete(data, warning):
+    data['complete'] = False
+    if warning not in data['warnings']: data['warnings'].append(warning)
+
+
+def optional_event_data(data):
+    for event in data['events']:
+        for key, validate in (('timeInfo', event_clock), ('recoveryAction', recovery_action),
+                              ('structured', structured_event), ('association', association)):
+            if key not in event: continue
+            try: validate(event[key])
+            except (ValueError, KeyError, TypeError):
+                event.pop(key)
+                incomplete(data, '部分事件附加数据结构不完整，原始事件仍保留，请重新解析原日志。')
+        for key in ('occurrenceCount', 'representationCount'):
+            if key not in event: continue
+            try: bounded_integer(event[key], 'event.' + key)
+            except (ValueError, TypeError):
+                event.pop(key)
+                incomplete(data, '部分事件附加数据结构不完整，原始事件仍保留，请重新解析原日志。')
+        for key in ('deviceNamespace', 'targetUUID', 'source', 'timeKind'):
+            if key in event and type(event[key]) is not str:
+                event.pop(key)
+                incomplete(data, '部分事件附加数据结构不完整，原始事件仍保留，请重新解析原日志。')
+
+
 def normalize_report(data):
     require(data, dict, 'report')
     for key, kind in (('source', str), ('gpus', list), ('events', list)):
@@ -82,6 +207,7 @@ def normalize_report(data):
             if key in gpu: require(gpu[key], str, 'gpu.' + key)
     for event in data['events']:
         defaults(event, {'id': '', 'kind': '', 'code': '', 'address': '', 'raw': '', 'time': '', 'title': '', 'line': 0, 'actions': []}, 'event')
+    optional_event_data(data)
     for node in data['nodes'].values():
         defaults(node, {'address': '', 'fields': {}}, 'node'); field_map(node['fields'])
         if 'evidence' in node: evidence(node['evidence'])
@@ -91,4 +217,12 @@ def normalize_report(data):
             data.pop('diagnostics')
             data['complete'] = False
             data['warnings'].append('诊断数据结构不完整，请在报告管理中重新解析原日志。')
+    for key, validate, warning in (
+        ('lifecycleEvents', lifecycle_events, '动作记录结构不完整，其他记录仍保留，请重新解析原日志。'),
+        ('structured', structured_data, '结构化结果不完整，其他记录仍保留，请重新解析原日志。')):
+        if key not in data: continue
+        try: validate(data[key])
+        except (ValueError, KeyError, TypeError):
+            data.pop(key)
+            incomplete(data, warning)
     return data

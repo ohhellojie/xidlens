@@ -7,11 +7,13 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parent
 import gpu_summary_core as core
 import diagnostics
+import structured_events
 BaseParser = core.Parser
 APP_HOME = Path(sys.executable).resolve().parent if getattr(sys, 'frozen', False) else ROOT
 from catalog import initial_catalog
 CATALOG, CATALOG_WARNING = initial_catalog(ROOT, APP_HOME)
 PCI_HEADER = re.compile(r'^((?:[\da-fA-F]{4,8}:)?[\da-fA-F]{2}:[\da-fA-F]{2}\.[0-7])\s+(.+)')
+STRUCTURED_TEXT = re.compile(r'nvidia-nvswitch|nvidia-smi\s+event-log|GPU Operational Events?',re.I)
 UNAVAILABLE = {'', '—', 'n/a', 'na', 'none', 'unknown', 'not specified', 'not available', 'not supported', 'to be filled by o.e.m.', 'default string', '0'}
 
 def digest(path):
@@ -33,6 +35,9 @@ class Parser(BaseParser):
         self.r['scoped_metrics']={}
         self.r['health_fields']={}
         self.diagnostics=diagnostics.Collector(self)
+        self.structured=structured_events.Collector(self.r['source'])
+        self.structured_prefix_lines=self.structured_prefix_bytes=0
+        self.structured_json_source=bool(re.search(r'\.json(?:\.gz)?$',self.r['source'],re.I))
 
     def field(self,address,key,value,n,line,origin):
         if not valid(value):return
@@ -68,7 +73,38 @@ class Parser(BaseParser):
         else:
             self.r['complete']=False;self.warn('错误记录达到 200000 条，后续记录未保存。')
 
+    def consume_structured(self,line,n):
+        collector=self.structured
+        if collector.json_mode is None:
+            # Ordinary logs and long blank prefixes must not be retained as JSON.
+            if not line.strip():
+                self.structured_prefix_lines+=1
+                self.structured_prefix_bytes+=len(line.encode('utf-8'))+1
+                return False
+            json_candidate=self.structured_json_source or line.lstrip('\ufeff').lstrip().startswith('{')
+            if json_candidate and self.structured_prefix_lines:
+                if self.structured_prefix_bytes>collector.max_json_bytes:
+                    collector.json_overflow=True
+                else:
+                    collector.consume('\n'*(self.structured_prefix_lines-1),1,self.section,self.boot)
+                collector.json_bytes=self.structured_prefix_bytes
+            if json_candidate:collector.json_mode=True
+        elif not collector.json_mode and not collector.goe_enabled and not STRUCTURED_TEXT.search(line):
+            return False
+        return collector.consume(line,n,self.section,self.boot)
+
     def consume(self,line,n):
+        was_goe=self.structured.goe_enabled
+        consumed=self.consume_structured(line,n)
+        if self.structured.json_mode:
+            # JSON strings are data, including embedded NVRM text or commands.
+            return
+        if not was_goe and self.structured.goe_enabled:
+            self.flush_slot();self.recover_line_error();self.section=line.strip().removeprefix('*** ')
+            return
+        if consumed:
+            self.r['recognized']|=self.structured.result['recognized']
+            return
         s=line.strip()
         boundary=core.section_boundary(line)
         if boundary:
@@ -201,6 +237,9 @@ class Parser(BaseParser):
     def parse(self,stream):
         result=super().parse(stream);self.flush_slot()
         result['diagnostic_collector']={key:getattr(self.diagnostics,key) for key in ('snapshots','matrices','paths','cpu_rows','nic_paths')}
+        core.check_cancel(self.cancel_event)
+        result['structured_import']=self.structured.finish()
+        core.check_cancel(self.cancel_event)
         return result
 
 core.Parser=Parser
@@ -297,6 +336,8 @@ def convert(r,container_warnings=(),cancel_event=None,catalog=None):
     result['lifecycleEvents']=lifecycle_events(r,gpus,cancel_event)
     if 'source_member' in r:result['sourceMember']=r['source_member']
     if collector:result['diagnostics']=diagnostics.finish(r,collector,gpus,events,cancel_event)
+    if r.get('structured_import'):
+        structured_events.merge_into_report(result,r['structured_import'])
     return result
 
 def analyze(path,cancel_event=None,progress=None,catalog=None):

@@ -6,7 +6,33 @@
     return !['','冲突','—','n/a','na','none','unknown','not specified','not available','not supported','to be filled by o.e.m.','default string','0'].includes(marker);
   };
   const identity = (gpu, field) => available(gpu[field]) ? (field === 'uuid' ? String(gpu[field]).trim().toLowerCase() : String(gpu[field]).trim()) : '';
-  const eventKey = e => JSON.stringify([e.gpu ?? null, e.address || '', e.kind, e.code || '', e.kind === 'xid' ? '' : e.title || '']);
+  const eventNamespace = e => e.kind==='sxid'?'nvswitch':e.deviceNamespace||'gpu';
+  const eventCount = e => Number.isSafeInteger(e.occurrenceCount)&&e.occurrenceCount>=0?e.occurrenceCount:1;
+  const countEvents = events => (events||[]).reduce((total,event)=>total+eventCount(event),0);
+  const eventType = e => {const s=e.structured||{};return e.kind==='goe'&&s.moduleSignature&&Number.isInteger(s.category)&&Number.isInteger(s.moduleEventCode)?`${s.moduleSignature}/0x${s.category.toString(16).padStart(4,'0')}/0x${s.moduleEventCode.toString(16).padStart(4,'0')}`:e.code||'';};
+  const eventTitle = e => e.kind==='xid'?'Xid '+eventType(e):e.kind==='sxid'?'NVSwitch SXid '+eventType(e):e.kind==='goe'?'GOE '+eventType(e):e.title||e.kind;
+  function eventMetadata(e) {
+    const s=e.structured||{},rows=[];
+    if(e.kind==='goe') {
+      rows.push(['格式','GOE · 实验性']);
+      if(s.driverVersion)rows.push(['驱动版本',s.driverVersion]);
+      if(s.severity!=null)rows.push([s.severityDomain==='host-cper'?'主机 CPER 严重性':'事件严重性',s.severity]);
+      if(s.scope!=null)rows.push(['范围',s.scope]);
+      if(s.legacyXid!=null)rows.push(['Legacy Xid',String(s.legacyXid)+' · 仅关联提示，未合并']);
+      if(s.identityConflict)rows.push(['标识冲突','相同标识的数据不一致，分别保留']);
+    } else if(e.kind==='sxid') {
+      if(s.switch!=null)rows.push(['NVSwitch',s.switch]);
+      if(s.link!=null)rows.push(['链路',s.link]);
+      if(s.severity!=null)rows.push(['SXid 严重性',s.severity]);
+    }
+    if((e.representationCount||s.representations?.length||0)>1)rows.push(['来源记录',(e.representationCount||s.representations.length)+' 处 · '+eventCount(e)+' 次事件']);
+    return rows;
+  }
+  function sourceEvidence(e) {
+    const s=e.structured||{},refs=Array.isArray(s.representations)&&s.representations.length?s.representations:s.evidence?[s.evidence]:[];
+    return refs.filter(ref=>ref&&typeof ref==='object').map(ref=>({...ref,reportId:e.reportId||'',source:e.source||ref.source||''}));
+  }
+  const eventKey = e => JSON.stringify([e.reportId||'',eventNamespace(e),eventNamespace(e)==='nvswitch'?null:e.gpu??null,e.address||'',e.kind==='goe'?(e.targetUUID||e.structured?.deviceUUID||''):'',e.kind,eventType(e),['xid','sxid','goe'].includes(e.kind)?'':e.title||'',['sxid','goe'].includes(e.kind)?[e.structured?.severityDomain,e.structured?.severity,e.structured?.scope,e.structured?.link]:null]);
   function groupEvents(events){
     const groups = new Map();
     for(const event of events){
@@ -26,7 +52,7 @@
     return [...groups.values()].map(group=>{
       if(!group.clock){group.first=group.events[0];group.last=group.events.at(-1);}
       const {key,events,first,last,clock}=group;
-      return {key,events,first,last,clock,count:events.length};
+      return {key,events,first,last,clock,count:countEvents(events),recordCount:events.length};
     }).sort((a,b)=>b.count-a.count);
   }
   const fields = [['model','型号'],['sn','GPU SN'],['uuid','GPU UUID'],['pci','PCI 地址'],['slot','槽位参考'],['numa','NUMA 节点'],['link','当前链路'],['linkMax','最大能力'],['status','读取状态']];
@@ -84,18 +110,18 @@
     const counts = report => {
       const map=new Map(),ids=new Set((report.gpus||[]).map(g=>g.id));
       for(const e of report.events||[]){
-        const gpu=ids.has(e.gpu)?e.gpu:null,address=gpu===null?(e.address||''):'';
+        const namespace=eventNamespace(e),gpu=namespace!=='nvswitch'&&ids.has(e.gpu)?e.gpu:null,address=gpu===null?(e.address||''):'';
         if(!map.has(gpu))map.set(gpu,new Map());
-        const bucket=map.get(gpu),key=JSON.stringify([e.kind,e.code||'',address]);
-        if(!bucket.has(key))bucket.set(key,{kind:e.kind,code:e.code||'',address,count:0});
-        bucket.get(key).count++;
+        const bucket=map.get(gpu),key=JSON.stringify([namespace,e.kind,eventType(e),address,gpu===null&&e.kind==='goe'?(e.targetUUID||e.structured?.deviceUUID||''):'']);
+        if(!bucket.has(key))bucket.set(key,{kind:e.kind,code:eventType(e),address,namespace,count:0});
+        bucket.get(key).count+=eventCount(e);
       }
       return map;
     };
     const aCounts=counts(before),bCounts=counts(after);
     const mergedCounts=(a=new Map(),b=new Map())=>[...new Set([...a.keys(),...b.keys()])].map(key=>{
-      const {kind,code,address}=a.get(key)||b.get(key);
-      return {kind,code,address,before:a.get(key)?.count||0,after:b.get(key)?.count||0};
+      const {kind,code,address,namespace}=a.get(key)||b.get(key);
+      return {kind,code,address,namespace,before:a.get(key)?.count||0,after:b.get(key)?.count||0};
     });
     function row(a,b,basis,why){
       const details=compareFields(before,after,a,b);
@@ -140,9 +166,9 @@
   }
   function pathErrorCount(report,gpu){
     const addresses=new Set([...upstream(report.nodes,gpu.pci),gpu.pci]);
-    return (report.events||[]).filter(e=>addresses.has(e.address)).length;
+    return countEvents((report.events||[]).filter(e=>eventNamespace(e)!=='nvswitch'&&addresses.has(e.address)));
   }
-  const api={eventKey,groupEvents,compareReports,compareFields,fields,upstream,pathErrorCount};
+  const api={eventKey,eventNamespace,eventType,eventTitle,eventCount,countEvents,eventMetadata,sourceEvidence,groupEvents,compareReports,compareFields,fields,upstream,pathErrorCount};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.XidAnalysis=api;
 })(globalThis);
