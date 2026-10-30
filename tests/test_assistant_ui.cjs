@@ -21,11 +21,11 @@ const model = ctx => {ui.render(ctx);change('mode','model');change('model','synt
   assert.equal(calls.length,0);assert.ok(html.includes('本机整理'));assert.ok(!html.includes('发送预览'));
   assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));
   click('send');await tick();assert.equal(calls.length,0);
-  click('offline');html=ui.render(ctx);assert.ok(html.includes('未调用 AI'));assert.ok(html.includes('可编辑摘要'));assert.equal(calls.length,0);
+  click('offline');html=ui.render(ctx);assert.ok(html.includes('在本机摘录片段，不调用模型'));assert.ok(!html.includes('将发送给模型'));assert.ok(!html.includes('随所选证据发送'));assert.ok(html.includes('可编辑摘要'));assert.equal(calls.length,0);
   ui.input({dataset:{assistantField:'summary'},value:'人工编辑的摘要'});click('copy');await tick();assert.equal(copied,'人工编辑的摘要');
   click('source',{ref:'e1'});assert.equal(source,null,'Unmapped text cannot navigate to a claimed line');click('source',{ref:'unknown'});assert.equal(source,null);
 
-  model(ctx);html=ui.render(ctx);assert.ok(html.includes('http://localhost:11434/v1/chat/completions'));assert.ok(html.includes('synthetic-model'));assert.ok(html.includes('确认发送至模型'));assert.equal(calls.length,0);
+  model(ctx);html=ui.render(ctx);assert.ok(html.includes('补充说明（将发送给模型）'));assert.ok(html.includes('http://localhost:11434/v1/chat/completions'));assert.ok(html.includes('synthetic-model'));assert.ok(html.includes('确认发送至模型'));assert.equal(calls.length,0);
   const field={value:'SYNTHETIC-KEY-ONLY'};
   ui.click({dataset:{assistant:'send'},closest:()=>({querySelector:()=>field})});
   assert.equal(field.value,'');assert.equal(calls.length,1);assert.equal(calls[0].payload.apiKey,'SYNTHETIC-KEY-ONLY');

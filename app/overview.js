@@ -56,7 +56,7 @@ function buildModel(data){
   for(const [field,records] of Object.entries(fields||{})){
    const valid=records.filter(v=>usable(v.value)),values=[...new Set(valid.map(v=>String(v.value).trim()))];
    if(values.length<2)continue;
-   add({id:'conflict:'+prefix+':'+address+':'+field,address,device:device(address),status:'conflict',title:(names[field]||field)+'存在不同值',observation:values.join(' / '),basis:'同一设备标识下的来源提供了不同值；保留各处原始记录。',next:'核对采集时间、启动会话与来源，确认是否属于同一设备。',evidence:references(valid.map(refOf)),values:valid.map(v=>({value:String(v.value),origin:v.origin||'来源未记录',evidence:v.evidence||{}}))});
+   add({id:'conflict:'+prefix+':'+address+':'+field,address,device:device(address),status:'conflict',title:(names[field]||field)+'存在不同值',observation:values.join(' / '),basis:'同一设备标识下的来源提供了不同值；保留各处原始记录。',next:'核对采集时间、启动记录与来源，确认是否属于同一设备。',evidence:references(valid.map(refOf)),values:valid.map(v=>({value:String(v.value),origin:v.origin||'来源未记录',evidence:v.evidence||{}}))});
   }
  };
  for(const g of gpus){
@@ -89,7 +89,7 @@ function buildModel(data){
   }else if(unavailable.length){
    gaps.add('smi');add({id:'missing:fields:'+g.pci,address:g.pci,device:g.label,status:'missing',title:'部分 GPU 状态无法读取',observation:unavailable.join('；'),basis:'N/A、Unknown 或不可用字段不能按 0 处理；需核对设备支持范围和读取条件。',next:'核对字段支持范围、驱动和读取条件后补充采集。',gaps:['smi'],evidence:references([...paths.values()].flat().filter(f=>f.availability==='unavailable'||!usable(f.value)).map(f=>f.evidence))});
   }
-  if(scope.length)add({id:'ok:'+g.pci,address:g.pci,device:g.label,status:'ok',title:'已检查项目',observation:scope.length+' 项已检查',basis:'结论仅覆盖下列项目及其采集时点。',next:'需要核验时查看对应原文。',scope,evidence:references(scope.flatMap(x=>x.evidence))});
+  if(scope.length)add({id:'ok:'+g.pci,address:g.pci,device:g.label,status:'ok',title:'检查范围',observation:scope.length+' 项',basis:'以下项目在采集时未见异常；未采集项目无法判断。',next:'需要核验时查看对应原文。',scope,evidence:references(scope.flatMap(x=>x.evidence))});
  }
  conflict(Object.fromEntries(['model','sn','uuid','host','manufacturer'].filter(k=>data.server?.fields?.[k]).map(k=>[k,data.server.fields[k]])),'','server');
  const eventGroups=new Map();
@@ -102,7 +102,7 @@ function buildModel(data){
  for(const [key,events] of eventGroups){
   const e=events[0],structured=['sxid','goe'].includes(e.kind),count=analysis.countEvents(events),metadata=structured?analysis.eventMetadata(e):[];
   const evidence=events.flatMap(x=>{const refs=analysis.sourceEvidence(x),fallback={line:x.line,text:x.raw,time:x.time,section:x.section,boot_marker:x.boot,source:x.source,caseId:x.caseId||x.reportId};return refs.length?refs.map(ref=>({...fallback,...ref,text:ref.text||x.raw,caseId:x.caseId||x.reportId})): [fallback];});
-  const origins=references(evidence),name=structured?analysis.eventTitle(e):e.kind==='xid'?'Xid '+e.code+' · '+(e.title||'错误记录'):e.title||(e.kind==='init'?'初始化失败':'错误记录');
+  const origins=references(evidence),name=structured?analysis.eventTitle(e):e.kind==='xid'?'Xid '+e.code+' · '+(/^未收录 Xid \d+$/.test(e.title||'')?'未收录':e.title||'错误记录'):e.title||(e.kind==='init'?'初始化失败':'错误记录');
   const label=analysis.eventNamespace(e)==='nvswitch'?'NVSwitch'+(e.structured?.switch!=null?' '+e.structured.switch:''):e.kind==='goe'?(gpus.find(g=>g.id===e.gpu)?.label||e.targetUUID||e.structured?.deviceUUID||'未关联设备'):device(e.address);
   add({id:'event:'+key,address:e.address||'',device:label,status:e.kind==='goe'?'review':'error',title:name,observation:count+' 次事件'+(origins.length!==count?' · '+origins.length+' 处来源':''),basis:[e.description||'日志记录了此事件。需结合设备状态和上下文核对。',...metadata.map(([label,value])=>label+'：'+value)].join(' '),next:'核对原文、影响范围和同期设备状态。',actions:e.actions||[],event:e,evidence:origins,count});
  }
@@ -112,7 +112,7 @@ function buildModel(data){
  findings.sort((a,b)=>order[a.status]-order[b.status]||(a.address||'').localeCompare(b.address||''));
  return {findings,gaps:[...gaps],counts:Object.fromEntries(Object.keys(labels).map(k=>[k,findings.filter(f=>f.status===k).length])),gpuCount:gpus.length,source:data.source||'',complete:data.complete!==false};
 }
-const guides={smi:{title:'GPU 详细状态',command:'nvidia-smi -q',detail:'保留完整输出、采集时间和设备标识，用于核对 ECC、行重映射及字段读取状态。'},pci:{title:'PCIe 设备与驱动',command:'lspci -Dnnvv',detail:'保留 GPU 和上下游端口的 LnkCap、LnkSta、AER 及驱动字段；部分字段需要相应读取权限。'},topology:{title:'GPU 互联关系',command:'nvidia-smi topo -m',detail:'保留表头和所有设备行；需要仅查看 PCIe 关系时另采集 nvidia-smi topo -mp。'},kernel:{title:'本次启动内核日志',command:'journalctl -k -b --no-pager',detail:'保留事件前后文及启动会话。无 journalctl 时可保留 dmesg 输出及其时间类型。'},complete:{title:'完整原始日志',command:'',detail:'查看读取提示，保留未截断的原始文件后重新导入。'},reparse:{title:'重新解析报告',command:'',detail:'打开报告管理，选中此报告并重新解析。'}};
+const guides={smi:{title:'GPU 详细状态',command:'nvidia-smi -q',detail:'保留完整输出、采集时间和设备标识，用于核对 ECC、行重映射及字段读取状态。'},pci:{title:'PCIe 设备与驱动',command:'lspci -Dnnvv',detail:'保留 GPU 和上下游端口的 LnkCap、LnkSta、AER 及驱动字段；部分字段需要相应读取权限。'},topology:{title:'GPU 互联关系',command:'nvidia-smi topo -m',detail:'保留表头和所有设备行；需要仅查看 PCIe 关系时另采集 nvidia-smi topo -mp。'},kernel:{title:'本次启动内核日志',command:'journalctl -k -b --no-pager',detail:'保留事件前后文及启动记录。无 journalctl 时可保留 dmesg 输出及其时间类型。'},complete:{title:'完整原始日志',command:'',detail:'查看读取提示，保留未截断的原始文件后重新导入。'},reparse:{title:'重新解析报告',command:'',detail:'打开报告管理，选中此报告并重新解析。'}};
 function collectionHtml(keys){
  const selected=[...new Set(keys?.length?keys:['smi','pci','kernel','topology'])].filter(k=>guides[k]);
  const commands=selected.map(k=>guides[k].command).filter(Boolean);
@@ -133,7 +133,7 @@ function detail(f){
  if(!f)return '<div class="overview-detail-empty"><h2>没有匹配的发现</h2><p>调整筛选或查看完整日志。</p></div>';
  let body='';
  if(f.status==='conflict')body=`<p class="overview-detail-summary">${esc(f.next)}</p><div class="overview-conflicts">${f.values.slice(0,state.evidenceLimit).map(v=>`<section class="overview-conflict"><h3>${esc(originLabel(v.origin))}</h3><strong>${esc(v.value)}</strong><p>${esc(timeLabel(v.evidence))}</p>${sourceLink(v.evidence)}<pre>${esc(v.evidence.text||v.value)}</pre></section>`).join('')}</div>${f.values.length>state.evidenceLimit?'<button class="btn" data-overview="more-evidence">显示更多来源</button>':''}`;
- else if(f.status==='ok')body=`<p class="overview-detail-summary">${esc(f.basis)}</p><div class="overview-scope"><table aria-label="已检查项目"><thead><tr><th>检查项</th><th>观察值</th><th>来源</th></tr></thead><tbody>${f.scope.slice(0,state.evidenceLimit).map(s=>`<tr><th scope="row">${esc(s.name)}</th><td>${esc(s.value)}</td><td>${sourceLink(s.evidence[0],'原文')||'来源未记录'}</td></tr>`).join('')}</tbody></table></div>${f.scope.length>state.evidenceLimit?'<button class="btn" data-overview="more-evidence">显示更多检查项</button>':''}<p class="overview-note overview-limit">未采集的项目不计为正常。</p>`;
+ else if(f.status==='ok')body=`<p class="overview-detail-summary">${esc(f.basis)}</p><div class="overview-scope"><table aria-label="已检查项目"><thead><tr><th>检查项</th><th>观察值</th><th>来源</th></tr></thead><tbody>${f.scope.slice(0,state.evidenceLimit).map(s=>`<tr><th scope="row">${esc(s.name)}</th><td>${esc(s.value)}</td><td>${sourceLink(s.evidence[0],'原文')||'来源未记录'}</td></tr>`).join('')}</tbody></table></div>${f.scope.length>state.evidenceLimit?'<button class="btn" data-overview="more-evidence">显示更多检查项</button>':''}`;
  else body=`<section class="overview-detail-section"><h3>${f.status==='missing'?'缺少什么':'观察结果'}</h3><p>${esc(f.observation)}</p></section><section class="overview-detail-section"><h3>${f.status==='missing'?'影响范围':'判断依据'}</h3><p>${esc(f.basis||'查看原文及上下文。')}</p>${f.path&&f.title!==pathLabel(f.path)?`<p class="overview-path">${esc(pathLabel(f.path))}</p>`:''}</section>${f.status!=='missing'?`<section class="overview-detail-section"><h3>下一步</h3><p>${esc(f.next)}</p>${f.actions.length?`<ul>${f.actions.map(a=>`<li>${esc(typeof a==='string'?a:a.text||a.label||a.key||'')}</li>`).join('')}</ul>`:''}</section>`:''}<section class="overview-detail-section"><h3>${f.status==='missing'?'已有证据':'证据'}</h3>${evidenceHtml(f.evidence)}</section>`;
  const primary=f.status==='missing'?'<button class="btn primary" data-overview="collect">查看补采清单</button>':f.status==='conflict'?'<button class="btn" data-page="reader">查看完整日志</button>':Number.isInteger(f.evidence[0]?.line)&&f.evidence[0].line>0?`<button class="btn primary" data-source-line="${f.evidence[0].line}"${f.evidence[0].caseId||f.evidence[0].reportId?` data-source-case="${esc(f.evidence[0].caseId||f.evidence[0].reportId)}"`:''}>查看对应原文</button>`:'<button class="btn" data-page="reader">查看完整日志</button>';
  return `<div class="overview-detail-head"><p>${esc(f.device)}${f.address?` · <span class="mono">${esc(f.address)}</span>`:''}</p><h2>${esc(f.title)}</h2>${badge(f.status)}</div><div class="overview-detail-body" data-scroll-key="overview-detail-body">${body}${state.collect?collectionHtml(f.gaps.length?f.gaps:model.gaps):''}</div><div class="overview-detail-actions">${primary}${f.status==='missing'&&f.evidence.length?sourceLink(f.evidence[0],'查看已有原文'):''}</div>`;
@@ -143,7 +143,7 @@ function render(data,ctx){
  report=data;context=ctx;
  if(cache?.data!==data){cache={data,model:buildModel(data)};}model=cache.model;
  const title='<div class="overview-heading"><h1 tabindex="-1">诊断概览</h1>';
- if(!data.source)return `<div class="overview-workspace">${title}</div><div class="overview-start"><h2>导入日志开始分析</h2><p>读取设备信息、重点发现和对应原文。日志在本机处理。</p><div class="actions"><button class="btn primary" data-action="import">导入日志</button><button class="btn" data-action="load-demo">查看示例</button><button class="btn" data-overview="collect">采集说明</button></div>${state.collect?collectionHtml():''}</div></div>`;
+ if(!data.source)return `<div class="overview-workspace">${title}</div><div class="overview-start"><h2>导入日志开始分析</h2><p>查看设备信息、诊断发现和对应原文。</p><div class="actions"><button class="btn primary" data-action="import">导入日志</button><button class="btn" data-action="load-demo">查看示例</button><button class="btn" data-overview="collect">采集说明</button></div>${state.collect?collectionHtml():''}</div></div>`;
  const q=state.query.trim().toLowerCase(),filtered=model.findings.filter(f=>(state.filter==='all'||f.status===state.filter)&&(!q||[f.device,f.address,f.title,f.observation].join(' ').toLowerCase().includes(q)));
  state.page=Math.min(Math.max(0,state.page),Math.max(0,Math.ceil(filtered.length/PAGE_SIZE)-1));
  const visible=filtered.slice(state.page*PAGE_SIZE,(state.page+1)*PAGE_SIZE),current=visible.find(f=>f.id===state.selected)||visible[0];state.selected=current?.id||'';

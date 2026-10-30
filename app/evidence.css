@@ -1,5 +1,5 @@
 .content:has(.evidence-workspace){overflow:auto}
-.evidence-workspace{max-width:1260px;margin:0 auto;color:var(--text);font-size:14px;line-height:1.6}
+.evidence-workspace{width:100%;max-width:1260px;margin:0 auto;color:var(--text);font-size:14px;line-height:1.6}
 .evidence-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:26px}
 .evidence-heading h1{font-size:24px;margin:0 0 8px}.evidence-heading p{font-size:13px;color:var(--muted)}
 .evidence-assist{border-top:1px solid var(--line);margin-top:18px;padding-top:18px}.evidence-assist .evidence-note{margin:8px 0 0}

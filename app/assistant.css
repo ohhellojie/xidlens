@@ -1,5 +1,5 @@
-.assistant-page{max-width:1120px;margin:0 auto;padding:28px 32px;color:var(--text,#202124)}
-.assistant-return{max-width:1120px;margin:0 auto;padding:0 32px}.dialog[data-kind=assistant-source]{width:800px}.dialog[data-kind=assistant-source] pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.assistant-page{box-sizing:border-box;width:100%;max-width:1120px;margin:0 auto;padding:28px 32px;color:var(--text,#202124)}
+.assistant-return{box-sizing:border-box;width:100%;max-width:1120px;margin:0 auto;padding:0 32px}.dialog[data-kind=assistant-source]{width:800px}.dialog[data-kind=assistant-source] pre{white-space:pre-wrap;overflow-wrap:anywhere}
 .assistant-page header p,.assistant-page .source-meta{color:var(--muted,#626971)}
 .assistant-page h1{font-size:24px;margin:0 0 8px}.assistant-page h2{font-size:18px;margin:0 0 12px}.assistant-page h3{font-size:15px;margin:0 0 10px}
 .assistant-inputs{min-width:0;margin:24px 0 0;border:0;padding:0}.assistant-inputs legend{font-size:16px;font-weight:600;margin-bottom:12px}

@@ -9,9 +9,9 @@ const sample={source:'sample',gpus:[{id:2,label:'GPU 2',pci:'0000:02:00.0',uuid:
 const ctx={state:{page:'status',gpu:2},heading:()=>'',render(){}};
 ui.reset();let html=ui.render(sample,ctx);
 assert.match(html,/<option value="full" selected>/,'Default to the most complete block, not an empty or partial trailing command');
-assert.match(html,/1 个采集块无字段/);
+assert.match(html,/1 条采集记录无字段/);
 ui.change({dataset:{diagChange:'snapshot'},value:'empty'});html=ui.render(sample,ctx);
-assert.match(html,/<option value="empty" selected>/);assert.match(html,/该采集块无状态字段/,'An explicit empty block is never replaced silently');
+assert.match(html,/<option value="empty" selected>/);assert.match(html,/该采集记录无状态字段/,'An explicit empty block is never replaced silently');
 ui.click({dataset:{diag:'detail'}});html=ui.render(sample,ctx);assert.match(html,/diag-wide/);
 ctx.state.page='checks';html=ui.render(sample,ctx);assert.ok(!html.includes('checks-wide'));
 ctx.state.page='status';html=ui.render(sample,ctx);assert.match(html,/diag-wide/,'Detail visibility belongs to each page');

@@ -25,7 +25,8 @@ const report={source:'demo.log'},ctx={caseId:key,api,render:()=>rendered++,downl
  let html=ui.render(report,ctx);assert.ok(html.includes('&lt;script&gt;Title'));assert.ok(html.includes('&lt;img'));assert.ok(html.includes('&lt;tag&gt;'));assert.ok(!html.includes('<script>Title'));assert.ok(!html.includes('<img src=x'));
  ui.input({dataset:{evidenceInput:'title'},value:'Evidence'});ui.input({dataset:{evidenceInput:'note'},value:'A note'});ui.input({dataset:{evidenceInput:'tags'},value:'gpu，review'});
  await ui.save();assert.ok(ui.state.selected.has('d'.repeat(32)));assert.deepEqual(items.at(-1).tags,['gpu','review']);assert.equal(ui.state.dirty,false);assert.equal(ui.state.error,'');
- await ui.preview();assert.ok(ui.state.preview);assert.equal(ui.state.reviewed,false);
+ let previewFocus=0;global.document={getElementById:id=>id==='evidence-preview-heading'?{focus:()=>previewFocus++}:null};
+ await ui.preview();delete global.document;assert.equal(previewFocus,1,'Completed preview moves keyboard focus to its heading');assert.ok(ui.state.preview);assert.equal(ui.state.reviewed,false);
  html=ui.render(report,ctx);assert.ok(html.includes('&lt;svg onload=bad()&gt;'));assert.ok(!html.includes('<svg onload'));
  ui.click(control('download'));assert.equal(downloads.length,0,'Downloading requires reviewing the preview');
  ui.change(checkbox('data-evidence-reviewed',true));ui.click(control('download'));assert.equal(downloads.length,1);assert.equal(downloads[0][0],'xidlens-evidence.txt');assert.ok(!downloads[0][1].includes('redactionKey'));

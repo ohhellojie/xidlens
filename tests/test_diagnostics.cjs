@@ -30,7 +30,7 @@ assert.match(html,/data-diag="group" data-value="概览" aria-pressed="true"/,'A
  ui.reset();ctx.state.page='status';ui.render(sample,ctx);ui.click({dataset:{diag:'group',value:'PCIe 链路'}});html=ui.render(sample,ctx);assert.ok(!html.includes('<th>提示</th>'));assert.ok(html.includes('8x'));
  sample.diagnostics.checks.push({id:'fail',address:sample.gpus[0].pci,status:'error',snapshot:'s0',path:field.path,title:'Failure'});
  html=ui.render(sample,ctx);assert.ok(html.includes('<th>提示</th>'));assert.ok(html.includes('<td><span class="badge diag-error">发现错误</span></td>'));
- sample.diagnostics.checks=[];field.availability='unavailable';ui.reset();ui.render(sample,ctx);ui.click({dataset:{diag:'group',value:'PCIe 链路'}});html=ui.render(sample,ctx);assert.ok(html.includes('<td><span class="badge diag-missing">数据不足</span></td>'));
+ sample.diagnostics.checks=[];field.availability='unavailable';ui.reset();ui.render(sample,ctx);ui.click({dataset:{diag:'group',value:'PCIe 链路'}});html=ui.render(sample,ctx);assert.ok(html.includes('<td><span class="badge diag-missing">数据缺失</span></td>'));
  ui.reset();
 }
 
@@ -148,3 +148,20 @@ report.diagnostics.matrices[0].complete=false;
 html=ui.render(report,ctx);
 assert.ok(html.includes('GPU0 到 GPU1：FUTURE'));assert.ok(html.includes('未识别的关系码，保留日志原值。'));
 assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));
+
+// A snapshot without warning checks is collected data, not a missing sample.
+{
+ const sample=structuredClone(report),address=sample.gpus[0].pci;
+ sample.gpus.push({id:1,pci:'0000:42:00.0',label:'GPU 1'});
+ sample.diagnostics.checks=[{id:'other-health',address:'0000:42:00.0',rule:'smi-health',snapshot:'s2',status:'error',title:'Nonzero count',evidence:[]}];
+ ui.reset();ctx.state.page='checks';ui.render(sample,ctx);
+ ui.click({dataset:{diag:'checkCell',value:address+'|health'}});html=ui.render(sample,ctx);
+ assert.match(html,/状态参数：查看采集值/);
+ assert.ok(html.includes('data-diag="snapshot" data-value="s0"'));
+ assert.ok(!html.includes('日志未提供此项的检查结果。'));
+ // A truly empty snapshot must remain missing.
+ sample.diagnostics.snapshots[0].fields=[];ui.reset();ui.render(sample,ctx);
+ ui.click({dataset:{diag:'checkCell',value:address+'|health'}});html=ui.render(sample,ctx);
+ assert.ok(html.includes('日志未提供此项的检查结果。'));
+ ui.reset();
+}

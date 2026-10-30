@@ -26,7 +26,7 @@ const ctx={...binding,api,render(){},onAssist(transfer){const prepared=assistant
 async function mount(context=ctx){evidence.reset();evidence.render(report,context);await tick();evidence.change({dataset:{evidenceSelect:bookmarks[0].id},checked:true});}
 
 (async()=>{
- await mount();assert.match(evidence.render(report,ctx),/按书签整理/);
+ await mount();assert.match(evidence.render(report,ctx),/整理摘要/);
  evidence.change({dataset:{evidenceOption:'path'},checked:false});evidence.input({dataset:{evidenceInput:'extra'},value:'Synthetic hidden phrase'});
  await evidence.preview();evidence.input({dataset:{evidenceInput:'preview'},value:'TEMPORARY EXPORT EDIT'});
  assert.match(evidence.render(report,ctx),/不包含导出预览的临时编辑/);
@@ -37,7 +37,7 @@ async function mount(context=ctx){evidence.reset();evidence.render(report,contex
  assert.ok(!JSON.stringify(transfer.input).includes('TEMPORARY EXPORT EDIT'));assert.ok(!JSON.stringify(transfer.input).includes('UNSELECTED PRIVATE'));
  assert.deepEqual(transfer.sources.e1,{reportId:binding.caseId,revision:binding.revision,identity:binding.identity,start:10,end:10});
  assert.ok(Object.isFrozen(transfer.sources.e1));
- const noHook={...ctx,onAssist:null};assert.ok(!evidence.render(report,noHook).includes('按书签整理'));await evidence.assist();assert.equal(deliveries.length,1);
+ const noHook={...ctx,onAssist:null};assert.ok(!evidence.render(report,noHook).includes('整理摘要'));await evidence.assist();assert.equal(deliveries.length,1);
 
  await mount();evidence.input({dataset:{evidenceInput:'note'},value:'unsaved'});await evidence.assist();assert.match(evidence.state.error,/先保存/);assert.equal(deliveries.length,1);
  await mount();for(let index=0;index<33;index++)evidence.state.selected.add('synthetic-'+index);

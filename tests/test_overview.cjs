@@ -25,7 +25,7 @@ test('detail has source jumps and no inferred collection times',()=>{
  assert.ok(!html.includes('整机健康'));assert.ok(!html.includes('故障已排除'));assert.ok(!html.includes('置信度'));
  ui.click({dataset:{overview:'select',value:'missing:smi:'+b}});html=ui.render(d,ctx);assert.ok(html.includes('ECC、行重映射等状态无法判断'));assert.ok(html.includes('查看补采清单'));
  ui.click({dataset:{overview:'collect'}});html=ui.render(d,ctx);assert.ok(html.includes('nvidia-smi -q'));assert.ok(html.includes('不会执行这些命令'));
- ui.click({dataset:{overview:'select',value:'ok:'+a}});html=ui.render(d,ctx);assert.ok(html.includes('结论仅覆盖下列项目'));assert.ok(html.includes('未采集的项目不计为正常'));
+ ui.click({dataset:{overview:'select',value:'ok:'+a}});html=ui.render(d,ctx);assert.ok(html.includes('以下项目在采集时未见异常'));assert.ok(html.includes('未采集项目无法判断'));
 });
 test('zero cannot hide conflicting numeric samples or another failed check',()=>{
  const d=base();d.diagnostics.snapshots.push({id:'s3',address:a,fields:[field('ECC Errors/Volatile/DRAM/Uncorrectable','9',200)]});

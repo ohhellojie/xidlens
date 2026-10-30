@@ -127,3 +127,13 @@ async function reportStateTests(){
  await reportStateTests();
  console.log('Overview host: demo concurrency, failure recovery, import isolation, focus and report state passed');
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
+// Scroll positions belong to one page. A new page cannot inherit another page's offset.
+{
+ const area={id:'content',dataset:{},scrollLeft:0,scrollTop:240};
+ const env={document:{querySelectorAll:()=>[area]}};vm.createContext(env);
+ vm.runInContext(source.slice(source.indexOf('const viewPositions='),source.indexOf('function updateInspector(')),env);
+ vm.runInContext("renderedView='old';saveViewPosition();restoreViewPosition('new');",env);
+ assert.equal(area.scrollTop,0);
+ vm.runInContext("restoreViewPosition('old');",env);assert.equal(area.scrollTop,240);
+}

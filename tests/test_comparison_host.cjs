@@ -40,7 +40,7 @@ function cacheAndIdentity(){
 function fieldEvidence(){
  const {env}=fixture();let row=env.comparisonRows().rows[0],index=row.details.findIndex(f=>f.key==='health:'+path),field=row.details[index];
  assert.equal(field.comparison.delta,null);assert.ok(!env.comparisonField(field,index).includes('增量'));env.compareFieldSource(index);
- assert.match(env.dialog.html,/计数不可比/);assert.match(env.dialog.html,/缺少同一易失性计数周期/);
+ assert.match(env.dialog.html,/无法计算增量/);assert.match(env.dialog.html,/缺少同一易失性计数周期/);
  assert.match(env.dialog.html,new RegExp('data-compare-source="'+A+'" data-line="12"'));assert.match(env.dialog.html,new RegExp('data-compare-source="'+B+'" data-line="24"'));
  epoch(env.data);epoch(env.comparisonData);env.data={...env.data};field=env.comparisonRows().rows[0].details[index];assert.match(env.comparisonField(field,index),/增量 \+6/,'Verified bigint delta remains exact');
  const altered={...field,comparison:{...field.comparison,comparable:false,delta:'6'}};assert.ok(!env.comparisonField(altered,index).includes('增量'),'A numeric difference alone is never shown as an increment');

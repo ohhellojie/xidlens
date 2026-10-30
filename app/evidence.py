@@ -359,7 +359,8 @@ class EvidenceStore:
         package = {'format': 'xidlens-evidence', 'version': 1, 'generator': 'XidLens '+VERSION, 'source': '报告 1', 'warning': WARNING, 'redacted': [k for k, enabled in redactor.enabled.items() if enabled], 'items': safe}
         plain = ['XidLens 日志证据', WARNING, '']
         for i, item in enumerate(safe, 1):
-            plain.append(f"{i}. {item['title'] or '证据片段'} · 第 {item['start']}–{item['end']} 行")
+            line_range = str(item['start']) if item['start'] == item['end'] else f"{item['start']}–{item['end']}"
+            plain.append(f"{i}. {item['title'] or '证据片段'} · 第 {line_range} 行")
             if item['tags']:
                 plain.append('标签：'+'、'.join(item['tags']))
             if item['note']:
