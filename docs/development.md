@@ -25,7 +25,7 @@ python tools/check_repository.py
 git diff --check
 ```
 
-JavaScript 命令运行 `tests` 下全部 `test_*.cjs`，任一失败时退出并返回错误。测试覆盖解析、读取与恢复、报告管理、联合分析、时间线、对比、证据导出、结构化结果和证据辅助。模型测试使用合成片段、模拟响应和本机服务，不需要 API 密钥或外部模型。运行 API 测试时需允许本机回环连接。
+JavaScript 命令运行 `tests` 下全部 `test_*.cjs`，任一失败时退出并返回错误。测试覆盖解析、读取与恢复、报告管理、联合分析、时间线、对比、证据导出、结构化结果和摘要整理。模型测试使用合成片段、模拟响应和本机服务，不需要 API 密钥或外部模型。运行 API 测试时需允许本机回环连接。
 
 只验证对应功能时，可执行：
 
@@ -39,6 +39,10 @@ node tests/test_evidence_assistant.cjs
 ```
 
 功能修改还需运行相关宿主与来源跳转测试；完整回归使用上面的全部测试命令。
+
+## 摘要模块接入
+
+后端请求、前端回调和来源绑定见[摘要模块接口](assistant-integration.md)。界面操作与接口配置见[整理摘要](evidence-assistant.md)。
 
 ## 构建 Windows x64
 
@@ -56,7 +60,7 @@ python tools/package_release.py
 
 EXE 位于 `dist/XidLens.exe`；便携 ZIP 和 SHA-256 清单位于 `dist/release`。自定义规则的构建方式见[规则说明](catalog.md)，独立中文资料包的生成方式见[资料更新](reference-packages.md)。
 
-软件和资料更新的 HTTPS 下载使用随应用打包的 certifi 公共证书库；版本要求由依赖文件固定。企业 HTTPS 代理的证书链也须通过该证书库校验。可选模型接口的连接与证书规则见[证据辅助](evidence-assistant.md)。
+软件和资料更新的 HTTPS 下载使用随应用打包的 certifi 公共证书库；版本要求由依赖文件固定。企业 HTTPS 代理的证书链也须通过该证书库校验。可选模型接口的连接与证书规则见[摘要整理](evidence-assistant.md)。
 
 ## 公开内容检查
 

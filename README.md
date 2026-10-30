@@ -27,10 +27,10 @@ XidLens 在本机解析 NVIDIA GPU 日志，整理设备信息、错误和状态
 支持 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 的文本输出，以及 GZ、ZIP 和 TAR 压缩包。
 
 - **诊断概览**：筛选重点发现，查看判断依据、证据和下一步。未见异常、数据缺失和字段冲突分别显示。
-- **设备与状态**：提取服务器和 GPU 身份，查看 `nvidia-smi -q` 采集块，检查 PCIe 链路、ECC 和行重映射等状态。
-- **事件时间线**：按设备、类型和时间筛选错误、驱动加载、明确的重置结果及状态快照，保留来源与启动分段。
+- **设备与状态**：提取服务器和 GPU 身份，查看 `nvidia-smi -q` 采集记录，检查 PCIe 链路、ECC 和行重映射等状态。
+- **事件时间线**：按设备、类型和时间筛选错误、驱动加载、明确的重置结果及状态快照，保留来源与启动区间。
 
-[![异常检查：在设备矩阵中选择 ECC 记录，右侧显示计数和判断依据](docs/images/checks.jpg)](docs/images/checks.jpg)
+[![异常检查：在设备矩阵中选择 ECC 记录，右侧显示计数和说明](docs/images/checks.jpg)](docs/images/checks.jpg)
 
 分析结果可跳到对应原文。完整日志支持全文搜索、行号跳转和专注阅读，切换页面或报告后保留阅读位置。
 
@@ -46,7 +46,9 @@ XidLens 在本机解析 NVIDIA GPU 日志，整理设备信息、错误和状态
 
 在日志中选择行范围，保存带备注和标签的证据书签。选择书签后生成脱敏预览，检查或编辑片段、来源名和备注，确认后导出 TXT 或 JSON。
 
-证据辅助默认在本机摘录所选片段，不调用 AI。也可选择本机模型或自选 HTTPS 兼容 API，核对脱敏片段、补充说明、接口和模型后，点击确认发送。仅发送本次选中的内容；返回的观察、待核实事项和摘要附有引用，摘要可编辑、复制。配置与数据处理条件见[证据辅助](docs/evidence-assistant.md)。
+选择书签后点击整理摘要，默认在本机摘录，不调用 AI。摘要保留引用，可编辑、复制。
+
+也可使用本机模型或自选 HTTPS 兼容 API。核对发送预览后，点击确认发送至模型；仅发送本次选中的片段和补充说明。模型结果需核对原文，配置与数据处理条件见[整理摘要](docs/evidence-assistant.md)。
 
 ## DCGM 与事件格式
 
@@ -69,7 +71,7 @@ NVSwitch SXid 与 GPU Xid 分开归属。GOE 为实验性解析，保留完整�
 内置 Xid 说明和排查手册可独立更新。软件默认联网检查新版本，可在设置中关闭；下载与安装由用户确认。
 
 - [使用说明](docs/usage.md) · [日志采集与判断范围](docs/diagnostics.md)
-- [结构化结果](docs/structured-events.md) · [证据辅助](docs/evidence-assistant.md)
+- [结构化结果](docs/structured-events.md) · [整理摘要](docs/evidence-assistant.md)
 - [资料更新](docs/reference-packages.md) · [解析规则](docs/catalog.md)
 - [源码运行与构建](docs/development.md) · [贡献说明](CONTRIBUTING.md)
 

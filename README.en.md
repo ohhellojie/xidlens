@@ -46,7 +46,9 @@ Select two reports to compare device properties, errors, and counters. GPUs are 
 
 Select a line range in the log and save a bookmark with notes and tags. Choose bookmarks to create a redacted preview, review or edit the excerpts, source names, and notes, then confirm export as TXT or JSON.
 
-Evidence assistance extracts selected excerpts locally by default, without AI. Optionally choose a local model or a compatible HTTPS API, review the redacted excerpts, additional notes, endpoint, and model, then explicitly confirm sending. Only the content selected for that request is sent. Returned observations, items to verify, and summaries include references; summaries can be edited and copied. See [evidence assistance](docs/evidence-assistant.md) for configuration and data handling details.
+Select bookmarks and click 整理摘要 (Create a summary). By default, the app extracts excerpts locally without AI. Summaries retain references and can be edited and copied.
+
+You can also use a local model or a compatible HTTPS API. Review the request preview and click 确认发送至模型 (Confirm and send to model). Only the selected excerpts and additional notes are sent. Check model results against the source. See [summaries](docs/evidence-assistant.md) for configuration and data handling details.
 
 ## DCGM and event formats
 
@@ -71,7 +73,7 @@ The built-in Xid reference and troubleshooting manual can be updated independent
 Documentation is in Chinese:
 
 - [Usage](docs/usage.md) · [Log collection and interpretation](docs/diagnostics.md)
-- [Structured results](docs/structured-events.md) · [Evidence assistance](docs/evidence-assistant.md)
+- [Structured results](docs/structured-events.md) · [Summaries](docs/evidence-assistant.md)
 - [Reference updates](docs/reference-packages.md) · [Parsing rules](docs/catalog.md)
 - [Run from source and build](docs/development.md) · [Contributing](CONTRIBUTING.md)
 
