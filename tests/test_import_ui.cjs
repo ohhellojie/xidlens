@@ -5,13 +5,14 @@ const body=source.slice(source.indexOf('async function importFiles('),source.ind
 async function run(files,cancelAfter=0){
  const nodes=new Map(),uploaded=[],refreshed=[];let current,closed=false;
  const el=id=>{if(!nodes.has(id))nodes.set(id,{hidden:false,open:true,setAttribute(){},focus(){}});return nodes.get(id);};
- const env={busy:false,activeImport:null,loadedCase:'old',cases:[],data:{source:''},catalogBusy:false,$:el,document:{querySelector:()=>null},
+ const env={busy:false,activeImport:null,loadedCase:'old',cases:[],data:{source:''},sessionState:{scope:true},state:{page:'sessions'},catalogBusy:false,$:el,document:{querySelector:()=>null},
   validateLogFile:f=>f.name.endsWith('.exe')?f.name+'：类型不支持':'',showImportProgress(){},toast(){},closeDialog(){closed=true;},
   api:async path=>path==='/api/import/start'?{job:'job'}:{},refreshCases:async id=>refreshed.push(id),
   uploadImport:async(f,op)=>{current=f;uploaded.push(f.name);if(f.uploadError)throw Error('读取失败');if(uploaded.length===cancelAfter)op.cancelRequested=true;},
   waitImport:async op=>op.cancelRequested?{state:'cancelled'}:current.bad?{state:'error',message:'没有可解析记录'}:{state:'done',ids:[current.name]}};
  vm.createContext(env);vm.runInContext(body,env);await env.importFiles(files);
  assert.equal(env.busy,false);assert.equal(env.activeImport,null);assert.equal(el('file-input').disabled,false);
+ if(refreshed.length){assert.equal(env.sessionState.scope,false);assert.equal(env.state.page,'overview');}
  return {uploaded,refreshed,closed,message:el('import-feedback').textContent};
 }
 (async()=>{

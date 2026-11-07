@@ -21,7 +21,7 @@ function fixture(){
   XidComparison:{assess(...args){env.assessments++;return comparison.assess(...args);}},assessments:0,
   XidDiagnostics:{leave(){},reset(){},restore(){},capture(){return {};},afterRender(){}},
   XidReader:{unmount(){},mount(_element,options){mounts.push(options);}},
-  saveViewPosition(){},restoreViewPosition(){},focusKey(){return null;},restoreFocus(){},renderNav(){},renderDrawer(){},syncReportControls(){},closeMenu(){},closeDrawer(){},
+  workspaceTabs:()=>'',renderScope(){},saveViewPosition(){},restoreViewPosition(){},focusKey(){return null;},restoreFocus(){},renderNav(){},renderDrawer(){},syncReportControls(){},closeMenu(){},closeDrawer(){},
   heading:()=>'<h1>日志对比</h1>',empty:text=>'<p>'+text+'</p>',esc:escape,val:value=>value||'—',icon:()=>'',codeLabel:e=>e.code||e.kind,status:text=>{env.statusText=text;},toast(){},
   openDialog(title,html){env.dialog={title,html};env.$('dialog').open=true;},closeDialog(){env.$('dialog').open=false;},
   updateInspector(_id,html){env.inspector=html;},

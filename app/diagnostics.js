@@ -241,6 +241,7 @@ function render(data,ctx){
  if(lastPage&&lastPage!==ctx.state.page){detailVisibility.set(lastPage,state.detailHidden);state.detailHidden=detailVisibility.get(ctx.state.page)||false;state.gpuPicker=false;}lastPage=ctx.state.page;context=ctx;report=data;
  if(!data.source)return ctx.heading()+'<div class="live-empty">导入日志后查看解析结果</div>';
  if(!data.diagnostics)return ctx.heading()+'<div class="live-empty"><h2>此报告需要重新解析</h2><p>重新解析原日志以查看诊断结果。</p><button class="btn" data-page="reports">报告管理</button></div>';
+ if(ctx.state.page==='topology'&&!Object.keys(data.nodes||{}).length&&!data.diagnostics.topology?.length&&!data.diagnostics.matrices?.length)return ctx.heading()+'<div class="live-empty"><h2>未采集连接关系</h2><p>导入 lspci 或 nvidia-smi topo 的输出后查看。</p><button class="btn" data-page="manual">查看采集说明</button></div>';
  indexChecks();
  if(ctx.state.page==='topology'&&!state.viewInitialized){state.view=(!data.diagnostics.topology.length&&data.diagnostics.matrices.length)?'matrix':'tree';state.viewInitialized=true;}
  return ctx.heading()+`<div class="diag-workspace">${ctx.state.page==='status'?statusView():ctx.state.page==='checks'?checksView():`<div class="diag-tabs">${button('view','tree','PCIe 连接树',state.view==='tree')}${button('view','matrix','GPU 互联矩阵',state.view==='matrix')}${detailToggle()}</div>${state.view==='matrix'?matrixView():treeView()}`}</div>`;

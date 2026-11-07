@@ -40,6 +40,47 @@ class ReportTests(unittest.TestCase):
                                    headers=headers if headers is not None else {'X-Local-Token':self.s.TOKEN})
         with self.opener.open(req,timeout=5) as response:return json.load(response)
 
+    def test_removed_fragment_and_model_routes_are_not_available(self):
+        for path, body in [('api/evidence?id='+'a'*32, None), ('api/assistant/protocol', None),
+                           ('api/evidence/preview', {}), ('api/assistant/run', {})]:
+            with self.subTest(path=path), self.assertRaises(urllib.error.HTTPError) as caught:
+                self.request(path, body)
+            self.assertEqual(caught.exception.code, 404)
+
+    def test_legacy_annotations_survive_reads_and_are_cleaned_with_report(self):
+        path, data = self.report()
+        folder = self.s.RUNTIME / 'evidence'
+        folder.mkdir(exist_ok=True)
+        annotation = folder / (data['id']+'.json')
+        annotation.write_text('{"legacy":"synthetic note"}', encoding='utf-8')
+        self.request('api/cases')
+        self.assertEqual(annotation.read_text(encoding='utf-8'), '{"legacy":"synthetic note"}')
+        result = self.request('api/cases/delete', {'ids': [data['id']]})
+        self.assertEqual(result['deleted'], [data['id']])
+        self.assertFalse(annotation.exists())
+
+    def test_legacy_annotation_cleanup_failure_can_be_retried(self):
+        path, data = self.report()
+        with patch.object(self.s, 'remove_legacy_annotations', side_effect=OSError('synthetic failure')):
+            result = self.request('api/cases/delete', {'ids': [data['id']]})
+        self.assertEqual(result['evidenceCleanupFailed'], [data['id']])
+        result = self.request('api/cases/delete', {'ids': [data['id']]})
+        self.assertNotIn('evidenceCleanupFailed', result)
+
+    def test_dcgm_summary_counts_entities_without_double_counting_test_summaries(self):
+        path, data = self.report()
+        base = {'run': 1, 'category': 'Hardware', 'test': 'memory'}
+        data['structured'] = {'format': 'dcgm-json', 'dcgm': {
+            'results': [{**base, 'entity': {'gpu_id': 0}, 'status': 'pass'},
+                        {**base, 'entity': {'gpu_id': 1}, 'status': 'fail'}],
+            'summaries': [{**base, 'status': 'fail'},
+                          {**base, 'test': 'software', 'status': 'warn'}],
+            'runs': [{'run': 1, 'runtimeError': 'Synthetic execution failure'}]}}
+        path.write_text(json.dumps(data), encoding='utf-8')
+        row = self.request('api/cases')['cases'][0]
+        self.assertEqual(row['diagnostic'], {'results': 3, 'entities': 2, 'failed': 1,
+                                             'warnings': 1, 'runtimeErrors': 1})
+
     def test_summary_matches_report_without_transferring_events(self):
         path,d=self.report();row=self.request('api/cases')['cases'][0]
         self.assertEqual(row['server']['sn'],d['server']['sn'])

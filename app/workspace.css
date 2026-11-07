@@ -1,0 +1,31 @@
+/* One work area, with contextual views and an explicit source scope. */
+:root{--accent:#292929;--selected:#f1f1f1;--hover:#f5f5f5;--muted:#626262}
+.workspace-tabs{display:flex;gap:8px;flex-wrap:wrap;flex:none;padding:0 0 14px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.workspace-tabs .btn[aria-current="page"]{font-weight:600;border-color:var(--text);background:var(--subtle)}
+.nav-item[aria-current="page"]{color:var(--text);background:var(--selected);font-weight:600}
+.nav-caption,.sidebar-foot #manual{display:none}
+.sidebar-foot .prototype-tag{display:none!important}
+.scope-label{font-size:11px;color:var(--muted);margin-right:6px;white-space:nowrap}
+.workspace-scope-note{display:flex;gap:12px;flex-wrap:wrap;align-items:center;flex:none;font-size:12px;padding:10px 0;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.workspace-scope-note strong{font-weight:600}.workspace-scope-note .actions{margin-left:auto}
+.workspace-session-content{display:flex;flex:1;min-height:0;flex-direction:column;overflow:auto}
+.workspace-session-content>.overview-workspace,.workspace-session-content>.timeline-page{flex:1;min-height:0}
+.workspace-session-content .session-heading{display:none}
+.session-notices{flex:none}
+.content>.workspace-tabs~.split{flex:1;min-height:0}
+.workspace-split{grid-template-columns:minmax(0,1fr) minmax(320px,.8fr)}
+.content .inspector{width:auto;flex-basis:auto}
+.overview-layout{grid-template-columns:minmax(360px,1fr) minmax(350px,.85fr)}
+.overview-group h2{font-size:13px}.overview-coverage{border-top:1px solid var(--line);padding-top:12px}
+.settings-updates{display:grid;gap:20px}.settings-updates .resource-section{margin:0}
+.report-diagnostic{display:block;font-size:12px;color:var(--muted);margin-top:4px}
+.source-list-actions{display:flex;gap:8px;align-items:center}
+.content.reader-content>.workspace-tabs,.content.knowledge-content>.workspace-tabs{margin:14px 18px 0;padding-bottom:10px}
+.reader-focus .workspace-tabs{display:none}
+.overview-coverage summary{cursor:pointer;padding:12px 0;font-weight:600}.overview-coverage summary span{margin-left:8px;color:var(--muted)}
+.overview-device-group{border-bottom:1px solid var(--line)}
+.workspace-session-content .overview-layout{min-height:360px}
+@media(max-width:1100px){.overview-layout{grid-template-columns:minmax(280px,1fr) minmax(300px,1fr)}.content .inspector{width:320px;flex-basis:320px}.topbar{gap:8px}.file-context{min-width:180px}.scope-label{display:none}}
+@media(max-width:850px){.content{padding:16px}.overview-layout,.timeline-split,.session-split,.checks-layout{display:flex;flex-direction:column;overflow:auto}.overview-findings,.timeline-split>section{min-height:240px;max-height:45vh;flex:none}.overview-detail,.timeline-detail,.session-detail{min-height:300px;flex:none;border-left:0;border-top:1px solid var(--line)}.overview-detail-body{overflow:visible}.overview-detail{overflow:visible}.overview-layout{overflow:auto}.split{flex-direction:column;overflow:auto}.content .inspector{width:100%;flex-basis:auto;max-height:none;border-left:0;border-top:1px solid var(--line)}.split>.table-section,.table-section{min-height:250px;flex:none}.topbar .top-divider,.theme-button{display:none}.workspace-tabs{gap:6px}.workspace-tabs .btn{padding:7px 9px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+@media(max-width:850px){.workspace-split{display:flex;flex-direction:column;overflow:auto;gap:18px}.workspace-split>.workspace-main{min-height:300px;flex:none}.workspace-split>.inspector{flex:none;overflow:visible;padding:18px 0;width:100%}}

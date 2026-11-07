@@ -98,6 +98,8 @@
     if (!result?.manifest || !result?.view) return list(ctx.sessions || [],ctx.unreadable);
     const {manifest,view}=result;
     if (state.id!==manifest.id) Object.assign(state,{id:manifest.id,tab:'sources',page:0,source:'all',selected:'',evidencePage:0});
+    if(ctx.view&&tabs[ctx.view])state.tab=ctx.view;
+    if(ctx.embedded)return `<section class="session-page">${state.tab==='devices'?devices(view):sources(view)}</section>`;
     return `<section class="session-page"><header class="session-heading"><div><h1 tabindex="-1">${esc(manifest.name)}</h1><p>${view.members.length} 份来源 · ${view.counts.events} 条事件 · 人工关联</p></div><div class="actions">${action('list','','关联列表')}${action('refresh',manifest.id,'更新来源')}${action('delete',manifest.id,'移除关联')}</div></header>${warnings(view)}<nav class="session-tabs" aria-label="联合分析视图">${Object.entries(tabs).map(([key,label])=>`<button class="btn" data-session="tab" data-value="${key}" aria-pressed="${state.tab===key}">${label}</button>`).join('')}</nav>${state.tab==='sources'?sources(view):state.tab==='devices'?devices(view):state.tab==='timeline'?(context.renderTimeline?.(result)||''):records(view,state.tab)}</section>`;
   }
   function rerender() { context.render?.(); }

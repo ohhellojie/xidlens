@@ -8,7 +8,7 @@
   <a href="README.md">简体中文</a>
 </p>
 
-XidLens processes NVIDIA GPU logs locally, organizes device information, errors, and diagnostic checks, and links findings to their source lines. It supports analysis across multiple logs, event timelines, report comparison, and sharing redacted excerpts.
+XidLens processes NVIDIA GPU logs locally, organizes device information, errors, and diagnostic checks, and links findings to their source lines. It supports analysis across multiple logs, event timelines, and report comparison.
 
 [![Device information with server details, GPU inventory, and device properties](docs/images/devices.jpg)](docs/images/devices.jpg)
 
@@ -38,17 +38,9 @@ Open source lines directly from analysis results. The full log reader supports t
 
 ## Multiple logs and comparison
 
-Select files from the same collection in report management to create a joint analysis of devices, events, checks, and timelines. Each source link opens the original line in the corresponding report.
+Select files from the same collection in report management to create a joint analysis of devices, events, checks, and timelines. Single reports and source collections use the same work areas. The top selector identifies the active source, and each source link opens the original line in the corresponding report.
 
 Select two reports to compare device properties, errors, and counters. GPUs are matched by unique, consistent serial numbers or UUIDs. Counter changes require comparable measurements; missing values, conflicts, and reasons a comparison is unavailable remain visible. Inspect both source logs side by side. See [usage](docs/usage.md) for steps and comparison conditions.
-
-## Evidence and sharing
-
-Select a line range in the log and save a bookmark with notes and tags. Choose bookmarks to create a redacted preview, review or edit the excerpts, source names, and notes, then confirm export as TXT or JSON.
-
-Select bookmarks and click 整理摘要 (Create a summary). By default, the app extracts excerpts locally without AI. Summaries retain references and can be edited and copied.
-
-You can also use a local model or a compatible HTTPS API. Review the request preview and click 确认发送至模型 (Confirm and send to model). Only the selected excerpts and additional notes are sent. Check model results against the source. See [summaries](docs/evidence-assistant.md) for configuration and data handling details.
 
 ## DCGM and event formats
 
@@ -66,14 +58,14 @@ Devices with an unconfirmed upstream connection are listed separately. See [stat
 
 ## Documentation and updates
 
-Device inventories can be copied to Excel or exported as TSV, log summaries as TXT, and full records as JSON. Keep the `runtime` folder when upgrading; it stores reports, log copies, bookmarks, and settings.
+Device inventories can be copied to Excel or exported as TSV, log summaries as TXT, and full records as JSON. Keep the `runtime` folder when upgrading; it stores reports, log copies, and settings.
 
-The built-in Xid reference and troubleshooting manual can be updated independently. The app checks online for new versions by default; this can be disabled in settings. Downloads and installation require confirmation.
+Settings brings together application, official rule, Xid reference, and troubleshooting manual updates. The app checks online for new versions by default; this can be disabled in settings. Downloads and installation require confirmation.
 
 Documentation is in Chinese:
 
 - [Usage](docs/usage.md) · [Log collection and interpretation](docs/diagnostics.md)
-- [Structured results](docs/structured-events.md) · [Summaries](docs/evidence-assistant.md)
+- [Structured results](docs/structured-events.md)
 - [Reference updates](docs/reference-packages.md) · [Parsing rules](docs/catalog.md)
 - [Run from source and build](docs/development.md) · [Contributing](CONTRIBUTING.md)
 

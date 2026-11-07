@@ -18,7 +18,7 @@ function fixture(){
   $(id){if(!elements.has(id))elements.set(id,node());return elements.get(id);},
   document:{querySelectorAll(){return focusables;},activeElement:null},
   api(path){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});requests.push({path,resolve,reject});return promise;},
-  closeMenu(){},closeDrawer(){},closeDialog(){},saveViewPosition(){},status(){},toast(){},icon(){return '';},
+  closeMenu(){},closeDrawer(){},closeDialog(){},saveViewPosition(){},status(){},toast(){},icon(){return '';},esc:value=>String(value),
   XidDiagnostics:{reset(){},restore(){},capture(){return {};},leave(){},openMatrix(){}},XidOverview:{reset(){},restore(){},capture(){return {};}}
  };
  vm.createContext(env);vm.runInContext(analysis+timeline+sessions+
@@ -30,7 +30,7 @@ function fixture(){
   section('function focusKey(','let knowledgeCode=')+
   '\nglobalThis.session=sessionState;',env);
  env.render=()=>{env.html=env.state.page==='timeline'?env.renderTimeline():env.state.page==='sessions'?env.renderSessions():'reader';};
- env.session.loaded=true;env.session.result=bundle();env.render();
+ env.session.loaded=true;env.session.result=bundle();env.session.area='errors';env.session.view='timeline';env.render();
  const load=async(id,next=report(id),force=false)=>{const pending=env.loadCase(id,force);requests.at(-1).resolve(next);await pending;};
  return {env,elements,requests,focusables,load};
 }
@@ -48,7 +48,7 @@ async function sourceReturn(){
  const {env,requests}=fixture();input(env,'query','TARGET 1');
  env.state.page='sessions';env.render();env.XidSessions.click({dataset:{session:'tab',value:'timeline'}});
  assert.equal((env.html.match(/<h1 /g)||[]).length,1,'Embedded timeline does not repeat the session heading');
- input(env,'query','TARGET');change(env,'clock','uptime');input(env,'from','0');action(env,'mode','groups');action(env,'memberPage','2');action(env,'select','event:'+B+':e205');
+ input(env,'query','TARGET');change(env,'clock','uptime');input(env,'from','0');env.session.view='events';env.render();action(env,'memberPage','2');action(env,'select','event:'+B+':e205');
  const saved=plain(env.XidTimeline.capture()),original=env.openSessionSource;
  env.openSessionSource=(...args)=>env.sourcePromise=original(...args);
  action(env,'source','event:'+B+':e205');assert.equal(requests.at(-1).path,'/api/case/'+B);
@@ -56,7 +56,7 @@ async function sourceReturn(){
  assert.equal(env.state.page,'reader');assert.deepEqual(plain(env.pendingSource),{caseId:B,line:206});assert.deepEqual(plain(env.readerReturn),{caseId:B,page:'sessions'});
  assert.equal(env.caseViews.get(A).timeline.query,'TARGET 1','Joint filters never overwrite the loaded report snapshot');
  env.goto(env.readerReturn.page);assert.deepEqual(plain(env.XidTimeline.capture()),saved,'Returning from another report retains joint filter, range, group and member page');
- assert.ok(env.html.includes('第 206 行'));assert.ok(env.html.includes('timeline-embedded'));
+ assert.ok(env.html.includes('第 206 行'));assert.ok(env.html.includes('workspace-session-content'));
  env.state.page='timeline';env.render();assert.equal(env.XidTimeline.capture().identity,'case:'+B);assert.equal(env.XidTimeline.capture().query,'');
  env.state.page='sessions';env.render();assert.deepEqual(plain(env.XidTimeline.capture()),saved);
 }
