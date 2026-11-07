@@ -27,12 +27,12 @@ function fixture(){
   goto(page){env.state.page=page;navigations.push({page,caseId:env.loadedCase});},
   openDialog(_title,_html,_footer,kind){env.dialogRevision++;elements.get('dialog').open=true;elements.get('dialog').dataset.kind=kind;elements.set('session-name',{...node(),value:''});elements.set('session-error',node());elements.set('confirm-session',node());},
   closeDialog(){elements.get('dialog').open=false;},
-  rememberCaseView(){},saveViewPosition(){},closeMenu(){},closeDrawer(){},status(){},comparisonReader(){return null;},
+  rememberCaseView(){},workspaceTabs:()=>'',renderScope(){},saveViewPosition(){},closeMenu(){},closeDrawer(){},status(){},comparisonReader(){return null;},
   XidDiagnostics:{reset(){},restore(){},openMatrix(){}},XidOverview:{reset(){},restore(){}},
   XidSessions:{render(result,context){env.lastRenderContext=context;return result?'detail':'list';}},
  };
  vm.createContext(env);vm.runInContext(sessionCode+loadCode+openSourceCode+'\nglobalThis.session=sessionState;',env);
- env.session.loaded=true;env.session.result=bundle(S);
+ env.session.loaded=true;env.session.result=bundle(S);env.session.area='devices';
  return {env,elements,requests,renders,toasts,navigations};
 }
 
@@ -131,9 +131,9 @@ function renderTests(){
  env.XidDiagnostics.afterRender=()=>{};env.XidOverview.afterRender=()=>{};
  vm.runInContext(renderCode,env);env.render();
  assert.equal(elements.get('export-button').hidden,true,'Session view must not export whichever single report is loaded');
- assert.equal(fileContext.style.visibility,'hidden','The loaded single report context is hidden in sessions');
+ assert.equal(fileContext.style.visibility,'','The source selector stays visible in combined analysis');
  assert.equal(statuses.at(-1),'2 份来源 · 6 条事件','The status bar uses session totals');
- assert.equal(elements.get('content').innerHTML,'detail');assert.equal(env.lastRenderContext.onSource,env.openSessionSource);
+ assert.match(elements.get('content').innerHTML,/detail/);assert.equal(env.lastRenderContext.onSource,env.openSessionSource);
  env.state.page='devices';env.render();assert.equal(elements.get('export-button').hidden,false);assert.equal(fileContext.style.visibility,'');assert.ok(statuses.at(-1).includes('3 次事件'));
 }
 

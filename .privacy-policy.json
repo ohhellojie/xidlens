@@ -16,21 +16,25 @@
       "657b0ffcf6608a7b696f2683f432507d9c4ca2a8c239976eb7fcb4a7847c7de0"
     ],
     "docs/images/checks.jpg": [
+      "cc1cab9699325f4448cd19f5941bfd593a1de3accbb954fa9f22839c4ca05a99",
       "2b3bdf356d941faab46f094103c766f5346d5fa7e82e97924518b72bb4220ce7"
     ],
     "docs/images/devices.jpg": [
+      "2b186a1656a46ec14842a642f3d0d838990b6d42fb4f86d13ffb14c42dd25a8f",
       "4bf21c93440475949acdb57e9895d8dbc42bd3eedbe0646e2fc52ecedf35ce62"
     ],
     "docs/images/errors.png": [
       "356e4483d269755f96761424daf6bf874c6a46309fa5186f5c7d6da2221d2dc1"
     ],
     "docs/images/reader.jpg": [
+      "a3a3158e203626fdf8e4924c86fd43f48d87acfdd2aad6cd58ab2d0b2f46da8d",
       "43449bcc95c6b530f165a67d9330c5b156c7c6103a161c18def5c80deb550341"
     ],
     "docs/images/status.png": [
       "7daa3e39cc6f222144f6b944f1d9537aa69ef0bf5d206ee251c6a8ecfb2adc0d"
     ],
     "docs/images/topology.jpg": [
+      "b4335fa426a17f1523c61613ee7cb24f5efa990513e7c806a50bc59fde3dd589",
       "b114526654acbc6af4f65a3e783b633f1724d52e1a157239c3816b6b9e543c61"
     ],
     "docs/images/checks.png": [
@@ -48,11 +52,9 @@
     ]
   },
   "owned_python_modules": [
-    "assistant",
     "catalog",
     "desktop",
     "diagnostics",
-    "evidence",
     "file_export",
     "gpu_summary_core",
     "instance",
@@ -68,7 +70,9 @@
     "version",
     "window_layout",
     "sessions",
-    "structured_events"
+    "structured_events",
+    "assistant",
+    "evidence"
   ],
   "public_data_files": [
     "analysis.js",
@@ -89,12 +93,11 @@
     "sessions.css",
     "timeline.js",
     "timeline.css",
-    "evidence.js",
-    "evidence.css",
-    "assistant.js",
-    "assistant.css",
     "structured.js",
-    "structured.css"
+    "structured.css",
+    "workspace.js",
+    "workspace.css",
+    "settings.js"
   ],
   "public_git_names": [
     "ohhellojie",

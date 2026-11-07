@@ -21,8 +21,8 @@ ctx.state.gpu=2;html=ui.render(sample,ctx);assert.match(html,/当前 GPU 7/,'Dev
 ui.click({dataset:{diag:'status',value:'2'}});html=ui.render(sample,ctx);assert.match(html,/data-value="概览" aria-pressed="true"/);assert.ok(!html.includes('diag-wide'));
 ui.click({dataset:{diag:'gpuPicker'}});html=ui.render(sample,ctx);assert.match(html,/role="dialog" aria-label="选择 GPU"/);
 ui.leave();html=ui.render(sample,ctx);assert.ok(!html.includes('role="dialog"'));
-ctx.state.page='topology';ui.render(sample,ctx);ui.openMatrix();html=ui.render(sample,ctx);assert.match(html,/data-value="matrix" aria-pressed="true"/);
-ui.reset();html=ui.render(sample,ctx);assert.match(html,/data-value="tree" aria-pressed="true"/);
+sample.diagnostics.matrices=[{id:'matrix',mode:'m',labels:[],rows:[],mapping:{},evidence:{line:1}}];ctx.state.page='topology';ui.render(sample,ctx);ui.openMatrix();html=ui.render(sample,ctx);assert.match(html,/data-value="matrix" aria-pressed="true"/);
+ui.reset();sample.diagnostics.matrices=[];sample.nodes={pci:{kind:'gpu',fields:{}}};html=ui.render(sample,ctx);assert.match(html,/data-value="tree" aria-pressed="true"/);
 // A status filter chooses a matching cell instead of retaining an invisible error.
 {
  const report=structuredClone(sample);report.diagnostics.checks=[{id:'read',address:sample.gpus[0].pci,rule:'smi-read',status:'error',title:'Read error'},{id:'link',address:sample.gpus[0].pci,rule:'pcie-link',status:'review',title:'Link review'}];

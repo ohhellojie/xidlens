@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('node:assert/strict'),workspace=require('../app/workspace.js'),overview=require('../app/overview.js');
+const icon=()=>'';
+assert.equal(workspace.groups.length,6);
+assert.equal((workspace.navigation('overview',{},icon).match(/data-workspace=/g)||[]).length,3);
+assert.equal(workspace.groupFor('reader'),'reader');assert.equal(workspace.groupFor('evidence'),'');assert.equal(workspace.groupFor('checks'),'overview');
+assert.ok(!workspace.tabs('devices',{source:'empty',diagnostics:{}}).includes('连接关系'));
+assert.ok(workspace.tabs('overview',{structured:{format:'dcgm-json'}}).includes('DCGM 结果'));
+assert.equal(workspace.reportSummary({gpus:0,events:0,diagnostic:{entities:2,results:2,failed:1,warnings:0,runtimeErrors:1}}).attention,2);
+assert.match(workspace.reportSummary({diagnostic:{entities:2,results:2,failed:1,warnings:0}}).devices,/2 个诊断实体/);
+const pci='0000:41:00.0',ids=['a'.repeat(32),'b'.repeat(32)];
+const bundle={manifest:{name:'Synthetic sources'},view:{members:ids.map((reportId,i)=>({reportId,source:'source-'+i,state:'ready'})),devices:ids.map(reportId=>({reportId,id:0,pci,label:'GPU 0',fields:{}})),events:[],snapshots:[],checks:ids.map((reportId,i)=>({id:'same-check',reportId,address:pci,title:'ECC check',status:'error',rule:'ecc',value:String(i+1),evidence:[{reportId,line:i+10,text:'Synthetic check'}]})),deviceGroups:[{},{}],complete:true}};
+const model=workspace.sessionOverview(bundle,overview.buildModel),errors=model.findings.filter(f=>f.status==='error');
+assert.equal(errors.length,2,'Same PCI address in two reports must not collapse findings');assert.equal(new Set(errors.map(f=>f.id)).size,2);
+assert.deepEqual(errors.map(f=>f.evidence[0].reportId).sort(),ids);assert.ok(errors.every(f=>f.device.includes('source-')));assert.equal(model.gpuCount,2);
+console.log('Workspace: contextual routes, diagnostic counts and separate source identities passed');

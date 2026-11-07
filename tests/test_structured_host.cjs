@@ -17,11 +17,11 @@ function fixture(){
   XidReader:{unmount(){},mount(_node,options){mounts.push(options);}},
   XidDiagnostics:{reset(){},restore(){},capture(){return {};},leave(){},openMatrix(){},afterRender(){},dismissPicker(){},input(){return false;},change(){return false;}},
   XidOverview:{afterRender(){},reset(){},restore(){},capture(){return {};},render(){return '<h1>诊断概览</h1>';}},
-  saveViewPosition(){},restoreViewPosition(){},renderDrawer(){},syncReportControls(){},closeMenu(){},closeDrawer(){},closeDialog(){},status(){},toast(){},icon(){return '';},esc,
+  saveViewPosition(){},restoreViewPosition(){},renderDrawer(){},syncReportControls(){},closeMenu(){},closeDrawer(){},closeDialog(){},status(){},toast(){},icon(){return '';},esc,reportOption:c=>c.source||c.id,
   comparisonReader(){return null;},api(path){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});requests.push({path,resolve,reject});return promise;}
  };
  env.window=env;vm.createContext(env);
- vm.runInContext(fs.readFileSync(require.resolve('../app/analysis.js'),'utf8')+fs.readFileSync(require.resolve('../app/structured.js'),'utf8')+
+ vm.runInContext(fs.readFileSync(require.resolve('../app/workspace.js'),'utf8')+fs.readFileSync(require.resolve('../app/analysis.js'),'utf8')+fs.readFileSync(require.resolve('../app/structured.js'),'utf8')+
   section('function renderNav()','function gpuRows(')+section('function focusKey(','let knowledgeCode=')+
   section('function renderStructured()','function renderTimeline(')+section('function render(preserveScroll','function openGpu(')+
   section('function rememberCaseView()','function openSource(')+section('function openSource(',"document.addEventListener('click',event=>{const target=event.target.closest('[data-source-line]')")+
@@ -31,7 +31,7 @@ function fixture(){
  return {env,nodes,requests,mounts,focusables,contexts,listeners,load};
 }
 async function stateAndNavigation(){
- const f=fixture(),{env,load}=f;await load(B);assert.equal(env.state.page,'structured');assert.match(env.$('navigation').innerHTML,/data-page="structured"/);assert.match(env.$('content').innerHTML,/DCGM 结果/);assert.equal(env.$('export-button').hidden,true);
+ const f=fixture(),{env,load}=f;await load(B);assert.equal(env.state.page,'structured');assert.match(env.$('navigation').innerHTML,/data-workspace="overview"/);assert.match(env.$('content').innerHTML,/DCGM 结果/);assert.equal(env.$('export-button').hidden,true);
  env.XidStructured.change({dataset:{structuredChange:'status'},value:'fail'});env.XidStructured.input({dataset:{structuredInput:'query'},value:'TEST 1'});const saved=plain(env.XidStructured.capture());
  await load(A);assert.equal(env.XidStructured.capture().query,'');await load(B);assert.deepEqual(plain(env.XidStructured.capture()),saved);
  await load(A);await load(B,{...report(B),contentSha256:'new-revision'});assert.equal(env.XidStructured.capture().query,'');

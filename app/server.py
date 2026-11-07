@@ -1,4 +1,4 @@
-"""仅监听本机；模型辅助只发送用户明确确认的证据预览。"""
+"""Local-only log analysis service."""
 from __future__ import annotations
 import argparse, concurrent.futures, errno, hashlib, json, os, secrets, select, sys, threading, time, uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -13,8 +13,6 @@ from version import VERSION
 from report_data import normalize_report
 from log_reader import LogStore
 from sessions import SessionStore
-from evidence import EvidenceError, EvidenceStore
-import assistant
 import recovery
 
 ROOT=Path(__file__).resolve().parent
@@ -29,7 +27,6 @@ JSON_BODY_TIMEOUT=5
 EXECUTOR=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 STOP_EVENT=threading.Event()
 RESULTS_LOCK=threading.RLock()
-ASSISTANT_LOCK=threading.Lock()
 CASE_CACHE={}
 RECOVERY={'recovered':0,'interrupted':0,'pending':0}
 INVALID_REPORTS=[]
@@ -277,11 +274,32 @@ def case_list():
                              'server':{k:(server.get(k) or '') for k in ('sn','model','time')},
                              'identities':[{k:(g.get(k) or '') for k in ('label','sn','uuid')} for g in d['gpus']],
                              'bytes':d.get('bytes'),'modified':stat.st_mtime}
+                    if d.get('structured', {}).get('format') == 'dcgm-json':
+                        dcgm = d['structured'].get('dcgm', {})
+                        results = dcgm.get('results', [])
+                        def test_key(row):
+                            return (row.get('run'), row.get('category'), row.get('test'))
+                        keys = {test_key(row) for row in results}
+                        results = results + [row for row in dcgm.get('summaries', []) if test_key(row) not in keys]
+                        entities = {json.dumps(row.get('entity'), sort_keys=True) for row in results if row.get('entity')}
+                        summary['diagnostic'] = {'results': len(results), 'entities': len(entities),
+                                                 'failed': sum(row.get('status') == 'fail' for row in results),
+                                                 'warnings': sum(row.get('status') == 'warn' for row in results),
+                                                 'runtimeErrors': sum(bool(row.get('runtimeError')) for row in dcgm.get('runs', []))}
                     CASE_CACHE[p.stem]=(stamp,summary)
                 cases.append(summary)
             except (OSError,ValueError,KeyError,TypeError,AttributeError,RecursionError):INVALID_REPORTS.append(p.stem)
         for key in set(CASE_CACHE)-seen:CASE_CACHE.pop(key,None)
         return sorted(cases,key=lambda d:(d['modified'],d['id']))
+
+def remove_legacy_annotations(key):
+    if not re_id(key):
+        raise ValueError('Invalid report ID')
+    folder = RUNTIME / 'evidence'
+    path = folder / (key + '.json')
+    if folder.is_symlink() or path.is_symlink() or path.resolve().parent != folder:
+        raise OSError('Invalid legacy annotation path')
+    path.unlink(missing_ok=True)
 
 def delete_cases(ids):
     if not isinstance(ids,list) or not 0<len(ids)<=1000 or any(not isinstance(key,str) or not re_id(key) for key in ids):
@@ -298,11 +316,10 @@ def delete_cases(ids):
                 CASE_CACHE.pop(key,None);READER.drop(key);READER_SOURCES.pop(key,None);deleted.append(key)
             except OSError:failed.append(key)
         prune_sources(refs)
-    # A save holding the evidence lock either fails its final report check or
-    # finishes before this cleanup. Never acquire that lock under RESULTS_LOCK.
+    # Remove old-version annotations only when their owning report is deleted.
     cleanup_failed=[]
     for key in deleted:
-        try:EVIDENCE.remove_report(key)
+        try:remove_legacy_annotations(key)
         except Exception:cleanup_failed.append(key)
     result={'deleted':deleted,'failed':failed}
     if cleanup_failed:result['evidenceCleanupFailed']=cleanup_failed
@@ -371,26 +388,11 @@ def reader_source(key):
 
 READER=LogStore(RUNTIME/'reader-cache',reader_source)
 
-def evidence_source(key):
-    # Keep identity fields for redaction and use the reader's revision for lines.
-    # EvidenceStore acquires its own lock before resolving; never call it while
-    # holding RESULTS_LOCK from another server path.
-    with RESULTS_LOCK:
-        report,_=read_case(key)
-        path,_,revision=reader_source(key)
-        return path,report,revision
-
-EVIDENCE=EvidenceStore(RUNTIME/'evidence',evidence_source,READER.lines)
-
 class Handler(BaseHTTPRequestHandler):
     rbufsize=0
     def log_message(self,*args):pass
     def allowed(self):return self.headers.get('Host')==f'127.0.0.1:{self.server.server_port}'
     def authenticated(self):return self.allowed() and secrets.compare_digest(self.headers.get('X-Local-Token',''),TOKEN)
-    def assistant_authenticated(self):
-        origins=self.headers.get_all('Origin',[])
-        return (len(self.headers.get_all('Host',[]))==1 and len(self.headers.get_all('X-Local-Token',[]))==1
-                and len(origins)<=1 and (not origins or origins[0]==f'http://127.0.0.1:{self.server.server_port}') and self.authenticated())
     def read_json_body(self,limit=8192):
         lengths=self.headers.get_all('Content-Length',[])
         if len(lengths)!=1 or not lengths[0].isascii() or not lengths[0].isdecimal() or self.headers.get('Transfer-Encoding'):
@@ -427,11 +429,10 @@ class Handler(BaseHTTPRequestHandler):
         except (BrokenPipeError,ConnectionResetError,ConnectionAbortedError):pass
     def do_GET(self):
         url=urlparse(self.path)
-        if url.path.startswith('/api/assistant/') and not self.assistant_authenticated():return self.respond({'error':'拒绝访问','code':'forbidden'},403)
         if not self.allowed():return self.respond({'error':'拒绝访问'},403)
         if url.path=='/':return self.respond((ROOT/'index.html').read_text(encoding='utf-8').replace('__LOCAL_TOKEN__',TOKEN).replace('__APP_VERSION__',VERSION).replace('__SIDEBAR_PINNED__',str(sidebar_pinned()).lower()).encode(),ctype='text/html; charset=utf-8')
         if url.path=='/reader.js':return self.respond((ROOT/'reader'/'reader.js').read_bytes(),ctype='application/javascript; charset=utf-8')
-        if url.path in ('/overview.js','/overview.css','/sessions.js','/sessions.css','/timeline.js','/timeline.css','/comparison.js','/evidence.js','/evidence.css','/assistant.js','/assistant.css','/structured.js','/structured.css','/demo.txt'):
+        if url.path in ('/workspace.js','/workspace.css','/settings.js','/overview.js','/overview.css','/sessions.js','/sessions.css','/timeline.js','/timeline.css','/comparison.js','/structured.js','/structured.css','/demo.txt'):
             kind='application/javascript' if url.path.endswith('.js') else 'text/css' if url.path.endswith('.css') else 'text/plain'
             return self.respond((ROOT/url.path[1:]).read_bytes(),ctype=kind+'; charset=utf-8')
         if url.path=='/diagnostics.js':return self.respond((ROOT/'diagnostics.js').read_bytes(),ctype='application/javascript; charset=utf-8')
@@ -441,22 +442,6 @@ class Handler(BaseHTTPRequestHandler):
         if url.path=='/app.js':return self.respond((ROOT/'app.js').read_bytes(),ctype='application/javascript; charset=utf-8')
         if url.path=='/logo.png':return self.respond((ROOT/'logo.png').read_bytes(),ctype='image/png')
         if not self.authenticated():return self.respond({'error':'会话已失效，请重新打开程序'},403)
-        if url.path=='/api/assistant/protocol':
-            origin=self.headers.get('Origin')
-            if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求','code':'forbidden'},403)
-            if url.query:return self.respond({'error':'整理规则请求无效','code':'invalid_input'},400)
-            return self.respond(assistant.protocol())
-        if url.path=='/api/evidence':
-            origin=self.headers.get('Origin')
-            if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
-            query=parse_qs(url.query,keep_blank_values=True)
-            if set(query)!={'id'} or len(query['id'])!=1 or not re_id(query['id'][0]):return self.respond({'error':'报告编号无效'},400)
-            try:return self.respond(EVIDENCE.list(query['id'][0]))
-            except EvidenceError as exc:return self.respond({'error':str(exc)},exc.status)
-            except FileNotFoundError:return self.respond({'error':'报告或原日志不存在'},404)
-            except (ValueError,TypeError,KeyError,RecursionError):return self.respond({'error':'报告无法读取，请重新导入原日志'},422)
-            except OSError:return self.respond({'error':'证据记录暂时无法读取，请重试'},503)
-            except Exception:return self.respond({'error':'证据读取失败，请重试'},500)
         if url.path=='/api/sessions' or url.path.startswith('/api/session/'):
             origin=self.headers.get('Origin')
             if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
@@ -512,54 +497,9 @@ class Handler(BaseHTTPRequestHandler):
         return self.respond({'error':'不存在的资源'},404)
     def do_POST(self):
         url=urlparse(self.path)
-        if url.path.startswith('/api/assistant/') and not self.assistant_authenticated():return self.respond({'error':'拒绝访问','code':'forbidden'},403)
         if not self.authenticated():return self.respond({'error':'拒绝访问'},403)
         origin=self.headers.get('Origin')
         if origin and origin!=f'http://127.0.0.1:{self.server.server_port}':return self.respond({'error':'拒绝跨站请求'},403)
-        if url.path=='/api/assistant/run':
-            body=None;acquired=False
-            try:
-                if url.query:raise ValueError('unexpected query')
-                body=self.read_json_body(192*1024)
-                mode=body.get('mode','offline')
-                if mode=='offline':
-                    if set(body)-{'mode','input'} or 'input' not in body:raise ValueError('invalid offline input')
-                elif mode=='model':
-                    if set(body)-{'mode','confirmed','endpoint','apiKey','preview'} or not {'confirmed','endpoint','preview'}<=set(body):raise ValueError('invalid model input')
-                    acquired=ASSISTANT_LOCK.acquire(blocking=False)
-                    if not acquired:return self.respond({'error':'已有模型请求正在处理，请稍后重试','code':'busy'},409)
-                else:raise ValueError('invalid mode')
-                result=assistant.request_assistance(body)
-            except assistant.AssistanceError as exc:
-                status=504 if exc.code=='timeout' else 502 if exc.code in {'connection_failed','service_error','invalid_response','unknown_reference','incomplete_response','redirect_blocked','response_limit'} else 400
-                return self.respond({'error':str(exc),'code':exc.code},status)
-            except TimeoutError:return self.respond({'error':'请求传输超时，请重试','code':'request_timeout'},408)
-            except (ValueError,UnicodeError,TypeError,KeyError,RecursionError):return self.respond({'error':'证据辅助请求无效，请重新检查预览','code':'invalid_input'},400)
-            except Exception:return self.respond({'error':'证据辅助未完成，请稍后重试','code':'connection_failed'},500)
-            finally:
-                if isinstance(body,dict):body.pop('apiKey',None)
-                body=None
-                # Client cancellation never releases a still-running model request.
-                if acquired:ASSISTANT_LOCK.release()
-            return self.respond(result)
-        if url.path in ('/api/evidence/save','/api/evidence/delete','/api/evidence/preview'):
-            action=url.path.rsplit('/',1)[-1]
-            if RECOVERY['pending'] and action!='delete':return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)
-            try:
-                body=self.read_json_body(128*1024)
-                required={'id','revision','identity'}|({'entry'} if action=='save' else {'bookmarkId'} if action=='delete' else {'ids'})
-                optional={'options'} if action=='preview' else set()
-                if set(body)-required-optional or required-set(body):raise ValueError('无效字段')
-                if action=='save':result=EVIDENCE.save(body['id'],body['revision'],body['identity'],body['entry'])
-                elif action=='delete':result=EVIDENCE.delete(body['id'],body['revision'],body['identity'],body['bookmarkId'])
-                else:result=EVIDENCE.preview(body['id'],body['revision'],body['identity'],body['ids'],body.get('options'))
-                return self.respond(result)
-            except EvidenceError as exc:return self.respond({'error':str(exc)},exc.status)
-            except FileNotFoundError:return self.respond({'error':'报告或原日志不存在'},404)
-            except (ValueError,UnicodeError,TypeError,KeyError,RecursionError):return self.respond({'error':'证据请求无效，请核对报告与原文后重试'},400)
-            except TimeoutError:return self.respond({'error':'证据请求传输超时，请重试'},408)
-            except OSError:return self.respond({'error':'证据记录读取或保存失败，请重试'},503)
-            except Exception:return self.respond({'error':'证据操作失败，请重试'},500)
         if url.path in ('/api/sessions/create','/api/sessions/refresh','/api/sessions/delete'):
             if RECOVERY['pending'] and url.path!='/api/sessions/delete':
                 return self.respond({'error':'报告恢复未完成，请检查目录权限后重启'},503)

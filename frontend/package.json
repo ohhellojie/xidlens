@@ -7,9 +7,9 @@
     "build": "vite build && vite build --config vite.reader.config.js"
   },
   "dependencies": {
-    "vite": "6.4.2",
+    "@vitejs/plugin-react": "5.0.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "@vitejs/plugin-react": "5.0.4"
+    "vite": "6.4.5"
   }
 }

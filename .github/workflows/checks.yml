@@ -38,13 +38,10 @@ jobs:
       - run: node tests/test_update_ui.cjs
       - run: node tests/test_state_ui.cjs
       - run: node tests/test_reader_ui.cjs
-      - run: node tests/test_evidence_ui.cjs
-      - run: node tests/test_evidence_host.cjs
-      - run: node tests/test_assistant_ui.cjs
-      - run: node tests/test_evidence_assistant.cjs
-      - run: node tests/test_assistant_host.cjs
       - run: node tests/test_structured_ui.cjs
       - run: node tests/test_structured_views.cjs
       - run: node tests/test_structured_host.cjs
+      - run: node tests/test_workspace.cjs
+      - run: node tests/test_settings.cjs
       - run: python tools/check_repository.py
       - run: git diff --check
