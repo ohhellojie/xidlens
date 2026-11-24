@@ -32,6 +32,11 @@ const EXPORTS = {
 
 export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('xidlens-theme') || 'light');
+  const [sidebarPinned, setSidebarPinned] = useState(() => document.getElementById('root')?.dataset.sidebarPinned !== 'false');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [savingSidebar, setSavingSidebar] = useState(false);
+  const sidebarRef = useRef(null);
+  const sidebarToggleRef = useRef(null);
   const [page, setPage] = useState('devices');
   const [prevPage, setPrevPage] = useState('devices');
   const [cases, setCases] = useState([]);
@@ -62,6 +67,21 @@ export default function App() {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(''), 2200);
   }, []);
+
+  async function toggleSidebarPin() {
+    if (savingSidebar) return;
+    const pinned = !sidebarPinned;
+    setSavingSidebar(true);
+    try {
+      await postJson(`/api/sidebar/${pinned ? 'pin' : 'unpin'}`);
+      setSidebarPinned(pinned);
+      setSidebarOpen(!pinned && Boolean(sidebarRef.current?.matches(':hover, :has(:focus-visible)')));
+    } catch (err) {
+      notify(err.message || '导航栏设置保存失败');
+    } finally {
+      setSavingSidebar(false);
+    }
+  }
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -272,23 +292,79 @@ export default function App() {
   const pageLabels = { devices: '设备状态', errors: '错误记录', topology: '机器拓扑', compare: '日志对比' };
 
   return (
-    <div className="shell">
-      <aside className="sidebar" aria-label="主导航">
+    <div
+      className={`shell${sidebarPinned ? '' : ' sidebar-unpinned'}`}
+      onPointerDown={(event) => {
+        if (sidebarOpen && !sidebarRef.current?.contains(event.target)) setSidebarOpen(false);
+      }}
+    >
+      <aside
+        ref={sidebarRef}
+        className={`sidebar${sidebarOpen ? ' is-expanded' : ''}`}
+        aria-label="主导航"
+        onPointerEnter={(event) => {
+          if (!sidebarPinned && event.pointerType !== 'touch') setSidebarOpen(true);
+        }}
+        onPointerLeave={(event) => {
+          if (!sidebarPinned && event.pointerType !== 'touch' && !event.currentTarget.querySelector(':focus-visible')) {
+            setSidebarOpen(false);
+          }
+        }}
+        onFocus={(event) => {
+          if (!sidebarPinned && event.target !== sidebarToggleRef.current && event.target.matches(':focus-visible')) {
+            setSidebarOpen(true);
+          }
+        }}
+        onBlur={(event) => {
+          if (!sidebarPinned && !event.currentTarget.contains(event.relatedTarget) && !event.currentTarget.matches(':hover')) {
+            setSidebarOpen(false);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape' && !sidebarPinned && sidebarOpen) {
+            event.stopPropagation();
+            setSidebarOpen(false);
+            sidebarToggleRef.current?.focus({ preventScroll: true });
+          }
+        }}
+      >
         <div className="brand">
-          <img src="/logo.png" alt="XidLens" />
+          {sidebarPinned ? <img src="/logo.png" alt="XidLens" /> : (
+            <button
+              className="sidebar-toggle"
+              ref={sidebarToggleRef}
+              aria-expanded={sidebarOpen}
+              aria-controls="sidebar-nav"
+              aria-label={sidebarOpen ? '收起导航栏' : '展开导航栏'}
+              onClick={() => setSidebarOpen((open) => !open)}
+            >
+              <img src="/logo.png" alt="" />
+            </button>
+          )}
           <span className="brand-name">XidLens</span>
+          <button
+            className="icon-btn sidebar-pin"
+            title={sidebarPinned ? '取消固定导航栏' : '固定导航栏'}
+            aria-label="固定导航栏"
+            aria-pressed={sidebarPinned}
+            aria-disabled={savingSidebar}
+            onClick={toggleSidebarPin}
+          >
+            <Icon name={sidebarPinned ? 'pin' : 'pinOff'} />
+          </button>
         </div>
 
-        <nav className="nav">
+        <nav className="nav" id="sidebar-nav">
           <div className="nav-group">
             {NAV_ANALYSIS.map((item) => (
               <button
                 key={item.id}
                 className={`nav-item ${page === item.id ? 'is-active' : ''}`}
+                title={item.label}
                 onClick={() => setPage(item.id)}
               >
                 <Icon name={item.icon} />
-                <span>{item.label}</span>
+                <span className="nav-label">{item.label}</span>
                 {item.id === 'errors' && totalEvents > 0 && (
                   <span className="nav-count">{totalEvents}</span>
                 )}
@@ -313,19 +389,19 @@ export default function App() {
                 }}
               >
                 <Icon name={item.icon} />
-                <span>{item.label}</span>
+                <span className="nav-label">{item.label}</span>
               </button>
             ))}
           </div>
         </nav>
 
         <div className="sidebar-foot">
-          <button className="update-btn" onClick={() => setModal('update')}>
+          <button className="update-btn" title="软件更新" onClick={() => setModal('update')}>
             <span className="update-icon-wrap">
               <Icon name="refresh" size={14} />
               {hasAppUpdate && <span className="update-dot" />}
             </span>
-            <span>软件更新</span>
+            <span className="nav-label">软件更新</span>
           </button>
           <div className="version-text">v{APP_VERSION}</div>
         </div>

@@ -18,6 +18,8 @@ const PATHS = {
   copy: 'M9 9h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2ZM5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1',
   external: 'M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3',
   chevron: 'm9 18 6-6-6-6',
+  pin: 'M12 17v5M9 2h6v7l3 3v5H6v-5l3-3z',
+  pinOff: 'M2 2l20 20M12 17v5M9 2h6v7l3 3v2M6 12v5h11',
   trash: 'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14',
 };
 
