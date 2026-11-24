@@ -20,11 +20,13 @@
     ],
     "docs/images/devices.jpg": [
       "4bf21c93440475949acdb57e9895d8dbc42bd3eedbe0646e2fc52ecedf35ce62",
-      "bc14e3758d79a990f26cbeb0b7578221f51297cb416d99b0c9c3ada8e5b9cd2a"
+      "bc14e3758d79a990f26cbeb0b7578221f51297cb416d99b0c9c3ada8e5b9cd2a",
+      "01204a23995d6f7cf31a8b8af15b0e2ee728fa69cf938624731337226bf95bfb"
     ],
     "docs/images/errors.png": [
       "356e4483d269755f96761424daf6bf874c6a46309fa5186f5c7d6da2221d2dc1",
-      "4b1a3b79db5b32296b6c270e3c2b170757216d17ca51d9de8db83c87e9398042"
+      "4b1a3b79db5b32296b6c270e3c2b170757216d17ca51d9de8db83c87e9398042",
+      "9cca7e0292d871afda2453b79ed77a4201c2bc5674def6c6080e575e7998334f"
     ],
     "docs/images/manual.jpg": [
       "4c9b93f3035ddbdbeda9ba8641d3cb8fc96659617b62fa2e10757098cdf2cd51"
@@ -51,6 +53,9 @@
       "dfe76da29173fcebb2cdb189510ed0e942e76068db1ade676dc0fc5638a67d15",
       "ebf52718f19805dc536444d741ad0495e76e2df9f35bd28386da3fa3c515715b",
       "fa0518704e6d26f2bff19ab0b46aa2121b1fdeea93b6aafd59ccba2863968931"
+    ],
+    "docs/images/compare.jpg": [
+      "57fc00916456363eda42c1229d5aae29b58fa857645690f22052eb707b72af5b"
     ]
   },
   "owned_python_modules": [

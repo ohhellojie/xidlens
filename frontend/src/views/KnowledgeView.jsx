@@ -125,11 +125,11 @@ export default function KnowledgeView({
           {item ? (
             <div className="doc-article">
               <div style={{ paddingBottom: 14, borderBottom: '1px solid var(--line)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <div className="xid-title-row">
                   <h1>Xid {activeCode} · {item.title}</h1>
-                  <div className="segmented">
-                    <button className={lang === 'cn' ? 'is-active' : ''} onClick={() => setLang('cn')}>中文</button>
-                    <button className={lang === 'en' ? 'is-active' : ''} onClick={() => setLang('en')}>English</button>
+                  <div className="segmented" role="group" aria-label="Xid 目录语言">
+                    <button className={lang === 'cn' ? 'is-active' : ''} aria-pressed={lang === 'cn'} onClick={() => setLang('cn')}>中文</button>
+                    <button className={lang === 'en' ? 'is-active' : ''} aria-pressed={lang === 'en'} onClick={() => setLang('en')}>English</button>
                   </div>
                 </div>
                 {item.symbol && <div className="mono muted" style={{ fontSize: 12, marginTop: 4 }}>{item.symbol}</div>}

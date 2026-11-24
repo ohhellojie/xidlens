@@ -1,7 +1,7 @@
-XidLens · Windows x64 v2.0.0
+XidLens · Windows x64 v2.0.1
 
 解压后双击 XidLens.exe 启动，点击导入日志选择文件。
-升级时先退出软件，用新版 EXE 替换原文件，保留同目录 runtime 文件夹。
+已有版本可通过「软件更新」下载并安装新版。手动升级时先退出软件，用新版 EXE 替换原文件，保留同目录 runtime 文件夹。
 旧报告可在报告管理中重新解析，使用新版解析功能。
 
 支持 nvidia-bug-report、dmesg、journalctl、nvidia-smi 和 lspci 文本，以及 GZ、ZIP 和 TAR 压缩包。

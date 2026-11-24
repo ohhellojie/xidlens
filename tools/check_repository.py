@@ -23,7 +23,7 @@ for name in filter(None, names):
         continue
     if name in {'docs/images/devices.jpg', 'docs/images/checks.jpg',
                 'docs/images/manual.jpg', 'docs/images/topology.jpg',
-                'docs/images/reader.jpg'}:
+                'docs/images/reader.jpg', 'docs/images/compare.jpg'}:
         if not p.read_bytes().startswith(b'\xff\xd8\xff'):
             errors.append(name + ': invalid JPEG')
         continue

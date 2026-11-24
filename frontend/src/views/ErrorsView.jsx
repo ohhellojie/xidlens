@@ -79,10 +79,10 @@ export default function ErrorsView({
 
   return (
     <div className="page-pad">
-      <div className="split">
+      <div className="split split-responsive">
         <section className="split-main">
           <div className="toolbar">
-            <div className="toolbar-group">
+            <div className="toolbar-group error-tools">
               <div className="segmented" role="group" aria-label="排序方式">
                 <button className={mode === 'grouped' ? 'is-active' : ''} onClick={() => setMode('grouped')}>
                   按类型聚合

@@ -2,7 +2,7 @@ const metaContent = (name, fallback = '') =>
   document.querySelector(`meta[name="${name}"]`)?.getAttribute('content') || fallback;
 
 export const LOCAL_TOKEN = metaContent('local-token', '');
-export const APP_VERSION = metaContent('app-version', '2.0.0');
+export const APP_VERSION = metaContent('app-version', '2.0.1');
 
 export async function apiRequest(path, options = {}) {
   const headers = new Headers(options.headers || {});

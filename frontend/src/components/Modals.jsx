@@ -381,15 +381,15 @@ export function CompareSourceModal({ data, onClose }) {
       {snippets?.fieldKey !== fieldKey ? (
         <div className="empty-state" role="status">读取原文…</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>基准 · {baseReport.source}</div>
-            <pre className="code-box" style={{ maxHeight: 360 }}>{snippets.base}</pre>
-          </div>
-          <div>
-            <div className="fault-text" style={{ fontSize: 12, marginBottom: 6 }}>当前 · {currentReport.source}</div>
-            <pre className="code-box" style={{ maxHeight: 360 }}>{snippets.cur}</pre>
-          </div>
+        <div className="compare-source-grid">
+          <section className="compare-source-side" aria-label="基准报告原文">
+            <div className="compare-source-label muted">基准 · {baseReport.source}</div>
+            <pre className="code-box" tabIndex={0}>{snippets.base}</pre>
+          </section>
+          <section className="compare-source-side" aria-label="当前报告原文">
+            <div className="compare-source-label fault-text">当前 · {currentReport.source}</div>
+            <pre className="code-box" tabIndex={0}>{snippets.cur}</pre>
+          </section>
         </div>
       )}
     </ModalFrame>

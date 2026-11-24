@@ -3,7 +3,7 @@
 <h1 align="center">XidLens</h1>
 
 <p align="center">
-  本机离线解析 NVIDIA GPU 日志的桌面排查工具 · 设备状态 · 错误记录 · PCIe 拓扑 · 官方 Xid 与分流手册
+  离线分析 NVIDIA GPU 日志的 Windows 工具
 </p>
 
 <p align="center">
@@ -21,11 +21,11 @@
 
 ---
 
-XidLens 在本机离线解析 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 等日志，把分散在数十万行原始文本中的服务器与 GPU 状态、Xid / SXid / AER 错误、PCIe 互联拓扑以及两份报告的前后差异整理为清晰视图，并与原文行号及 NVIDIA 官方资料一一对应。
+XidLens 在本机解析 `nvidia-bug-report`、`dmesg`、`journalctl`、`nvidia-smi` 和 `lspci` 等日志。可以查看服务器与 GPU 状态、Xid / SXid / AER 错误和 PCIe 拓扑，比较两份报告，并按行号回查原文。
 
 [![设备状态：服务器概览、GPU 清单、异常标记与右侧设备详情](docs/images/devices.jpg)](docs/images/devices.jpg)
 
-*设备状态主视图（使用合成演示数据，点击图片查看原图）。*
+截图使用合成日志。
 
 ## 快速开始
 
@@ -33,17 +33,19 @@ XidLens 在本机离线解析 `nvidia-bug-report`、`dmesg`、`journalctl`、`nv
 2. 解压后双击 `XidLens.exe` 启动（免安装）。
 3. 点击顶部「导入日志」，选择日志文件或压缩包即可开始分析。
 
+已在使用 XidLens 的用户可从左下角「软件更新」下载并安装新版。软件默认自动检查更新。
+
 > **运行环境**：Windows 10 / Windows 11 x64，需已安装 Microsoft Edge WebView2 Runtime（Windows 11 默认自带）。界面为简体中文，日志全程仅在本机解析，不上传任何日志数据。
 
 ## 核心功能
 
 ### 1. 设备状态与异常筛选
 - 自动提取服务器 SN、机型、驱动版本与 GPU 清单（型号、PCI 地址、槽位参考、SN、UUID、PCIe 链路速率与位宽、未纠 ECC 与行重映射状态）。
-- 支持按 SN / UUID / PCI 地址快速检索、一键筛选「仅异常」、查看右侧设备详情与状态检查，并支持一键「复制到 Excel」。
+- 按 SN、UUID 或 PCI 地址搜索，筛选异常设备，查看状态检查或将设备清单复制到 Excel。
 
 ### 2. 错误记录与官方 Xid 对照
 - 支持「按类型聚合」与「按时间顺序」浏览 Xid、NVSwitch SXid、驱动初始化失败与 PCIe AER 记录，并按设备筛选。
-- 右侧保留原始日志片段与行号定位，严格对照 **NVIDIA 官方 Xid Catalog** 展示中英双语说明、即时操作（Immediate Action）与调查操作（Investigative Action），可直达排查手册或 Xid 目录。
+- 查看原始日志片段和行号，并核对 NVIDIA Xid Catalog 的中英文说明、即时操作和调查操作。可打开相关手册章节或 Xid 条目。
 
 [![错误记录：按类型聚合错误并对照 NVIDIA 官方 Xid Catalog 双语说明与处理建议](docs/images/errors.png)](docs/images/errors.png)
 
@@ -54,8 +56,10 @@ XidLens 在本机离线解析 `nvidia-bug-report`、`dmesg`、`journalctl`、`nv
 [![机器拓扑：基于 lspci 自动推导的 PCIe 互联矩阵与右侧路径分叉图](docs/images/topology.jpg)](docs/images/topology.jpg)
 
 ### 4. 日志对比与原文抽屉
-- **日志对比**：在两份报告间按唯一 SN 或 UUID 自动匹配 GPU，聚焦变化字段并支持并排核对两侧原文行号与片段。
+- **日志对比**：按唯一 SN 或 UUID 匹配两份报告中的 GPU。选择变化字段后，可并排查看基准和当前报告的原文与各自的行号。长日志行可横向滚动。
 - **原文抽屉与完整日志**：点击分析结果中的任意行号，即可在右侧滑出原文抽屉就地核对，并一键切入支持虚拟滚动、`Ctrl+F` 搜索、`Ctrl+G` 行号跳转和异常定位的完整日志阅读器。
+
+[![原文对照：并排查看两份报告的累计未纠 ECC 日志与行号](docs/images/compare.jpg)](docs/images/compare.jpg)
 
 ### 5. 官方 Xid 目录与交互式排查手册
 - 内置 **NVIDIA Xid Catalog**（支持 `Ctrl+K` 速查、中英文切换、Xid 144–150 解码表及关联 Xid 154）与 **GPU Debug Guidelines** 排查手册。

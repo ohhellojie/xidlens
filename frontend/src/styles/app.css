@@ -330,6 +330,7 @@ a:hover { text-decoration: underline; }
   overflow: hidden;
 }
 .inspector.wide { width: 380px; }
+.split-responsive > .inspector { max-width: 42%; }
 .inspector-head {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
@@ -366,6 +367,11 @@ a:hover { text-decoration: underline; }
   flex-wrap: wrap;
 }
 .toolbar-group { display: flex; align-items: center; gap: 8px; }
+.gpu-tools { max-width: 100%; }
+.gpu-tools .input { width: 210px; }
+.gpu-tools .btn { flex-shrink: 0; }
+.error-tools { flex-wrap: wrap; }
+.error-tools .segmented { flex: none; white-space: nowrap; }
 .table-box {
   flex: 1;
   min-height: 0;
@@ -411,6 +417,18 @@ a:hover { text-decoration: underline; }
   max-height: 220px;
   overflow: auto;
 }
+.compare-source-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 16px;
+}
+.compare-source-side {
+  display: grid;
+  grid-row: span 2;
+  grid-template-rows: subgrid;
+}
+.compare-source-label { font-size: 12px; align-self: end; overflow-wrap: anywhere; }
+.compare-source-side .code-box { max-height: 360px; white-space: pre; word-break: normal; }
 
 /* Topology */
 .topo-panel {
@@ -522,6 +540,9 @@ a:hover { text-decoration: underline; }
 .doc-article { max-width: 720px; display: flex; flex-direction: column; gap: 20px; font-size: 13px; line-height: 1.75; }
 .doc-article.has-figures { max-width: 880px; }
 .doc-article h1 { font-size: 20px; font-weight: 600; line-height: 1.4; }
+.xid-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.xid-title-row h1 { min-width: 0; overflow-wrap: anywhere; }
+.xid-title-row .segmented { flex: none; white-space: nowrap; }
 .doc-article h2, .doc-article h3 { font-size: 14px; font-weight: 600; }
 .prose { white-space: pre-wrap; line-height: 1.8; }
 .arch-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 420px; font: 12px var(--mono); }

@@ -3,7 +3,7 @@
 <h1 align="center">XidLens</h1>
 
 <p align="center">
-  Local offline NVIDIA GPU log analyzer · Device Status · Error Records · PCIe Topology · Official Xid &amp; Triage Manual
+  Offline NVIDIA GPU log analyzer for Windows
 </p>
 
 <p align="center">
@@ -21,11 +21,11 @@
 
 ---
 
-XidLens parses `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `lspci` logs offline on your machine. It turns large raw diagnostic logs into clear views for device health, Xid / SXid / AER errors, PCIe topology, and side-by-side report comparison — with direct source-line navigation and built-in NVIDIA reference documentation.
+XidLens parses `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `lspci` logs locally. View server and GPU status, Xid / SXid / AER errors, and PCIe topology. Compare two reports and jump to the original log by line number.
 
 [![Device status with server details, GPU inventory, fault markers, and device inspector](docs/images/devices.jpg)](docs/images/devices.jpg)
 
-*Device status overview using synthetic demonstration data. Click any screenshot to view at full resolution.*
+Screenshots use synthetic logs.
 
 ## Quick Start
 
@@ -33,17 +33,19 @@ XidLens parses `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `ls
 2. Extract it and run `XidLens.exe` (no installation required).
 3. Click **导入日志** (Import logs) at the top to open log files or archives.
 
+Existing users can download and install the new version from **软件更新** (Software Updates) in the bottom-left corner. The app checks for updates automatically by default.
+
 > **Requirements**: Windows 10 or Windows 11 (x64) with Microsoft Edge WebView2 Runtime. The UI is in Simplified Chinese. All log parsing stays 100% local and offline.
 
 ## Core Features
 
 ### 1. Device Status & Fault Filtering
 - Extracts server SN, model, driver version, and GPU inventory (model, PCI bus ID, slot reference, SN, UUID, PCIe link speed/width, uncorrectable ECC, and row remapping status).
-- Supports fast filtering by SN / UUID / PCI address, a faults-only toggle, right-hand health inspection, and one-click copy to Excel.
+- Search by SN, UUID, or PCI address, filter for devices with faults, view status checks, or copy the inventory to Excel.
 
 ### 2. Error Records & Official Xid Catalog
 - Browse Xid, NVSwitch SXid, driver initialization failures, and PCIe AER records grouped by type or chronologically, filtered by device.
-- Displays the raw log snippet and source line alongside bilingual **NVIDIA Xid Catalog** explanations, immediate actions, and investigative actions, with one-click jumps to the manual or catalog.
+- View the original log and line number alongside explanations, immediate actions, and investigative actions from the NVIDIA Xid Catalog in Chinese or English. Open the related manual section or catalog entry.
 
 [![Error records grouped by type with bilingual NVIDIA Xid Catalog descriptions and actions](docs/images/errors.png)](docs/images/errors.png)
 
@@ -54,8 +56,10 @@ XidLens parses `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `ls
 [![Machine topology showing lspci-derived PCIe connectivity matrix and shared upstream path](docs/images/topology.jpg)](docs/images/topology.jpg)
 
 ### 4. Report Comparison & Source Drawer
-- **Report Comparison**: Matches GPUs across two reports by unique SN or UUID, highlights changed fields, and opens both source snippets side by side.
+- **Report Comparison**: Matches GPUs across two reports by unique SN or UUID. Select a changed field to view the baseline and current log snippets side by side with their line numbers. Scroll long lines horizontally.
 - **Source Drawer & Full Log Reader**: Click any line number to inspect context in a slide-over drawer, or jump straight into the virtual-scrolling full log reader (`Ctrl+F` search, `Ctrl+G` jump to line, error markers).
+
+[![Side-by-side source comparison of aggregate uncorrectable ECC values with line numbers](docs/images/compare.jpg)](docs/images/compare.jpg)
 
 ### 5. Official Xid Catalog & Interactive Triage Manual
 - Bundles the bilingual **NVIDIA Xid Catalog** (`Ctrl+K` quick search, Xid 144–150 decode table, Xid 154 associations) and the **NVIDIA GPU Debug Guidelines** troubleshooting manual.
@@ -70,7 +74,7 @@ XidLens parses `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, and `ls
 | **Inputs** | `nvidia-bug-report`, `dmesg`, `journalctl`, `nvidia-smi`, `lspci`, `dcgmi diag --json`, plus `.gz` / `.zip` / `.tar` / `.tgz` archives |
 | **Exports** | Copy inventory to Excel or export `TSV`; troubleshooting summary as `TXT`; full structured report as `JSON` |
 | **Storage** | Reports, cached log copies, rules, and settings live in the `runtime/` folder next to `XidLens.exe` (keep it when upgrading) |
-| **Updates** | Check for app, NVIDIA parsing rules, Xid catalog, and manual updates individually in the bottom-left Software Updates dialog |
+| **Updates** | One check covers the app, NVIDIA parsing rules, Xid catalog, and manual. App downloads and installation require confirmation. |
 
 ## Documentation
 

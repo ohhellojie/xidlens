@@ -115,17 +115,16 @@ export default function DevicesView({
         )}
       </div>
 
-      <div className="split">
+      <div className="split split-responsive">
         <section className="split-main">
           <div className="toolbar">
             <div className="toolbar-group">
               <strong style={{ fontSize: 14 }}>GPU 清单</strong>
               {visibleGpus.length < gpus.length && <span className="muted mono" style={{ fontSize: 12 }}>{visibleGpus.length} / {gpus.length}</span>}
             </div>
-            <div className="toolbar-group">
+            <div className="toolbar-group gpu-tools">
               <input
                 className="input"
-                style={{ width: 210 }}
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
