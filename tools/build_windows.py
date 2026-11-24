@@ -38,10 +38,11 @@ def main():
                '--exclude-module', 'webview.platforms.qt',
                '--exclude-module', 'webview.platforms.cef',
                '--exclude-module', 'numpy', '--exclude-module', 'lxml',
+               '--exclude-module', 'cryptography', '--exclude-module', 'bcrypt',
+               '--exclude-module', 'markupsafe', '--exclude-module', 'jinja2',
                '--exclude-module', 'PyQt5', '--exclude-module', 'PySide6']
-    for name in ('index.html', 'app.js', 'analysis.js', 'comparison.js', 'diagnostics.js', 'diagnostics.css', 'overview.js', 'overview.css', 'sessions.js', 'sessions.css', 'timeline.js', 'timeline.css', 'evidence.js', 'evidence.css', 'assistant.js', 'assistant.css', 'structured.js', 'structured.css', 'demo.txt', 'logo.png'):
-        command += ['--add-data', f'{root/"app"/name}:.']
-    command += ['--add-data', f'{root/"app/knowledge"}:knowledge', '--add-data', f'{root/"app/reader"}:reader']
+    command += ['--add-data', f'{root/"app/logo.png"}:.']
+    command += ['--add-data', f'{root/"app/web"}:web', '--add-data', f'{root/"app/knowledge"}:knowledge']
     # A stage preserves the expected filename for optional local catalogs.
     import shutil
     stage = root/'build/catalog'

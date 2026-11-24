@@ -30,6 +30,63 @@ def strings(value,maximum=128):
     return [text(v,'资料文本') for v in value]
 
 
+def parse_table(table):
+    rows=table['rows']
+    if not isinstance(rows,list) or len(rows)>256:raise ValueError('手册表格无效')
+    head=strings(table['head'],8)
+    if not 2<=len(head)<=8:raise ValueError('手册表格无效')
+    parsed_rows=[strings(r,len(head)) for r in rows]
+    if any(len(r)!=len(head) for r in parsed_rows):raise ValueError('手册表格无效')
+    return {'title':text(table['title'],'表格标题'),'head':head,'rows':parsed_rows}
+
+
+def parse_topics(topics,refs):
+    if not isinstance(topics,list) or not 1<=len(topics)<=128:raise ValueError('手册目录无效')
+    ids=set();parsed=[]
+    for t in topics:
+        key=text(t['id'],'主题编号',64)
+        if not re.fullmatch(r'[a-zA-Z0-9_-]+',key) or key in ids:raise ValueError('主题编号无效')
+        ids.add(key)
+        item={k:text(t[k],k,50000) for k in ('id','group','title','sub','scope')}
+        for k in ('refs','related','next'):item[k]=strings(t[k])
+        if not set(item['refs'])<=set(refs):raise ValueError('主题来源缺失')
+        if any(not re.fullmatch(r'\d{1,5}',c) for c in item['related']):raise ValueError('关联 Xid 无效')
+        steps=t['steps']
+        if not isinstance(steps,list) or not 1<=len(steps)<=64:raise ValueError('排查步骤缺失')
+        item['steps']=[strings(s,2) for s in steps]
+        if any(len(s)!=2 for s in item['steps']):raise ValueError('排查步骤无效')
+        if 'note' in t:item['note']=text(t['note'],'补充说明')
+        if 'extracts' in t:
+            item['extracts']=strings(t['extracts'])
+            if any(not re.fullmatch(r'\d{1,5}',c) for c in item['extracts']):raise ValueError('详细说明编号无效')
+        if 'branches' in t:
+            if not isinstance(t['branches'],list) or not 1<=len(t['branches'])<=32:raise ValueError('分支无效')
+            item['branches']=[{k:text(b.get(k,''),k) for k in ('label','title','text','code','extra')} for b in t['branches']]
+            if any(not re.fullmatch(r'\d{1,5}',b['code']) for b in item['branches']):raise ValueError('分支编号无效')
+        if 'table' in t:
+            item['table']=parse_table(t['table'])
+        if 'tables' in t:
+            if not isinstance(t['tables'],list) or not 1<=len(t['tables'])<=8:raise ValueError('手册表格无效')
+            item['tables']=[parse_table(tb) for tb in t['tables']]
+        if 'commands' in t:
+            if not isinstance(t['commands'],list) or len(t['commands'])>32:raise ValueError('命令示例无效')
+            item['commands']=[{k:text(c[k],k) for k in ('title','code','note')} for c in t['commands']]
+        if 'figures' in t:
+            if not isinstance(t['figures'],list) or not 1<=len(t['figures'])<=16:raise ValueError('手册图示无效')
+            parsed_figures=[]
+            for fig in t['figures']:
+                if not isinstance(fig,dict):raise ValueError('手册图示无效')
+                fid=text(fig['id'],'图示编号',64)
+                if not re.fullmatch(r'[a-zA-Z0-9_-]+',fid):raise ValueError('图示编号无效')
+                step_idx=fig.get('step')
+                if type(step_idx) is not int or not 0<=step_idx<len(item['steps']):raise ValueError('图示步骤无效')
+                parsed_figures.append({'id':fid,'step':step_idx,'caption':text(fig.get('caption',''),'图示说明',512)})
+            item['figures']=parsed_figures
+        parsed.append(item)
+    if any(not set(t['next'])<=ids for t in parsed):raise ValueError('后续主题缺失')
+    return parsed
+
+
 def validate(raw,kind):
     if kind not in KINDS or len(raw)>MAX_PACKAGE:raise ValueError('资料包无效')
     data=read_json(raw)
@@ -56,42 +113,17 @@ def validate(raw,kind):
             tables[name]=[strings(row,32) for row in rows]
         content={'cn':cn,'en':en,'unused':unused,'extra':tables}
     else:
-        refs=content['sources'];topics=content['topics']
+        refs=content['sources']
         if not isinstance(refs,dict) or not 1<=len(refs)<=64:raise ValueError('手册来源无效')
         refs={text(k,'来源编号',64):[text(v[0],'来源名称',256),source_url(v[1])] for k,v in refs.items() if isinstance(v,list) and len(v)==2}
-        if not refs or not isinstance(topics,list) or not 1<=len(topics)<=128:raise ValueError('手册目录无效')
-        ids=set();parsed=[]
-        for t in topics:
-            key=text(t['id'],'主题编号',64)
-            if not re.fullmatch(r'[a-zA-Z0-9_-]+',key) or key in ids:raise ValueError('主题编号无效')
-            ids.add(key)
-            item={k:text(t[k],k,50000) for k in ('id','group','title','sub','scope')}
-            for k in ('refs','related','next'):item[k]=strings(t[k])
-            if not set(item['refs'])<=set(refs):raise ValueError('主题来源缺失')
-            if any(not re.fullmatch(r'\d{1,5}',c) for c in item['related']):raise ValueError('关联 Xid 无效')
-            steps=t['steps']
-            if not isinstance(steps,list) or not 1<=len(steps)<=64:raise ValueError('排查步骤缺失')
-            item['steps']=[strings(s,2) for s in steps]
-            if any(len(s)!=2 for s in item['steps']):raise ValueError('排查步骤无效')
-            if 'note' in t:item['note']=text(t['note'],'补充说明')
-            if 'extracts' in t:
-                item['extracts']=strings(t['extracts'])
-                if any(not re.fullmatch(r'\d{1,5}',c) for c in item['extracts']):raise ValueError('详细说明编号无效')
-            if 'branches' in t:
-                if not isinstance(t['branches'],list) or not 1<=len(t['branches'])<=32:raise ValueError('分支无效')
-                item['branches']=[{k:text(b.get(k,''),k) for k in ('label','title','text','code','extra')} for b in t['branches']]
-                if any(not re.fullmatch(r'\d{1,5}',b['code']) for b in item['branches']):raise ValueError('分支编号无效')
-            if 'table' in t:
-                table=t['table'];rows=table['rows']
-                if not isinstance(rows,list) or len(rows)>256:raise ValueError('手册表格无效')
-                item['table']={'title':text(table['title'],'表格标题'),'head':strings(table['head'],2),'rows':[strings(r,2) for r in rows]}
-                if len(item['table']['head'])!=2 or any(len(r)!=2 for r in item['table']['rows']):raise ValueError('手册表格无效')
-            if 'commands' in t:
-                if not isinstance(t['commands'],list) or len(t['commands'])>32:raise ValueError('命令示例无效')
-                item['commands']=[{k:text(c[k],k) for k in ('title','code','note')} for c in t['commands']]
-            parsed.append(item)
-        if any(not set(t['next'])<=ids for t in parsed):raise ValueError('后续主题缺失')
-        content={'topics':parsed,'sources':refs}
+        if not refs:raise ValueError('手册目录无效')
+        parsed=parse_topics(content['topics'],refs)
+        out={'topics':parsed,'sources':refs}
+        if 'en' in content:
+            en_topics=parse_topics(content['en'],refs)
+            if [t['id'] for t in en_topics]!=[t['id'] for t in parsed]:raise ValueError('中英文主题不一致')
+            out['en']=en_topics
+        content=out
     result={'schema':1,'kind':kind,'version':version,'updatedAt':stamp,'publisher':'XidLens','sources':sources,'content':content}
     if 'scope' in data:result['scope']=text(data['scope'],'适用范围',256)
     return result

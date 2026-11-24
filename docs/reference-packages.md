@@ -1,12 +1,12 @@
 # 资料更新
 
-Xid 查询和排查手册各自提供版本与更新入口，显示版本、日期、资料来源和更新来源。检查更新后，可选择更新对应资料。
+打开「软件更新」，点击「检查更新」。检查完成后，可选择更新 Xid 目录中文资料或 GPU 排查手册。
 
 资料保存在 `runtime/knowledge`，重启后继续使用。更新包完成下载、校验和保存后生效。更新范围为所选资料，解析规则和已有报告各自保存。
 
 ## 制作资料包
 
-内置资料位于 `app/knowledge/xid.json` 与 `app/knowledge/manual.json`，采用 JSON 格式，`schema` 为 `1`。修改内容时更新 `version`（三段数字版本号）、`updatedAt`（YYYY-MM-DD）及 `sources`。Xid 包包含中英文目录、未使用编号和解码表；手册包包含主题、步骤、分支和来源。
+内置资料位于 `app/knowledge/xid.json` 与 `app/knowledge/manual.json`，采用 JSON 格式，`schema` 为 `1`。修改内容时更新 `version`（三段数字版本号）、`updatedAt`（YYYY-MM-DD）及 `sources`。Xid 包包含中英文目录、未使用编号和解码表；手册包包含主题、步骤、可选图示（`figures`）、分支、表格与来源。
 
 ```sh
 python tools/package_knowledge.py xid

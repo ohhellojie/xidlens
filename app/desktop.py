@@ -23,8 +23,12 @@ def position_window(window):
 
 
 class DesktopActions:
-    def __init__(self):
+    def __init__(self, service):
+        self._service=service
         self._window=None
+
+    def app_ready(self):
+        self._service.mark_ready()
 
     def install_update(self):
         import update_install
@@ -56,7 +60,7 @@ def main(after_start=None, instance=None):
     try:
         service.start()
         webview.settings['ALLOW_FILE_URLS']=False
-        actions=DesktopActions()
+        actions=DesktopActions(service)
         window=webview.create_window('XidLens',service.url,width=1440,height=960,
                                      min_size=(860,600),text_select=True,
                                      background_color='#ffffff',js_api=actions,
@@ -76,10 +80,6 @@ def main(after_start=None, instance=None):
         def shown():
             if instance: instance.listen(activate)
         window.events.shown += shown
-        def loaded():
-            if window.evaluate_js("Boolean(window.XidKnowledge && document.querySelector('#navigation button'))"):
-                service.mark_ready()
-        window.events.loaded += loaded
         service.on_stop=window.destroy
         window.events.closing += lambda: server.STOP_EVENT.set()
         webview.start(after_start,args=(window,service),gui='edgechromium',

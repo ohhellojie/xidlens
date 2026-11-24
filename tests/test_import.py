@@ -103,6 +103,14 @@ class ImportTests(unittest.TestCase):
             key=self.request('api/import?name='+name,SAMPLE.encode())['job']
             self.assertEqual(self.wait(key)['state'],'done')
 
+    def test_synthetic_fixture_is_only_available_through_normal_import(self):
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            self.request('demo.txt')
+        self.assertEqual(caught.exception.code, 404)
+        fixture = Path(__file__).resolve().parents[1] / 'app/demo.txt'
+        job = self.request('api/import?name=sample.txt', fixture.read_bytes())['job']
+        self.assertEqual(self.wait(job)['state'], 'done')
+
     def test_sidebar_mode_is_saved_and_restored_in_page(self):
         for mode,pinned in [('unpin',False),('pin',True)]:
             self.request('api/sidebar/'+mode,b'')

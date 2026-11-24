@@ -1,324 +1,461 @@
 {
   "schema": 1,
-  "version": "1.0.1",
-  "updatedAt": "2026-10-23",
-  "publisher": "XidLens",
   "kind": "manual",
+  "version": "1.2.0",
+  "updatedAt": "2026-11-24",
+  "publisher": "XidLens",
   "sources": [
     {
       "title": "NVIDIA GPU Debug Guidelines",
-      "url": "https://docs.nvidia.com/deploy/gpu-debug-guidelines/"
+      "url": "https://docs.nvidia.com/deploy/gpu-debug-guidelines/index.html"
+    },
+    {
+      "title": "NVIDIA XID Errors",
+      "url": "https://docs.nvidia.com/deploy/xid-errors/index.html"
+    },
+    {
+      "title": "NVIDIA GPU Memory Error Management",
+      "url": "https://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/index.html"
     }
   ],
   "content": {
     "topics": [
       {
+        "id": "overview",
+        "group": "GPU 调试指南",
+        "title": "概述",
+        "sub": "文档目的与适用范围",
+        "scope": "本文档提供 GPU 错误调试与诊断指引，旨在协助系统管理员、开发人员及现场应用工程师（FAE）尽快使服务器恢复正常运行。",
+        "refs": [
+          "gdg_overview"
+        ],
+        "related": [],
+        "next": [
+          "start",
+          "triage",
+          "collect"
+        ],
+        "steps": [
+          [
+            "涵盖范围",
+            "本文档提供在 GPU 服务器上开始排查一般问题的流程及相关说明，旨在覆盖数据中心 GPU 运行中最常见的问题，但并非详尽无遗。文中内容汇总自多份有关排查 GPU 系统问题的文档与最佳实践。"
+          ],
+          [
+            "与系统供应商流程的关系",
+            "本排查流程为通用指引，可能与您所在系统供应商的具体分流规范不完全一致。请尽早与系统供应商联系，以确保系统尽快恢复完全健康状态。借助本流程，基础设施团队仍可先行完成排查的初始步骤，收集尽可能完整的数据，或直接解决问题而无需提交支持请求。"
+          ]
+        ]
+      },
+      {
         "id": "start",
-        "group": "开始排查",
-        "title": "记录现象与变化",
-        "sub": "时间、范围与复现条件",
-        "scope": "先记录现象，再选择对应排查路径。",
+        "group": "GPU 调试指南",
+        "title": "初始事件报告",
+        "sub": "事件开始时需记录的问题",
+        "scope": "处理 GPU 系统事件与其他系统事件一样，建立完善的流程有助于更快诊断问题并使系统恢复投产。",
         "refs": [
           "initial"
         ],
         "related": [],
         "next": [
-          "collect",
-          "79",
-          "13"
+          "triage",
+          "collect"
         ],
         "steps": [
           [
-            "确定时间与范围",
-            "记录首次发生时间、频率、受影响的设备和应用。区分持续故障与偶发故障。"
+            "记录观察到的现象",
+            "在任何事件开始时（无论由系统检测到还是由用户报告），应尽量记录以下问题：\n1. 观察到了什么事件现象？\n2. 何时观察到该事件？\n3. 如何观察到该事件？\n4. 该行为是否在多个系统或多个组件上同时观察到？如果是，涉及多少数量，发生频率如何？\n5. 近期系统、驱动或应用程序行为是否发生过任何变更？"
           ],
           [
-            "核对近期变化",
-            "对照故障前后的系统、驱动、应用版本及配置；记录哪些条件下可以复现。"
-          ],
-          [
-            "保留原始描述",
-            "保留完整错误信息和已完成的检查，尚未验证的原因标为待核实。"
+            "关联系统整体状态",
+            "在启动排查流程时收集上述问题的信息十分关键，它有助于全面理解问题本身；将这些信息记录下来，还可以与其他事件相互印证，从而更准确地把握系统整体行为与健康状况。"
           ]
         ]
       },
       {
-        "id": "collect",
-        "group": "开始排查",
-        "title": "收集诊断信息",
-        "sub": "系统、驱动与完整日志",
-        "scope": "尽量在恢复操作前保存故障现场。命令示例用于 Linux。",
+        "id": "triage",
+        "group": "GPU 调试指南",
+        "title": "GPU 节点分流流程",
+        "sub": "图 1–图 3 · 按通知来源启动节点分流",
+        "scope": "系统支持团队通常会通过错误报告、系统事件监控和诊断指标获知 GPU 系统上的潜在问题。并非所有事件都需要系统供应商介入解决；以下对应官方图 1 至图 3 的节点分流起始流程。",
         "refs": [
           "triage"
-        ],
-        "related": [],
-        "next": [
-          "diag"
-        ],
-        "steps": [
-          [
-            "基本信息",
-            "保存系统与驱动版本、故障时间、完整日志和已执行步骤。应用相关问题补充框架版本及复现条件。"
-          ],
-          [
-            "诊断附件",
-            "收集 nvidia-bug-report；HGX 补充 Fabric Manager 日志，已运行诊断则保留 DCGM 输出。"
-          ],
-          [
-            "建立设备对应关系",
-            "在同份日志中对应 UUID、PCI 地址和 SN；跨报告按唯一且无冲突的 UUID 或 SN 匹配。缺失字段留空。"
-          ]
-        ]
-      },
-      {
-        "id": "79",
-        "group": "按现象查找",
-        "title": "GPU 无法访问",
-        "sub": "Xid 79 · PCIe",
-        "scope": "Xid 79 表示驱动无法通过 PCIe 访问 GPU。具体原因需要结合故障前后的记录。",
-        "refs": [
-          "catalog"
-        ],
-        "related": [
-          "79",
-          "154"
-        ],
-        "next": [
-          "collect",
-          "diag",
-          "reset"
-        ],
-        "extracts": [
-          "79"
-        ],
-        "steps": [
-          [
-            "定位目标",
-            "记录事件中的 PCI 地址，与同份报告里的 UUID、SN 对照。检查掉卡前后的错误，保留事件顺序。"
-          ],
-          [
-            "核对恢复建议",
-            "查看 Xid 79 及伴随 Xid 154 的恢复操作；确认复位条件后再安排恢复。"
-          ],
-          [
-            "复查是否重现",
-            "恢复后重新检查设备可见性。再次发生时保留新旧日志，按目录建议继续诊断。"
-          ]
-        ]
-      },
-      {
-        "id": "13",
-        "group": "按现象查找",
-        "title": "应用异常",
-        "sub": "Xid 13 / 31 · CUDA 调试",
-        "scope": "结合 Xid 的重复位置和复现规律，排查应用、驱动与硬件。",
-        "refs": [
-          "catalog",
-          "sanitizer"
         ],
         "related": [
           "13",
           "31",
-          "43",
-          "45"
-        ],
-        "next": [
-          "diag",
-          "collect",
-          "performance"
-        ],
-        "extracts": [
-          "13",
-          "31"
-        ],
-        "steps": [
-          [
-            "比较重复位置",
-            "Xid 13 关注 TPC / GPC / SM；Xid 31 关注是否总在同一 PCI 地址上出现。保留多次复现记录。"
-          ],
-          [
-            "按现象选择路径",
-            "相同硬件位置反复异常：按目录工作流进行 DCGM EUD，必要时做现场诊断。零散或跨 GPU 发生：检查应用与 CUDA，硬件原因结合诊断结果核实。"
-          ],
-          [
-            "检查内存访问",
-            "Compute Sanitizer 的 memcheck 可检查越界和未对齐访问。它会实际运行应用，应使用可复现的测试输入。"
-          ],
-          [
-            "保留调试结果",
-            "记录错误位置、调用栈与应用版本。确认应用正确后仍报错，按目录要求提交完整复现材料。"
-          ]
-        ],
-        "commands": [
-          {
-            "title": "内存访问检查 · Linux 示例",
-            "code": "compute-sanitizer --tool memcheck ./your_app",
-            "note": "将 your_app 替换为测试程序，并补上程序参数。"
-          }
-        ],
-        "table": {
-          "title": "其他检查工具",
-          "head": [
-            "工具",
-            "用途"
-          ],
-          "rows": [
-            [
-              "racecheck",
-              "共享内存访问竞争"
-            ],
-            [
-              "initcheck",
-              "未初始化的内存访问"
-            ],
-            [
-              "synccheck",
-              "同步原语使用错误"
-            ]
-          ]
-        }
-      },
-      {
-        "id": "48",
-        "group": "按现象查找",
-        "title": "显存与 ECC",
-        "sub": "Xid 48 / 63 / 64 / 94 / 95",
-        "scope": "先核对 GPU 架构、伴随 Xid 和 MIG 状态，再选择恢复路径。",
-        "refs": [
-          "catalog",
-          "triage"
-        ],
-        "related": [
           "48",
           "63",
           "64",
+          "74",
+          "79",
           "92",
           "94",
           "95"
         ],
         "next": [
+          "triage-xid",
+          "diag",
+          "13",
+          "network",
+          "collect"
+        ],
+        "steps": [
+          [
+            "图 1：GPU 分流流程图（Xid 消息、监控问题与系统问题）",
+            "按事件通知来源（Xid 消息、系统监控告警或系统级故障）分三条路径启动初始分流。"
+          ],
+          [
+            "图 2：GPU 分流流程图（用户报告错误）",
+            "当用户直接反馈作业异常、报错或性能下降时，先排除 Xid 与 DCGM 诊断问题，再进入应用侧排查。"
+          ],
+          [
+            "图 3：GPU 分流流程图（调试应用程序）",
+            "确认硬件与基础诊断无异常后，按可复现性、标准 NGC 软件栈验证与节点范围定位应用或性能问题。"
+          ]
+        ],
+        "figures": [
+          {
+            "id": "triage-fig1",
+            "step": 0,
+            "caption": "图 1：GPU 分流流程图（Xid 消息、系统监控与系统问题）"
+          },
+          {
+            "id": "triage-fig2",
+            "step": 1,
+            "caption": "图 2：GPU 分流流程图（用户报告错误）"
+          },
+          {
+            "id": "triage-fig3",
+            "step": 2,
+            "caption": "图 3：GPU 分流流程图（调试应用程序）"
+          }
+        ]
+      },
+      {
+        "id": "collect",
+        "group": "GPU 调试指南",
+        "title": "报告 GPU 问题",
+        "sub": "向系统供应商收集与提交诊断数据",
+        "scope": "在系统发生问题后使用通用工具收集数据，对本地系统支持团队和系统供应商开展节点分流均有帮助。",
+        "refs": [
+          "triage",
+          "xid_working"
+        ],
+        "related": [],
+        "next": [
+          "triage-xid",
+          "diag"
+        ],
+        "steps": [
+          [
+            "收集基础配置与问题描述",
+            "向系统供应商收集数据时应包含：\n• 基本系统配置，例如操作系统和驱动信息。\n• 清晰的问题描述，包括描述该问题的关键日志消息。\n• 已执行的调试步骤列表。\n• 上述关键消息所在日志文件的完整内容。"
+          ],
+          [
+            "收集工具日志与诊断输出",
+            "• nvidia-bug-report.sh 的输出文件。\n• HGX 系统的 Fabric Manager 日志文件。\n• DCGM 诊断日志。"
+          ],
+          [
+            "补充用户应用程序信息并提交工单",
+            "• 若问题与用户应用程序相关，尽可能提供应用程序性质的详细信息（ISV 代码、框架、版本号等）及源代码链接（如条件允许）。\n• 向系统供应商提交支持工单。"
+          ]
+        ],
+        "commands": [
+          {
+            "title": "以 root 权限运行 nvidia-bug-report.sh",
+            "code": "sudo nvidia-bug-report.sh",
+            "note": "输出为单个压缩文本文件 nvidia-bug-report.log.gz。脚本通常很快完成，极少数情况下可能较慢，最多可等待一小时。"
+          },
+          {
+            "title": "采集命令挂起时的替代参数",
+            "code": "nvidia-bug-report.sh --safe-mode --extra-system-data",
+            "note": "当常规运行持续挂起时使用该参数组合收集替代日志，以避开调试收集过程中常见的挂起原因。"
+          }
+        ]
+      },
+      {
+        "id": "triage-xid",
+        "group": "GPU 调试指南",
+        "title": "理解 Xid 消息（表 1）",
+        "sub": "数据中心部署最常见的 Xid 消息与建议步骤",
+        "scope": "《XID Errors》文档列出了各类 Xid 错误及潜在原因。数据中心部署中最常见的 Xid 消息及建议操作列于下方官方表 1。",
+        "refs": [
+          "triage",
+          "xid_intro",
+          "dpr",
+          "mem_containment",
+          "fm"
+        ],
+        "related": [
+          "13",
+          "31",
+          "45",
+          "48",
+          "61",
+          "62",
+          "63",
+          "64",
+          "74",
+          "79",
+          "92",
+          "94",
+          "95",
+          "123"
+        ],
+        "next": [
           "reset",
+          "48",
           "diag",
           "collect"
         ],
         "steps": [
           [
-            "还原事件组合",
-            "按 GPU 分别对齐时间线，查看 Xid 48 后是否出现 63 或 64，63 是否伴随 94。"
+            "对照表 1 处理数据中心常见 Xid",
+            "下方表 1 给出 GPU Node Triage 中的常见 Xid 说明与建议操作。完整条目及租户指引见《XID Errors》与「使用 Xid 目录分析错误」。"
           ],
           [
-            "选择对应分支",
-            "以下按当前中文目录整理。A100 平台手册的特殊条件另列，执行前核对适用版本。"
+            "显存错误与架构特性说明",
+            "Xid 48、63、64、92、94 和 95 与 GPU 显存错误有关。A100 之前的 NVIDIA GPU 支持动态页面退役（Dynamic Page Retirement）；NVIDIA A100 及后续 GPU 引入了新的显存错误恢复特性，可提升容错能力并避免影响未受波及的应用程序。"
+          ],
+          [
+            "NVSwitch SXid 消息说明",
+            "针对 NVSwitch 的问题还会记录 SXid 消息。视严重程度（致命 fatal 与非致命 non-fatal）及受影响端口而定，错误可能会中止正在运行的 CUDA 作业并阻止启动新的 CUDA 作业，详情参阅《Fabric Manager User Guide》。"
           ]
         ],
-        "branches": [
-          {
-            "label": "48",
-            "title": "不可纠正 ECC",
-            "text": "单独出现：目录要求 RESET_GPU，并运行现场诊断。伴随 63 / 64：排空任务后复位。FB 错误继续按 63 / 64 处理；其他 SRAM 需检查错误阈值标志。",
-            "code": "48"
-          },
-          {
-            "label": "63",
-            "title": "重映射／页面退役记录",
-            "text": "Ampere 及更新架构对应行重映射，旧架构对应页面退役。单独的记录事件无需操作；伴随 48 或 94 时，按相应错误分支处理。",
-            "code": "63"
-          },
-          {
-            "label": "64",
-            "title": "记录失败",
-            "text": "当前目录要求复位 GPU，并联系支持。保留记录失败前后的错误及复位后的状态。",
-            "code": "64",
-            "extra": "A100 的 GPU Node Triage 表要求立即重启节点，当前目录要求 RESET_GPU。执行前按 GPU、驱动和平台版本核对适用步骤。"
-          },
-          {
-            "label": "94",
-            "title": "受控 ECC 错误",
-            "text": "重启受影响的应用，其他未受影响的应用可继续。安排合适时间复位 GPU 或重启，使行重映射生效；继续观察是否出现新的错误。",
-            "code": "94"
-          },
-          {
-            "label": "95",
-            "title": "未受控 ECC 错误",
-            "text": "可能影响多个应用。当前目录要求先复位受影响的 GPU，再重启应用；伴随其他故障时还需处理原始故障。",
-            "code": "95",
-            "extra": "A100 平台表：MIG 开启时，等待其他实例任务排空后复位；MIG 关闭时要求立即重启节点。这与当前目录的复位建议存在差异，执行前核对适用平台和版本。"
-          }
+        "extracts": [
+          "13",
+          "31",
+          "45",
+          "48",
+          "62",
+          "63",
+          "64",
+          "74",
+          "79",
+          "92",
+          "94",
+          "95"
         ],
         "table": {
-          "title": "复查项目",
+          "title": "表 1：数据中心部署常见 Xid 消息与建议操作（GPU Node Triage）",
           "head": [
-            "检查项",
-            "保留内容"
+            "Xid",
+            "说明",
+            "建议操作"
           ],
           "rows": [
             [
-              "ECC",
-              "可纠正／不可纠正错误、易失／累计计数及是否继续增长"
+              "13",
+              "图形引擎异常（Graphics Engine Exception）",
+              "运行 DCGM 诊断和现场诊断，确认问题是否与硬件有关。若无关，参照《XID Errors》指引调试用户应用程序；若仍未解决，参阅「报告 GPU 问题」。"
             ],
             [
-              "重映射",
-              "待生效、失败状态及前后变化；区分显存与 SRAM"
+              "31",
+              "疑似硬件问题（Suspected Hardware Problems）",
+              "联系硬件供应商，由其执行硬件诊断流程。"
             ],
             [
-              "恢复",
-              "应用是否恢复、设备是否可访问、是否出现新的关联 Xid"
+              "45",
+              "通道抢占式清理（Robust Channel Preemptive Removal）",
+              "无需操作，仅作信息提示，表示受其他故障波及而清理的通道。在 A100 上，当 Fabric Manager（FM）与 GPU 运行于同一操作系统环境且 FM 意外退出时，此错误可能单独出现；其余情况下可作为提示信息安全忽略。"
+            ],
+            [
+              "48",
+              "双比特 ECC 错误（Double Bit ECC Error）",
+              "若 Xid 48 后伴随 Xid 63 或 64：排空／隔离（drain/cordon）节点，等待所有工作完成后复位上报该 Xid 的 GPU（参阅复位能力与限制）。若未伴随 Xid 63 或 64：参阅「运行现场诊断」收集更多调试信息，并按显存 RMA 策略评估。"
+            ],
+            [
+              "61",
+              "PMU 断点（PMU Breakpoint）",
+              "按「报告 GPU 问题」提交信息，并复位上报该 Xid 的 GPU（参阅复位能力与限制）。"
+            ],
+            [
+              "62",
+              "PMU 停止运行错误（PMU Halt Error）",
+              "按「报告 GPU 问题」提交信息，并复位上报该 Xid 的 GPU（参阅复位能力与限制）。"
+            ],
+            [
+              "63",
+              "旧架构 GPU：ECC 页面退役记录事件\nA100：行重映射记录事件",
+              "旧架构 GPU：若关联 Xid 48，排空／隔离节点，等待所有工作完成后复位上报该 Xid 的 GPU；若未关联 Xid 48，则源于单比特错误，系统可照常运行直至合适时间重启。\nA100：若关联 Xid 94，需重启遇到错误的应用程序，其余应用程序可照常运行，直至合适时间复位 GPU 或重启以激活行重映射。"
+            ],
+            [
+              "64",
+              "旧架构 GPU：ECC 页面退役记录失败\nA100：行重映射记录失败",
+              "旧架构 GPU：密切监控节点；若无关联 Xid 48 则源于单比特错误，由于记录失败须立即复位上报错误的 GPU，若错误持续则排空、分流并报告 GPU 问题。\nA100：由于发生记录失败，应立即重启节点；若错误持续，排空、分流并参阅「报告 GPU 问题」及行重映射失败 RMA 策略。"
+            ],
+            [
+              "74",
+              "NVLink 错误（NVLink Error）",
+              "提取 Xid 错误消息中的 7 个十六进制字段，查看第 1 个 DWORD（从最低有效位 LSB 起算）：\n• bit 4 或 5：很可能是涉及 ECC／奇偶校验的硬件问题，同一链路出现超过 2 次时提交缺陷报告。\n• bit 21 或 22：通道信号完整性（SI）临界问题；若有伴随错误先按伴随错误处理，否则检查链路机械连接。\n• bit 8、9、12、16、17、24、28：可能是硬件问题；检查链路机械连接并在需要现场处理时重新插拔，问题持续时运行诊断。"
+            ],
+            [
+              "79",
+              "GPU 已从总线掉线（GPU has fallen off the bus）",
+              "排空节点，并参阅「报告 GPU 问题」。"
+            ],
+            [
+              "92",
+              "单比特 ECC 错误发生率过高（High single-bit ECC error rate）",
+              "参阅「运行现场诊断」收集更多调试信息，并参照显存错误超限 RMA 指引评估。"
+            ],
+            [
+              "94",
+              "发生受控 ECC 错误（Contained ECC error，A100 及后续架构）",
+              "需重启遇到该错误的应用程序；系统上的所有其他应用程序可继续照常运行，直至合适时间复位 GPU 或重启使行重映射生效。"
+            ],
+            [
+              "95",
+              "发生未受控 ECC 错误（Uncontained ECC error，A100 及后续架构）",
+              "若已启用 MIG：排空其他 GPU 实例上的工作，等待全部工作完成后复位上报该 Xid 的 GPU。若未启用 MIG：由于发生不可纠正的未受控 ECC 错误，应立即重启节点；若错误持续，排空、分流并参阅「报告 GPU 问题」。"
+            ],
+            [
+              "123",
+              "SPI PMU RPC 写入失败（SPI PMU RPC write fail）",
+              "报告 GPU 问题，并复位上报该 Xid 的 GPU（参阅《Fabric Manager User Guide》中的 GPU 复位能力与限制说明）。"
             ]
           ]
         }
       },
       {
-        "id": "74",
-        "group": "按现象查找",
-        "title": "NVLink 异常",
-        "sub": "Xid 74 · 链路与对端",
-        "scope": "链路报错也可能来自对端 GPU；先检查伴随错误。",
+        "id": "reset",
+        "group": "GPU 调试指南",
+        "title": "GPU、虚拟机与系统复位能力及限制",
+        "sub": "nvidia-smi 复位前提与各平台支持矩阵",
+        "scope": "触发一块或多块 GPU 的复位可用于清除 GPU 硬件与软件状态，避免原本需要整机重启的情况（通常在发生双比特 ECC 错误后很有用）。",
         "refs": [
-          "catalog"
+          "triage",
+          "smi",
+          "fm"
         ],
         "related": [
-          "74",
-          "144",
-          "145",
-          "146",
-          "147",
-          "148",
-          "149",
-          "150"
+          "48",
+          "61",
+          "62",
+          "63",
+          "64",
+          "94",
+          "95",
+          "109",
+          "110",
+          "119",
+          "120",
+          "123",
+          "136",
+          "140",
+          "154"
         ],
         "next": [
-          "collect",
-          "diag",
-          "reset"
-        ],
-        "extracts": [
-          "74"
+          "triage-xid",
+          "48",
+          "collect"
         ],
         "steps": [
           [
-            "保留完整错误行",
-            "保留完整错误行，包括 Xid 编号、全部十六进制字段及链路与 GPU 的对应关系。"
+            "nvidia-smi 手册页复位要求",
+            "可选的 -i 参数用于指定一块或多块目标设备；若不加此选项，将复位系统中的所有 GPU。该操作需要 root 权限。目标设备上不能有任何正在使用设备的应用程序（例如 CUDA 应用程序、X Server 等图形应用程序，或其他 nvidia-smi 实例等监控程序）。"
           ],
           [
-            "按寄存器和位值分支",
-            "Xid 74 的工作流区分 ECC / Parity、信号完整性、机械连接和次生错误；完整寄存器指引可在下方展开。"
-          ],
-          [
-            "追查对端与持续性",
-            "有其他关联错误时，先按原始错误处理；持续出现时按对应分支检查连接并诊断。"
-          ],
-          [
-            "核对新编号解码",
-            "144–150 使用各自的子代码表；先选中编号，再按驱动版本查看 IntrInfo 与 ErrorStatus。"
+            "按架构、Fabric Manager 状态与虚拟化模式核对限制",
+            "执行复位前，对照下方官方能力与限制矩阵核对裸金属、同一虚拟机包含全部设备，以及共享 NVSwitch 虚拟化（GPU 与交换芯片位于不同虚拟机）的处置方式。"
           ]
+        ],
+        "table": {
+          "title": "GPU / VM / 系统复位能力与限制矩阵",
+          "head": [
+            "平台与架构",
+            "FM 状态",
+            "裸金属",
+            "虚拟化（所有设备在同一 VM）",
+            "共享 NVSwitch 虚拟化（GPU 与交换芯片在不同 VM）"
+          ],
+          "rows": [
+            [
+              "NVIDIA Ampere 及更新架构（直连 NVLink）",
+              "不适用",
+              "支持单块 GPU 独立复位；也可不指定 -i 复位全部 GPU。",
+              "虚拟机内不支持 GPU 复位；请重启虚拟机。",
+              "不适用"
+            ],
+            [
+              "NVIDIA Ampere 架构 + NVSwitch",
+              "运行中（Running）",
+              "支持单块 GPU 独立复位；复位过程中，Fabric Manager（FM）会自动同步复位对应的 NVSwitch 侧链路。",
+              "虚拟机内不支持 GPU 复位；请重启虚拟机。",
+              "重启仅含 GPU 的虚拟机；服务虚拟机（Service VM）流程应通过与 FM 通信确保正确复位 NVSwitch 链路。"
+            ],
+            [
+              "NVIDIA Ampere 架构 + NVSwitch",
+              "未运行（NOT Running）",
+              "不支持单块 GPU 独立复位；须一并复位通过 NVLink 互连的全部 GPU 与 NVSwitch。",
+              "虚拟机内不支持 GPU 复位；请重启虚拟机。",
+              "—"
+            ],
+            [
+              "Hopper 及更新架构 + NVSwitch",
+              "不适用",
+              "无论 FM 状态如何，均支持单块或多块 GPU 独立复位；也可不指定 -i 复位全部 GPU 与 NVSwitch。",
+              "虚拟机内能否复位取决于管理程序（Hypervisor）授予该 VM 的权限；若未授权，请重启虚拟机。",
+              "虚拟机内能否复位取决于管理程序（Hypervisor）授予该 VM 的权限；若未授权，请重启虚拟机。"
+            ]
+          ]
+        },
+        "commands": [
+          {
+            "title": "复位指定 GPU（root）",
+            "code": "sudo nvidia-smi --gpu-reset -i 0",
+            "note": "将 0 替换为目标 GPU 的序号、UUID 或 PCI 总线地址；省略 -i 会复位全部 GPU。"
+          }
+        ]
+      },
+      {
+        "id": "diag",
+        "group": "GPU 调试指南",
+        "title": "运行 DCGM 诊断与现场诊断",
+        "sub": "生产环境节点健康评估与 RMA 前置工具",
+        "scope": "DCGM 是面向生产环境的系统级工具，提供诊断测试以评估节点健康状况与集群就绪度；现场诊断（Field Diagnostics）则是判定 GPU 健康的权威工具。",
+        "refs": [
+          "triage",
+          "dcgm"
+        ],
+        "related": [
+          "13",
+          "31",
+          "48",
+          "92"
+        ],
+        "next": [
+          "collect",
+          "health"
+        ],
+        "steps": [
+          [
+            "选择 DCGM 诊断测试套件（-r）",
+            "DCGM 诊断通过 --run（-r）参数提供适用于大多数系统的默认测试套件：1（短测试 short）、2（中等测试 medium）和 3（长测试 long）。若需对系统进行充分压力测试，使用长测试（-r 3），耗时约 30 分钟；其他级别可用作作业启动前的上线检查或系统 prolog 校验。"
+          ],
+          [
+            "处理 DCGM 发现的问题",
+            "当 DCGM 诊断发现问题时应尝试予以解决：配置类问题可通过运维命令修正，DCGM 通常会给出排查起点提示；若测试发现 GPU 或 NVSwitch 互连网络（若存在）运行异常，请检查节点及节点配置是否存在反常之处。"
+          ],
+          [
+            "运行现场诊断（Running Field Diagnostics）",
+            "现场诊断（Field diagnostic）是 NVIDIA 用于判定 GPU 健康状况的权威、全面工具，通常在启动硬件返修（RMA）流程前必须运行。请联系系统供应商了解何时、是否以及如何运行该工具。"
+          ]
+        ],
+        "commands": [
+          {
+            "title": "运行完整压力级别的 DCGM 诊断",
+            "code": "dcgmi diag -r 3",
+            "note": "长测试耗时约 30 分钟；如需结构化结果可附加 -j 输出 JSON。"
+          }
         ]
       },
       {
         "id": "network",
-        "group": "按现象查找",
-        "title": "多节点通信",
-        "sub": "NCCL · 性能基线与慢节点",
-        "scope": "测试会占用 GPU 和网络。使用一致的软件、拓扑和负载条件比较。",
+        "group": "GPU 调试指南",
+        "title": "网络测试",
+        "sub": "NVIDIA / nccl-tests · 节点对测试与多轨隔离",
+        "scope": "可使用 NCCL 性能测试套件（NVIDIA/nccl-tests）测试网络吞吐性能与延迟。",
         "refs": [
           "triage",
           "nccl"
@@ -326,240 +463,579 @@
         "related": [],
         "next": [
           "health",
-          "performance",
+          "13",
           "collect"
         ],
         "steps": [
           [
-            "建立基线",
-            "按相同拓扑比较节点对。发现慢组合后，更换对端复测；多网卡路径分别比较。"
+            "使用 all_reduce_perf 进行节点成对测试",
+            "all_reduce_perf 非常适合评估节点组之间的网络性能。相同拓扑下的节点成对（Pairwise）测试应当测得一致的性能表现。发现某对节点偏慢时，将该节点对分别与其他节点重新组合复测，以隔离问题节点。在多轨（Multi-rail）网络拓扑中，还可将测试隔离到特定网络轨道，以确定存在问题的具体网络接口。"
           ],
           [
-            "区分测试范围",
-            "单节点多卡测试可检查本机通信。跨节点测试需 MPI 构建（MPI=1）、节点分配与匹配的运行环境。"
-          ],
-          [
-            "保留可比结果",
-            "保存完整命令、GPU 数、消息大小、软件版本与输出。示例 GPU 数按实际分配调整。"
+            "建立投产前性能基线",
+            "建议在系统正式投入生产前运行网络测试并记录实测性能，作为日后对比的基线。不同节点组的性能可能因系统网络拓扑而异，可与网络供应商或架构师确认预期应达到的性能指标。"
           ]
         ],
         "commands": [
           {
-            "title": "单节点 8 GPU · NCCL 官方示例",
+            "title": "单节点 8 GPU · nccl-tests 官方示例",
             "code": "./build/all_reduce_perf -b 8 -e 128M -f 2 -g 8",
-            "note": "单节点测试，消息从 8 B 到 128 MiB，每次翻倍。"
+            "note": "消息大小从 8 B 倍增至 128 MiB；跨节点测试需使用启用 MPI（MPI=1）构建的版本。"
           }
         ]
       },
       {
-        "id": "performance",
-        "group": "按现象查找",
-        "title": "性能下降",
-        "sub": "Nsight · 系统时间线与内核",
-        "scope": "先固定输入、规模与运行环境，保留正常和异常两组结果。",
+        "id": "13",
+        "group": "GPU 调试指南",
+        "title": "调试应用程序与性能分析",
+        "sub": "CUDA-GDB、Compute Sanitizer 与 Nsight 工具",
+        "scope": "调试应用程序通常需要将调试器附加到用户应用程序上，尽可能完整地收集直至应用程序崩溃前的数据。",
         "refs": [
+          "triage",
+          "best",
+          "cudagdb",
+          "sanitizer",
           "systems",
           "compute"
         ],
-        "related": [],
+        "related": [
+          "8",
+          "11",
+          "13",
+          "25",
+          "31",
+          "32",
+          "43",
+          "68",
+          "69",
+          "80",
+          "137"
+        ],
         "next": [
-          "health",
-          "network",
-          "13"
+          "triage",
+          "diag",
+          "collect"
         ],
         "steps": [
           [
-            "查看系统时间线",
-            "Nsight Systems 用于观察 CPU、CUDA 调用和 GPU 活动的时间关系。先定位等待、空闲或传输集中出现的位置。"
+            "使用调试器定位崩溃来源",
+            "导致应用程序崩溃的问题可能与系统软件有关，但直接调试目标进程是查明崩溃位置及判断能否在应用程序侧解决的最快方式。调试器收集的数据也可供 NVIDIA 用于进一步排查系统软件问题。"
           ],
           [
-            "分析目标内核",
-            "Nsight Compute 用于检查 CUDA 内核的性能指标。已有具体慢内核时，再深入看计算与内存访问。"
+            "使用 CUDA-GDB 与 Compute Sanitizer",
+            "CUDA-GDB 是 NVIDIA 面向 Linux 和 QNX 环境的 CUDA 应用程序调试工具，支持开发人员在不引入模拟或仿真环境差异的情况下直接调试真实运行的应用。针对疑似用户编程引起的非法访存等问题，《XID Errors》同时推荐使用 Compute Sanitizer 的 memcheck 工具。"
           ],
           [
-            "验证变化",
-            "每次只改变一项条件，复测同一工作负载。保留工具配置，并将采样开销与正常运行耗时分开记录。"
+            "使用 Nsight 分析性能瓶颈",
+            "若问题与性能相关，可使用 Nsight Systems 或 Nsight Compute 等性能分析器了解应用程序的性能特征与瓶颈所在。系统软件的变更同样可能导致应用程序性能改变，因此即使应用程序代码本身未做修改，对其进行性能剖析仍是重要步骤。剖析数据能够凸显 CPU、存储或 GPU 上的性能问题，帮助定位瓶颈源头。"
           ]
+        ],
+        "extracts": [
+          "13",
+          "31",
+          "137"
+        ],
+        "commands": [
+          {
+            "title": "使用 Compute Sanitizer memcheck 检查内存访问",
+            "code": "compute-sanitizer --tool memcheck ./your_app",
+            "note": "将 your_app 替换为可执行程序及参数；还支持 racecheck、initcheck 与 synccheck 工具。"
+          }
         ]
       },
       {
-        "id": "diag",
-        "group": "进一步检查",
-        "title": "DCGM 与现场诊断",
-        "sub": "级别、结果与后续操作",
-        "scope": "先确认 GPU 已空闲，并核对当前 DCGM 对设备与配置的支持。长测试会施加负载。",
+        "id": "health",
+        "group": "GPU 调试指南",
+        "title": "收集节点指标与事前预防检查",
+        "sub": "Best Practices · 时序监控与作业前后检查项",
+        "scope": "节点的运行与性能状况可通过系统指标推导；最佳做法是在系统问题影响用户作业之前将其提前捕获。",
         "refs": [
+          "best",
+          "telemetry",
+          "persistence",
           "dcgm"
         ],
         "related": [],
         "next": [
-          "collect",
-          "health"
+          "diag",
+          "network",
+          "collect"
         ],
         "steps": [
           [
-            "选择级别",
-            "按目的选择诊断级别；实际项目取决于 DCGM 版本与设备支持。"
+            "通过带内与带外方式收集节点时序指标",
+            "收集系统指标的时间序列数据，可让管理员发现节点开始运行异常的迹象，或用于主动式系统维护。指标既可通过 DCGM Prometheus 插件（Kubernetes 环境提供容器化 DCGM）进行带内（in-band）采集，也可通过 IPMI 进行带外（out-of-band）采集，并存入时序数据库设置告警。"
           ],
           [
-            "按结果继续",
-            "逐项核对测试结果，区分通过、失败、未执行和不支持。失败项查看 GPU 与错误详情，保留完整输出及退出码。"
+            "建立关键温度与散热告警",
+            "• 进风口温度升高可能指示数据中心制冷异常或杂物堵塞风道。\n• GPU 温度与 GPU 显存温度过高会导致 GPU 降频及性能下降。"
           ],
           [
-            "需要硬件结论时",
-            "硬件判定和 RMA 按设备厂商要求完成现场诊断。"
+            "在作业开始前与结束后捕获错误（Prolog / Epilog）",
+            "提前发现系统问题的最佳时机是在作业启动时通过 init-container 或 prolog 脚本，或在作业结束时通过 epilog 脚本执行检查，涵盖下方官方列出的 GPU 专项检查、NVSwitch 系统检查及非 GPU 基础设施检查。"
           ]
         ],
+        "tables": [
+          {
+            "title": "GPU 系统应收集的关键监控指标",
+            "head": [
+              "指标项",
+              "官方说明"
+            ],
+            "rows": [
+              [
+                "各电源模块（PSU）功率",
+                "Power draw of each power supply"
+              ],
+              [
+                "配电单元（PDU）功率与功率因数",
+                "Power draw at the PDU / PDU Power factor"
+              ],
+              [
+                "CPU 功率与温度",
+                "CPU Power, and CPU Temperature"
+              ],
+              [
+                "GPU 功率、核心温度、显存温度与时钟频率",
+                "GPU Power, GPU Temperature, GPU Memory Temperature and GPU clocks"
+              ],
+              [
+                "NVLink 指标",
+                "NVLink metrics"
+              ],
+              [
+                "节点风扇转速与进风口温度",
+                "Node Fan Speed / Inlet Temperature"
+              ]
+            ]
+          },
+          {
+            "title": "事前预防检查清单（Catching Errors Before They Occur）",
+            "head": [
+              "检查类别",
+              "检查内容"
+            ],
+            "rows": [
+              [
+                "GPU 专项检查",
+                "• 确认关键软件已加载：GPU 驱动、nv-peer-mem（用于 GPUDirect RDMA）、gdrdrv（用于 GDRCopy）、Fabric Manager（用于 HGX 系统）。\n• 确认节点 GPU 属性正确（GPU 数量、PCIe 链路速率、VBIOS 等）。\n• 确认驱动持久化设置正确（应通过 Persistence Daemon 控制驱动持久化）。"
+              ],
+              [
+                "NVSwitch 系统检查",
+                "• 确认 Fabric Manager 正在运行。\n• 确认 NVLink 互连拓扑正确。\n• 检查近期是否出现任何 Xid 错误。\n• 运行 dcgmi diag -r 2 快速检查系统软件与 GPU 功能。"
+              ],
+              [
+                "其他非 GPU 检查",
+                "• 检查所有网络链路均处于活动状态（可进一步校验预期链路速率、固件版本、PCIe 链路宽度等）。\n• 检查所有预期的文件系统挂载均已就绪。\n• 运行示例 CUDA 工作负载以确认节点环境配置正确。"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "xid-intro",
+        "group": "Xid 错误指南",
+        "title": "Xid 与 SXid 消息简介",
+        "sub": "定义、适用范围与使用原则",
+        "scope": "本节源自《XID Errors — Introduction》，说明什么是 Xid 与 SXid 消息，以及如何将它们作为排障指引使用。",
+        "refs": [
+          "xid_intro",
+          "fm",
+          "gdg_overview"
+        ],
+        "related": [],
+        "next": [
+          "xid-working",
+          "xid-catalog",
+          "triage-xid"
+        ],
+        "steps": [
+          [
+            "什么是 Xid 消息",
+            "Xid 消息是 NVIDIA 驱动输出到操作系统内核日志或事件日志中的错误报告。Xid 消息表明发生了一般性的 GPU 错误，最常见于驱动对 GPU 编程有误，或发送给 GPU 的命令发生损坏。这些消息可能指示硬件问题、NVIDIA 软件问题或用户应用程序问题。每条消息的含义在不同驱动版本间保持一致。"
+          ],
+          [
+            "什么是 SXid 消息",
+            "NVSwitch 的 NVIDIA 驱动通过与 Xid 类似的机制，在内核日志中报告与 NVSwitch 硬件相关的错误情况。这些“交换芯片 Xid”（Switch Xids，即 SXid）及其使用指引在《Fabric Manager User Guide》中单独记录。"
+          ],
+          [
+            "如何使用 Xid 消息",
+            "Xid 消息旨在用作调试指引。由于许多故障可能存在多种潜在根因，仅凭 Xid 编号本身并不总能直接确定问题根源。例如，某条 Xid 错误可能表明用户程序尝试访问无效内存；但理论上，PCIe 或帧缓冲区（FB）问题引起的内存数据损坏可能破坏任意命令，从而诱发几乎任何类型的错误。因此，应将 Xid 分类作为进一步调查每个问题的起点。"
+          ]
+        ],
+        "note": "官方说明：SXid 消息仅适用于 Hopper 及更早代际的 GPU 平台。"
+      },
+      {
+        "id": "xid-working",
+        "group": "Xid 错误指南",
+        "title": "查看与分析 Xid 错误",
+        "sub": "日志结构、辅助工具与问题归类表",
+        "scope": "本节源自《XID Errors — Working with Xid Errors》，介绍如何在 Linux 下检索 Xid 字符串、使用配套工具获取补充信息，以及按疑似原因选择行动路径。",
+        "refs": [
+          "xid_working",
+          "smi",
+          "dcgm",
+          "sanitizer",
+          "cudagdb"
+        ],
+        "related": [
+          "48",
+          "54",
+          "79",
+          "119",
+          "120",
+          "154"
+        ],
+        "next": [
+          "xid-catalog",
+          "collect",
+          "diag"
+        ],
+        "steps": [
+          [
+            "在 Linux 下查看与拆解 Xid 消息",
+            "在 Linux 系统中，Xid 错误消息记录在内核日志缓冲区中，视发行版配置通常写入 journal 并落盘至 /var/log/messages 或 /var/log/syslog。检索“NVRM: Xid”即可找到全部 Xid 消息。\n日志中首条 Xid 之前会有一行记录 GPU GUID 与设备 ID，例如：\n[...] NVRM: GPU at 0000:03:00: GPU-b850f46d-d5ea-c752-ddf3-c4453e44d3f7\n[...] NVRM: Xid (0000:03:00): 14, Channel 00000001\n其中 GPU-b850... 为每块 GPU 全局唯一且不可变的标识符（GUID）；0000:03:00 为 PCI Express 总线、设备与功能号（BDF）；14 为 Xid 错误标识符；Channel 00000001 为该错误特有的上下文数据。"
+          ],
+          [
+            "提供补充信息的三个官方工具",
+            "• nvidia-smi：随 NVIDIA 驱动安装的命令行程序，报告系统中每块 GPU 的基础监控与配置数据，可列出 ECC 错误计数（Xid 48）、提示供电线是否未连接（Xid 54）或给出适用的 GPU 恢复操作（Xid 154）等；运行 nvidia-smi -q 获取详细输出。\n• NVIDIA Data Center GPU Manager（DCGM）：面向集群环境的管理与监控套件，其中的 DCGM 诊断可检查基础 GPU 健康状况，包括 ECC 错误、PCIe 问题、带宽异常及运行 CUDA 程序的一般问题。\n• nvidia-bug-report.sh：随驱动安装的日志收集脚本，以 root 运行后生成 nvidia-bug-report.log.gz。"
+          ]
+        ],
+        "extracts": [
+          "54",
+          "79",
+          "119",
+          "120",
+          "154"
+        ],
         "table": {
-          "title": "诊断级别",
+          "title": "分析 Xid 错误的建议操作（Analyzing Xid Errors）",
           "head": [
-            "级别",
-            "范围"
+            "疑似问题类别",
+            "建议操作"
           ],
           "rows": [
             [
-              "1 · 短",
-              "软件与基础环境"
+              "疑似用户编程问题",
+              "运行调试工具，参阅 Compute Sanitizer 的 memcheck 工具与 CUDA-GDB 文档。"
             ],
             [
-              "2 · 中",
-              "增加 PCIe / NVLink、显存和带宽检查"
+              "疑似硬件问题",
+              "联系硬件供应商，由其执行硬件诊断流程。"
             ],
             [
-              "3 · 长",
-              "增加诊断、负载与功耗等测试"
-            ],
-            [
-              "4 · 扩展",
-              "增加显存压力与脉冲功耗测试"
+              "疑似驱动问题",
+              "向 NVIDIA 提交缺陷报告，并附上 nvidia-bug-report.sh 的输出；同时参阅《GPU Debug Guidelines》收集补充信息。"
             ]
           ]
         },
         "commands": [
           {
-            "title": "指定 GPU · Linux 示例",
-            "code": "dcgmi diag -r 1 -i 0 -j",
-            "note": "0 为示例 GPU ID；核对目标后替换。-j 输出 JSON。升级测试级别前确认维护条件。"
+            "title": "检索系统日志中的 Xid 消息",
+            "code": "grep \"NVRM: Xid\" /var/log/syslog",
+            "note": "RHEL / CentOS 等发行版可检索 /var/log/messages，或使用 journalctl -k。"
+          },
+          {
+            "title": "查询 GPU 基础状态、ECC、供电与恢复操作",
+            "code": "nvidia-smi -q",
+            "note": "输出各 GPU 的配置、ECC 计数、行重映射及 GPU Recovery Action 等字段。"
           }
         ]
       },
       {
-        "id": "reset",
-        "group": "进一步检查",
-        "title": "GPU 复位条件",
-        "sub": "架构、虚拟化与 NVSwitch",
-        "scope": "复位会中断目标设备的使用。Linux 需要 root，并停止 CUDA、图形和监控进程的占用。",
+        "id": "xid-catalog",
+        "group": "Xid 错误指南",
+        "title": "使用 Xid 目录分析错误",
+        "sub": "五张工作表与官方四步判读流程",
+        "scope": "面向 Ampere 及更新代际 GPU（含 PCIe 形态 GPU），官方《Xid Catalog Reference》描述了各 Xid 事件、产品适用性以及建议的恢复操作与调查操作。",
         "refs": [
-          "smi",
-          "triage"
+          "catalog"
         ],
         "related": [
-          "154"
+          "74",
+          "136",
+          "144",
+          "145",
+          "146",
+          "147",
+          "148",
+          "149",
+          "150",
+          "151",
+          "154",
+          "159"
         ],
         "next": [
-          "collect",
-          "health"
+          "xid-working",
+          "reset",
+          "triage-xid"
         ],
         "steps": [
           [
-            "确定目标与范围",
-            "按 UUID 或 PCI 地址核对目标 GPU，并保存日志。省略 -i 会复位所有 GPU。"
+            "步骤 1：识别 Xid 编号并保留事件上下文",
+            "从日志消息的 GPU 标识符之后读取 Xid 编号（例如 NVRM: Xid (PCI:0000:5a:00): 79, GPU has fallen off the bus. 报告了 Xid 79）。保留完整消息及相关日志条目，包括时间戳、GPU 标识符和任何伴随出现的 Xid；同时记录产生该事件的 GPU 型号与驱动版本。消息中的附加字段可能用于选择对应的处理指引。"
           ],
           [
-            "核对平台条件",
-            "下表用于区分平台。虚拟机还需核对直通／vGPU 模式及管理程序权限。"
+            "步骤 2：查找条目并在需要时解码附加字段",
+            "在 XIDs 工作表中查找匹配编号，核对其说明、产品适用性（Applies to）及触发条件；标为“未使用（Unused）”的条目可能表示已弃用或仅适用于早期代际 GPU。\n对于 Xid 144–150，还需使用 XID 144-150 Decode 工作表：匹配 Xid 与子代码（subcode），按产生事件的驱动版本选用 V1（<R575）或 V2（>=R575）编码评估 IntrInfo 位掩码（掩码中的“-”表示不受该掩码约束的位）、错误状态（Error Status）与严重程度。注意区分消息内报告的严重程度（Reported Severity）与故障本身的严重程度及影响（Severity）。"
           ],
           [
-            "恢复后复查",
-            "复位后检查 GPU 和应用状态，仍有异常时按平台指引继续恢复。"
+            "步骤 3：选择适用的租户操作（即时操作与调查操作）",
+            "按优先级顺序（Priority Order）核对 XID Parsing Policy 工作表中与观测到的单条或组合事件相匹配的规则（须完整核对必需出现、部分出现、可选出现和未出现的 Xid 以及消息限定条件，仅出现其中某一条不构成匹配），采用首条满足条件的规则：\n• 租户运行期操作（Tenant In-Operation Action，即即时操作）：用于恢复系统或维持运行。\n• 租户调查操作（Tenant Investigatory Action，即调查操作）：用于进一步调查或升级支持。\n若无策略规则匹配，则采用 XIDs 表或 XID 144-150 Decode 表中对应条目的操作。若所选指引要求参照伴随的 Xid 154，则按该 Xid 154 事件报告的恢复指引执行。"
+          ],
+          [
+            "步骤 4：查阅并执行指引类别定义",
+            "RESET_GPU、RESTART_APP、CONTACT_SUPPORT 等操作键均在 Guidance Classes 工作表中定义。对于工作流类键（Workflow），应按定义中的具体条件与分支执行，而非仅凭键名理解。执行 GPU 复位前，须先核对复位前提条件以及平台或虚拟机限制；涉及需基础设施提供方权限的操作时，按定义中的支持或协同说明处理。"
           ]
         ],
+        "extracts": [
+          "154"
+        ],
         "table": {
-          "title": "平台条件",
+          "title": "Xid Catalog 参考表格的五张工作表",
           "head": [
-            "平台",
-            "范围与条件"
+            "工作表名称",
+            "内容说明"
           ],
           "rows": [
             [
-              "Ampere+ · 直连 NVLink",
-              "裸机可单卡复位；更早架构可能需要关联 GPU 一起复位。"
+              "User Guide",
+              "目录各字段与解码说明。"
             ],
             [
-              "Ampere · NVSwitch",
-              "FM 运行时可单卡复位；未运行时不支持单卡复位，需复位全部 NVLink 互连的 GPU 与 NVSwitch。"
+              "XIDs",
+              "Xid 编号、说明、产品适用性、触发条件及租户操作。"
             ],
             [
-              "Hopper+ · NVSwitch",
-              "单卡复位不再依赖 FM。"
+              "XID 144-150 Decode",
+              "NVLink 相关 Xid（144–150）的附加解码信息。"
             ],
             [
-              "虚拟机",
-              "Node Triage 中 Ampere 对应 VM 需重启；Hopper+ 取决于管理程序权限。MIG vGPU 客户机不支持 GPU reset。"
+              "Guidance Classes",
+              "目录中使用的各类操作键定义。"
+            ],
+            [
+              "XID Parsing Policy",
+              "解读多条 Xid 组合及其他限定信息的规则。"
             ]
           ]
-        },
-        "note": "共享 NVSwitch 虚拟化还涉及服务 VM 与 FM 的协调。权限不足或平台不支持时，先采用对应平台的恢复流程。"
+        }
       },
       {
-        "id": "health",
-        "group": "进一步检查",
-        "title": "配置与运行指标",
-        "sub": "数量、链路、温度与功耗",
-        "scope": "将异常值与同配置的正常状态比较，结合运行负载判断。",
+        "id": "48",
+        "group": "GPU 显存错误管理",
+        "title": "错误隔离与行重映射",
+        "sub": "Error Containment & Row Remapping · Ampere 及更新架构",
+        "scope": "本节源自《NVIDIA GPU Memory Error Management》，说明自 NVIDIA Ampere 架构起引入的错误隔离（Error Containment）与硬件行重映射（Row Remapping）机制。",
         "refs": [
-          "best"
+          "mem_containment",
+          "mem_remap",
+          "dpr",
+          "catalog"
         ],
-        "related": [],
+        "related": [
+          "48",
+          "63",
+          "64",
+          "92",
+          "94",
+          "95",
+          "140"
+        ],
         "next": [
-          "network",
-          "performance",
+          "mem-rma",
+          "reset",
+          "triage-xid"
+        ],
+        "steps": [
+          [
+            "错误隔离（Error Containment）",
+            "NVIDIA Ampere 架构为 GPU 引入了错误隔离机制，以限制不可纠正 ECC 错误对 GPU 应用程序的影响。在 Volta 等早期架构上，不可纠正 ECC 错误会影响当前正在执行的全部 GPU 工作负载；而在自 Ampere 架构起的数据中心级 GPU 上，影响仅限于遇到该错误的应用程序，其余工作负载在精度与性能上均不受影响地继续运行，且仍可启动新的工作负载。与早期架构不同，Ampere 及更新代际 GPU 在发生受控显存错误时无需立即复位 GPU。"
+          ],
+          [
+            "行重映射（Row Remapping）",
+            "行重映射是自 NVIDIA Ampere 架构起用于提升帧缓冲区（FB）显存可靠性的硬件机制，用于阻止继续使用已知退化的显存位置，取代了早期代际 GPU 使用的页面退役方案。DRAM 中的每个存储体（Bank）均在硬件上配备了备用行；行重映射器用备用单元替换退化的存储单元，在硬件层面完成修复，不会像软件动态页下线那样在地址空间中留下软件可见的空洞。行重映射需要经过一次 GPU 复位后方可生效，并在 GPU 整个生命周期内持久保留。"
+          ]
+        ],
+        "note": "官方说明：尽管最常见的不可纠正错误类别均属于受控错误（Xid 94），极少数情况下仍可能出现未受控的不可纠正错误（Xid 95），此时会影响该 GPU 上正在处理的全部工作负载。",
+        "extracts": [
+          "48",
+          "63",
+          "64",
+          "94",
+          "95",
+          "140"
+        ],
+        "table": {
+          "title": "旧架构页面退役与 Ampere+ 行重映射对比",
+          "head": [
+            "特性",
+            "旧架构 GPU 的页面退役（Page Retirement）",
+            "Ampere 及更新代际的行重映射（Row-Remapping）"
+          ],
+          "rows": [
+            [
+              "可用退役／重映射数量",
+              "帧缓冲区最多支持 64 次页面退役。",
+              "帧缓冲区最多支持 512 次行重映射。"
+            ],
+            [
+              "策略变化",
+              "页面退役一旦生效便无法取消退役，无论源于可纠正错误还是不可纠正错误。",
+              "当某个显存 Bank 的保留备用行耗尽时，因可纠正错误产生的重映射记录可被不可纠正错误的重映射替换。"
+            ],
+            [
+              "RMA 判定标准",
+              "页面退役达到一定阈值后，通常需进一步调查该 GPU 是否符合 RMA 条件。",
+              "参阅「显存与 SRAM 的 RMA 策略」。"
+            ],
+            [
+              "待生效更改的激活方式",
+              "需要重新加载内核模块、重新初始化驱动或执行 GPU 复位。",
+              "必须执行 GPU 复位（GPU reset）。"
+            ]
+          ]
+        }
+      },
+      {
+        "id": "mem-rma",
+        "group": "GPU 显存错误管理",
+        "title": "显存与 SRAM 的 RMA 策略",
+        "sub": "行重映射失败标志、Blackwell 通道修复与 SRAM 阈值",
+        "scope": "本节源自《NVIDIA GPU Memory Error Management — RMA Policy & SRAM Uncorrectable Errors》。GPU 是否符合 RMA 条件最终由 NVIDIA 现场诊断工具（Field Diagnostic）判定。",
+        "refs": [
+          "mem_rma",
+          "mem_sram",
+          "triage"
+        ],
+        "related": [
+          "48",
+          "63",
+          "64",
+          "92"
+        ],
+        "next": [
+          "48",
+          "diag",
           "collect"
         ],
         "steps": [
           [
-            "配置一致性",
-            "核对 GPU 数量、驱动、VBIOS 与 PCIe 链路；NVSwitch 平台补充 Fabric Manager 及拓扑状态。"
+            "GPU DRAM 显存 RMA 策略与行重映射失败标志",
+            "针对行重映射失败，当行重映射失败标志（row-remapping failure flag）置位并通过现场诊断工具验证后，即满足 RMA 条件。该标志可通过带内工具（NVML / nvidia-smi）及带外工具（SMBPBI）查询。\n对于 Blackwell GPU，同一存储体（Bank）上因不可纠正显存错误触发第 3 次重映射尝试时，若存在可用备用通道，将调用 HBM 通道修复（HBM channel repair）；修复成功后硬件恢复可用，否则 GPU 将继续执行行重映射直至行重映射失败标志置位。"
           ],
           [
-            "运行趋势",
-            "查看温度、功耗、时钟与风扇变化。记录异常发生时的负载，确认是否存在热限制或功耗限制。"
+            "触发行重映射失败标志的三类事件",
+            "发生以下任一事件时，将触发行重映射失败标志置位：\n1. 在已重映射了 8 行不可纠正错误行的同一 Bank 上，再次因不可纠正显存错误尝试进行行重映射。\n2. 对已经重映射过的同一行再次因不可纠正显存错误尝试重映射（即使同一 Bank 的累计重映射行数少于 8 行也可能发生）。\n3. 针对不可纠正显存错误的总计重映射次数已达到 512 次之后。"
           ],
           [
-            "形成对照",
-            "保存正常与异常时段的数据；分析波动时连续采集，再比较变化。"
+            "GPU L2 缓存／片上 SRAM 不可纠正错误 RMA 策略",
+            "针对片上 SRAM 不可纠正错误（UCE），是否符合 RMA 条件同样由 NVIDIA 现场诊断工具判定。发生以下任一事件时将触发 SRAM 阈值超限标志（SRAM Threshold Exceeded flag）：\n1. 采用奇偶校验（Parity）保护的 SRAM：同一地址 Bank 内的独立不可纠正错误计数（UCE Unique Count）超过 4 次。\n2. 采用 SECDED ECC 保护的 SRAM：同一地址 Bank 内的独立不可纠正错误计数（UCE Unique Count）超过 2 次。"
           ]
-        ]
+        ],
+        "table": {
+          "title": "显存与片上 SRAM 阈值标志汇总",
+          "head": [
+            "标志名称",
+            "触发阈值条件"
+          ],
+          "rows": [
+            [
+              "Row-Remapping Failure（DRAM）",
+              "单 Bank 已重映射满 8 行不可纠正错误后再尝试重映射；或同一已重映射行再次发生不可纠正重映射；或不可纠正重映射总数超过 512 次。"
+            ],
+            [
+              "HBM Channel Repair（Blackwell）",
+              "单 Bank 第 3 次不可纠正错误重映射尝试时若有备用通道则调用通道修复；无备用通道或修复未覆盖时继续行重映射。"
+            ],
+            [
+              "SRAM Threshold Exceeded（Parity）",
+              "奇偶校验保护的 SRAM 在同一地址 Bank 内 UCE Unique Count > 4。"
+            ],
+            [
+              "SRAM Threshold Exceeded（SECDED）",
+              "SECDED ECC 保护的 SRAM 在同一地址 Bank 内 UCE Unique Count > 2。"
+            ]
+          ]
+        }
       }
     ],
     "sources": {
-      "catalog": [
-        "Xid Catalog · 中文译本 2026-09-09",
-        "https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html"
-      ],
-      "triage": [
-        "GPU Node Triage · 2026-10-04",
-        "https://docs.nvidia.com/deploy/gpu-debug-guidelines/gpu-node-triage.html"
+      "gdg_overview": [
+        "GPU Debug Guidelines · Overview",
+        "https://docs.nvidia.com/deploy/gpu-debug-guidelines/overview.html"
       ],
       "initial": [
-        "Initial Incident Report",
+        "GPU Debug Guidelines · Initial Incident Report",
         "https://docs.nvidia.com/deploy/gpu-debug-guidelines/initial-incident-report.html"
       ],
+      "triage": [
+        "GPU Debug Guidelines · GPU Node Triage",
+        "https://docs.nvidia.com/deploy/gpu-debug-guidelines/gpu-node-triage.html"
+      ],
       "best": [
-        "Best Practices",
+        "GPU Debug Guidelines · Best Practices",
         "https://docs.nvidia.com/deploy/gpu-debug-guidelines/best-practices.html"
+      ],
+      "xid_intro": [
+        "XID Errors · Introduction",
+        "https://docs.nvidia.com/deploy/xid-errors/introduction.html"
+      ],
+      "xid_working": [
+        "XID Errors · Working with Xid Errors",
+        "https://docs.nvidia.com/deploy/xid-errors/working-with-xid-errors.html"
+      ],
+      "catalog": [
+        "XID Errors · Analyzing Xid Errors with the Xid Catalog",
+        "https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html"
+      ],
+      "mem_containment": [
+        "GPU Memory Error Management · Error Containment",
+        "https://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/error-containment.html"
+      ],
+      "mem_remap": [
+        "GPU Memory Error Management · Row Remapping",
+        "https://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/row-remapping.html"
+      ],
+      "mem_rma": [
+        "GPU Memory Error Management · RMA Policy",
+        "https://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/rma-policy-thresholds-for-row-remapping.html"
+      ],
+      "mem_sram": [
+        "GPU Memory Error Management · SRAM Uncorrectable Errors",
+        "https://docs.nvidia.com/deploy/a100-gpu-mem-error-mgmt/sram-uncorrectable-errors.html"
+      ],
+      "dpr": [
+        "Dynamic Page Offlining",
+        "https://docs.nvidia.com/deploy/dynamic-page-retirement/index.html"
+      ],
+      "fm": [
+        "NVIDIA Fabric Manager User Guide",
+        "https://docs.nvidia.com/datacenter/tesla/fabric-manager-user-guide/index.html"
       ],
       "smi": [
         "NVIDIA System Management Interface",
         "https://docs.nvidia.com/deploy/nvidia-smi/index.html"
       ],
+      "persistence": [
+        "NVIDIA Driver Persistence",
+        "https://docs.nvidia.com/deploy/driver-persistence/index.html"
+      ],
       "dcgm": [
-        "DCGM Diagnostics · latest",
+        "DCGM Diagnostics",
         "https://docs.nvidia.com/datacenter/dcgm/latest/user-guide/dcgm-diagnostics.html"
+      ],
+      "telemetry": [
+        "DCGM Prometheus Telemetry",
+        "https://docs.nvidia.com/datacenter/cloud-native/gpu-telemetry/latest/kube-prometheus.html"
       ],
       "nccl": [
         "NVIDIA / nccl-tests",
         "https://github.com/NVIDIA/nccl-tests"
+      ],
+      "cudagdb": [
+        "CUDA-GDB Documentation",
+        "https://docs.nvidia.com/cuda/cuda-gdb/index.html"
       ],
       "sanitizer": [
         "Compute Sanitizer",
@@ -573,6 +1049,947 @@
         "Nsight Compute",
         "https://docs.nvidia.com/nsight-compute/NsightCompute/index.html"
       ]
-    }
+    },
+    "en": [
+      {
+        "id": "overview",
+        "group": "GPU Debug Guidelines",
+        "title": "Overview",
+        "sub": "Document Purpose and Scope",
+        "scope": "This document provides GPU error debug and diagnosis guidelines, and is intended to assist system administrators, developers and FAEs get servers back up and running as quickly as possible.",
+        "refs": [
+          "gdg_overview"
+        ],
+        "related": [],
+        "next": [
+          "start",
+          "triage",
+          "collect"
+        ],
+        "steps": [
+          [
+            "Coverage",
+            "This document provides a process flow and associated details on how to start debugging general issues on GPU servers. It is intended to cover the most common issues one may see in the operation of GPUs in the data center but is not meant to be comprehensive. The information below is a summary of several different documents and best practices for debugging GPU system issues."
+          ],
+          [
+            "System Vendor Guidelines",
+            "This debug process is intended to be generic and may not align with your system vendor's specific triage guidelines. Please engage with your system vendor earlier, rather than later, to ensure your system is restored to full health as fast as possible. However, by using this process, infrastructure teams should be able to work through the first steps of the debug process to gather as much data as possible or avoid the need to submit a help request entirely."
+          ]
+        ]
+      },
+      {
+        "id": "start",
+        "group": "GPU Debug Guidelines",
+        "title": "Initial Incident Report",
+        "sub": "Questions to Document at the Start of an Incident",
+        "scope": "When managing GPU system incidents, as in all system incidents, having a well-designed process can help so incidents can be diagnosed more rapidly, and systems can be returned to production faster.",
+        "refs": [
+          "initial"
+        ],
+        "related": [],
+        "next": [
+          "triage",
+          "collect"
+        ],
+        "steps": [
+          [
+            "Questions to Document",
+            "At the beginning of any incident, whether detected by the system or reported from a user, try to document the following questions:\n1. What was observed about the incident?\n2. When was the incident observed?\n3. How was it observed?\n4. Is this behavior observed on multiple systems or components? If so, how many, and how frequent?\n5. Has anything changed with the system, driver, or application behavior recently?"
+          ],
+          [
+            "Correlating System Behavior",
+            "Collecting information regarding these questions to kick-off the debug process is important as it provides the best understanding of the problem and by recording this information can be correlated to other events to gain a better understanding of overall system behavior and health."
+          ]
+        ]
+      },
+      {
+        "id": "triage",
+        "group": "GPU Debug Guidelines",
+        "title": "GPU Node Triage Flowcharts",
+        "sub": "Figures 1–3 · Starting Node Triage by Notification Source",
+        "scope": "There are several ways that system support teams are notified about potential issues on GPU based systems: error reports, monitoring system events, and diagnostic metrics. While these events can impact operation, not all require intervention of the system vendor for resolution.",
+        "refs": [
+          "triage"
+        ],
+        "related": [
+          "13",
+          "31",
+          "48",
+          "63",
+          "64",
+          "74",
+          "79",
+          "92",
+          "94",
+          "95"
+        ],
+        "next": [
+          "triage-xid",
+          "diag",
+          "13",
+          "network",
+          "collect"
+        ],
+        "steps": [
+          [
+            "Figure 1: GPU Triage Flowchart",
+            "Start initial node triage along three paths based on the notification source: XID messages, system monitoring alerts, or system-level faults."
+          ],
+          [
+            "Figure 2: GPU Triage Flowchart (User Reported Error)",
+            "When a user reports a job error or slowdown, rule out XID messages and hardware issues with DCGM before debugging the application."
+          ],
+          [
+            "Figure 3: GPU Triage Flowchart (Debug Application)",
+            "Isolate application crashes or performance issues by checking reproducibility, standard NGC containers, and whether the issue affects all nodes."
+          ]
+        ],
+        "figures": [
+          {
+            "id": "triage-fig1",
+            "step": 0,
+            "caption": "Figure 1: GPU Triage Flowchart (XID, Monitoring & System Issues)"
+          },
+          {
+            "id": "triage-fig2",
+            "step": 1,
+            "caption": "Figure 2: GPU Triage Flowchart (User Reported Error)"
+          },
+          {
+            "id": "triage-fig3",
+            "step": 2,
+            "caption": "Figure 3: GPU Triage Flowchart (Debug Application)"
+          }
+        ]
+      },
+      {
+        "id": "collect",
+        "group": "GPU Debug Guidelines",
+        "title": "Reporting a GPU Issue",
+        "sub": "Data Collection for Your System Vendor",
+        "scope": "There are common tools which can be used to gather data after a system issue which are useful to both the local system support team and the vendor for node triage.",
+        "refs": [
+          "triage",
+          "xid_working"
+        ],
+        "related": [],
+        "next": [
+          "triage-xid",
+          "diag"
+        ],
+        "steps": [
+          [
+            "System Configuration and Issue Description",
+            "When gathering data for your system vendor, you should include the following:\n• Basic system configuration such as OS and driver info.\n• A clear description of the issue, including any key log messages describing the problem.\n• List of debug steps taken.\n• A full listing of the log used for the key messages above."
+          ],
+          [
+            "Diagnostic Bundles and Logs",
+            "• Output of nvidia-bug-report.sh.\n• Fabric manager log files for HGX systems.\n• DCGM Diagnostics logs."
+          ],
+          [
+            "Application Details and Vendor Ticket",
+            "• If associated with a user application, any details you can provide to the nature of the application (ISV code, framework, version numbers, and so on) and links to source code (if possible).\n• Submit a ticket to your system vendor."
+          ]
+        ],
+        "commands": [
+          {
+            "title": "Run nvidia-bug-report.sh as root",
+            "code": "sudo nvidia-bug-report.sh",
+            "note": "Produces nvidia-bug-report.log.gz. Typically runs quickly, though in rare cases allow up to one hour."
+          },
+          {
+            "title": "If nvidia-bug-report.sh remains hung",
+            "code": "nvidia-bug-report.sh --safe-mode --extra-system-data",
+            "note": "Collects alternative logs in a way that avoids common causes of hangs during debug collection."
+          }
+        ]
+      },
+      {
+        "id": "triage-xid",
+        "group": "GPU Debug Guidelines",
+        "title": "Understanding Xid Messages (Table 1)",
+        "sub": "Most Common Xid Messages in Data Center Deployments",
+        "scope": "The XID error document gives a listing of XID errors and potential causes. The most common XID messages in Data Center deployments and recommended steps are listed in Table 1.",
+        "refs": [
+          "triage",
+          "xid_intro",
+          "dpr",
+          "mem_containment",
+          "fm"
+        ],
+        "related": [
+          "13",
+          "31",
+          "45",
+          "48",
+          "61",
+          "62",
+          "63",
+          "64",
+          "74",
+          "79",
+          "92",
+          "94",
+          "95",
+          "123"
+        ],
+        "next": [
+          "reset",
+          "48",
+          "diag",
+          "collect"
+        ],
+        "steps": [
+          [
+            "Common Data Center Xid Reference",
+            "Use Table 1 below for recommended triage steps on the most common data center Xid messages. For full product applicability and tenant action definitions across architectures, also see Analyzing Xid Errors with the Xid Catalog."
+          ],
+          [
+            "GPU Memory Error Features",
+            "XID messages 48, 63, 64, 92, 94 and 95 are related to GPU memory errors. NVIDIA GPUs prior to A100 support dynamic page retirement. NVIDIA A100 GPUs introduce new memory error recovery features that improve resilience and avoid impacting unaffected applications."
+          ],
+          [
+            "NVSwitch SXid Messages",
+            "In addition, there are SXID messages for issues with the NVSwitch. Depending on the severity (fatal vs non-fatal) and the impacted port, the errors may abort existing CUDA jobs and prevent new CUDA job launches. For details, refer to the Fabric Manager User Guide."
+          ]
+        ],
+        "extracts": [
+          "13",
+          "31",
+          "45",
+          "48",
+          "62",
+          "63",
+          "64",
+          "74",
+          "79",
+          "92",
+          "94",
+          "95"
+        ],
+        "table": {
+          "title": "Table 1: Most Common XID Messages in Data Center Deployments",
+          "head": [
+            "Xid",
+            "Description",
+            "Action"
+          ],
+          "rows": [
+            [
+              "13",
+              "Graphics Engine Exception",
+              "Run DCGM and Field diagnostics to confirm if the issue is related to hardware. If not, debug the user application using guidance from the XID Errors guide. If the latter, see Reporting a GPU Issue."
+            ],
+            [
+              "31",
+              "Suspected Hardware Problems",
+              "Contact the hardware vendor. They can run through their hardware diagnostic process."
+            ],
+            [
+              "45",
+              "Robust Channel Preemptive Removal",
+              "No action, informative only. Indicates channels affected by another failure. On A100, this error could be seen by itself due to unexpected Fabric Manager shutdown when FM is running in the same OS environment as the GPU. Otherwise, this error is safe to ignore as an informational message."
+            ],
+            [
+              "48",
+              "Double Bit ECC Error",
+              "If Xid 48 is followed by Xid 63 or 64: Drain/cordon the node, wait for all work to complete, and reset GPU(s) reporting the XID (refer to GPU reset capabilities/limitations). If Xid 48 is not followed by Xid 63 or 64: see Running Field Diagnostics to collect additional debug information."
+            ],
+            [
+              "61",
+              "PMU Breakpoint",
+              "Report a GPU Issue and Reset GPU(s) reporting the XID (refer to GPU reset capabilities/limitations)."
+            ],
+            [
+              "62",
+              "PMU Halt Error",
+              "Report a GPU Issue and Reset GPU(s) reporting the XID (refer to GPU reset capabilities/limitations)."
+            ],
+            [
+              "63",
+              "Legacy GPU: ECC page retirement recording event\nA100: Row-remapping recording event",
+              "Legacy GPU: If associated with XID 48, drain/cordon the node, wait for all work to complete, and reset GPU(s) reporting the XID. If not, it is from a single bit error and the system can keep running as is until there is a convenient time to reboot it.\nA100: If associated with XID 94, the application that encountered the error needs to be restarted. All other applications on the system can keep running as is until there is a convenient time to reset the GPU or reboot for row remapping to activate."
+            ],
+            [
+              "64",
+              "Legacy GPU: ECC page retirement recording failure\nA100: Row-remapping recording failure",
+              "Legacy GPU: Monitor the node closely. If there is no associated XID 48 error, then these are related to single-bit errors. The GPU(s) reporting the error must be reset immediately since there is a recording failure. If the errors continue, drain, triage, and see Reporting a GPU Issue.\nA100: The node should be rebooted immediately since there is a recording failure. If the errors continue, drain, triage, and see Reporting a GPU Issue."
+            ],
+            [
+              "74",
+              "NVLink Error",
+              "Extract the 7 hex strings from the XID error message and inspect the first DWORD (counting from LSB):\n• Bits 4 or 5: Likely HW issue with ECC/Parity -> If seen more than 2 times on the same link, report a bug.\n• Bits 21 or 22: Marginal channel SI issue. Check link mechanical connections. If other errors accompany, follow the resolution for those.\n• Bits 8, 9, 12, 16, 17, 24, 28: Could possibly be a HW issue; check link mechanical connections and re-seat if a field resolution is required. Run diags if issue persists."
+            ],
+            [
+              "79",
+              "GPU has fallen off the bus",
+              "Drain and see Reporting a GPU Issue."
+            ],
+            [
+              "92",
+              "High single-bit ECC error rate",
+              "See Running Field Diagnostics to collect additional debug information. Refer to guidelines on when to RMA GPUs based on excessive errors."
+            ],
+            [
+              "94",
+              "Contained ECC error occurred (A100+)",
+              "The application that encountered the error needs to be restarted. All other applications on the system can keep running as is until there is a convenient time to reset the GPU or reboot for row remapping to activate."
+            ],
+            [
+              "95",
+              "Uncontained ECC error occurred (A100+)",
+              "If MIG is enabled, drain any work on the other GPU instances, wait for all work to complete, and reset GPU(s) reporting the XID. If MIG is disabled, the node should be rebooted immediately since there is an uncorrectable uncontained ECC error. If the errors continue, drain, triage, and see Reporting a GPU Issue."
+            ],
+            [
+              "123",
+              "SPI PMU RPC write fail",
+              "Report a GPU issue and reset GPU(s) reporting the XID (refer to GPU reset capabilities/limitations provided in the FM User Guide)."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "reset",
+        "group": "GPU Debug Guidelines",
+        "title": "GPU/VM/System Reset Capabilities and Limitations",
+        "sub": "nvidia-smi Reset Prerequisites and Platform Matrix",
+        "scope": "Trigger a reset of one or more GPUs. Can be used to clear GPU HW and SW state in situations that would otherwise require a machine reboot. Typically useful if a double bit ECC error has occurred.",
+        "refs": [
+          "triage",
+          "smi",
+          "fm"
+        ],
+        "related": [
+          "48",
+          "61",
+          "62",
+          "63",
+          "64",
+          "94",
+          "95",
+          "109",
+          "110",
+          "119",
+          "120",
+          "123",
+          "136",
+          "140",
+          "154"
+        ],
+        "next": [
+          "triage-xid",
+          "48",
+          "collect"
+        ],
+        "steps": [
+          [
+            "nvidia-smi Man Page Excerpt",
+            "Optional -i switch can be used to target one or more specific devices. Without this option, all GPUs are reset. Requires root. There can't be any applications using these devices (for example, CUDA application, graphics application like X server, monitoring application like other instance of nvidia-smi)."
+          ],
+          [
+            "Platform, Fabric Manager, and Virtualization Matrix",
+            "Review the table below for GPU reset support across Bare Metal, Virtualization (all devices in same VM), and Shared NVSwitch Virtualization (GPUs and Switches in different VMs)."
+          ]
+        ],
+        "table": {
+          "title": "GPU/VM/System Reset Capabilities and Limitations",
+          "head": [
+            "Architecture & Topology",
+            "FM State",
+            "Bare Metal",
+            "Virtualization - All devices in same VM",
+            "Shared NVSwitch Virtualization - GPUs and Switches in different VMs"
+          ],
+          "rows": [
+            [
+              "NVIDIA Ampere architecture and later with direct NVLink connect",
+              "N/A",
+              "A GPU can be reset individually. Plus, all GPUs can be reset without specifying -i.",
+              "GPU reset not supported in VMs. Restart the VM.",
+              "N/A"
+            ],
+            [
+              "NVIDIA Ampere architecture + NVSwitch",
+              "Running",
+              "A GPU can be reset individually. As part of GPU reset operation, corresponding NVSwitch side links will be reset automatically as well by the FM.",
+              "GPU reset not supported in VMs. Restart the VM.",
+              "Restart GPU-only VMs. The service VM flow should ensure proper reset of NVSwitch links through communication with the FM."
+            ],
+            [
+              "NVIDIA Ampere architecture + NVSwitch",
+              "NOT Running",
+              "Individual GPU reset is not supported. Reset all GPUs & NVSwitches connected together via NVLink.",
+              "GPU reset not supported in VMs. Restart the VM.",
+              "—"
+            ],
+            [
+              "Hopper and later + NVSwitch",
+              "N/A",
+              "GPU(s) can be reset individually regardless of the FM dependency. Plus, all GPUs and NVSwitches can be reset without specifying -i.",
+              "GPU reset ability depends on permissions allowed to VM by hypervisor. If not allowed, restart VM.",
+              "GPU reset ability depends on permissions allowed to VM by hypervisor. If not allowed, restart VM."
+            ]
+          ]
+        },
+        "commands": [
+          {
+            "title": "Reset a specific GPU as root",
+            "code": "sudo nvidia-smi --gpu-reset -i 0",
+            "note": "Replace 0 with the target GPU index, UUID, or PCI bus ID. Without -i, all GPUs are reset."
+          }
+        ]
+      },
+      {
+        "id": "diag",
+        "group": "GPU Debug Guidelines",
+        "title": "Running DCGM and Field Diagnostics",
+        "sub": "Production Node Health Assessment and RMA Validation",
+        "scope": "DCGM is a system level tool that provides a diagnostic test for production environments to assess node health and cluster readiness.",
+        "refs": [
+          "triage",
+          "dcgm"
+        ],
+        "related": [
+          "13",
+          "31",
+          "48",
+          "92"
+        ],
+        "next": [
+          "collect",
+          "health"
+        ],
+        "steps": [
+          [
+            "Running DCGM Diagnostics (--run / -r)",
+            "There are many options available for running the test, and a few default configurations that should work on most systems, specified with the --run (-r) option. The available test suites are 1 (short), 2 (medium), and 3 (long). For fully stressing the system, use the long (3) option, which takes approximately 30 minutes. The other options can be used as pre-flight checks or in the system prolog to validate the node prior to starting jobs."
+          ],
+          [
+            "Resolving Findings",
+            "When DCGM diagnostics finds an issue, attempt to resolve it. Issues with the configuration can be handled with IT commands and DCGM may provide suggestions as to where to start. If the diagnostic tests find an issue with the operation of the GPU or NVSwitch fabric (when present), inspect the node and node configuration for anything out of normal."
+          ],
+          [
+            "Running Field Diagnostics",
+            "Field diagnostic is the authoritative and comprehensive NVIDIA tool for determining the health of GPUs. It is usually required before an RMA can be started. Please contact your system vendor for instructions on when, if, and how you should run this tool."
+          ]
+        ],
+        "commands": [
+          {
+            "title": "Run the long DCGM diagnostic suite",
+            "code": "dcgmi diag -r 3",
+            "note": "Takes approximately 30 minutes. Add -j for structured JSON output."
+          }
+        ]
+      },
+      {
+        "id": "network",
+        "group": "GPU Debug Guidelines",
+        "title": "Network Testing",
+        "sub": "NVIDIA / nccl-tests · Pairwise Node Tests and Baselines",
+        "scope": "Network performance and latency can be tested using the NCCL performance tests (NVIDIA/nccl-tests).",
+        "refs": [
+          "triage",
+          "nccl"
+        ],
+        "related": [],
+        "next": [
+          "health",
+          "13",
+          "collect"
+        ],
+        "steps": [
+          [
+            "Pairwise and Multi-Rail Testing with all_reduce_perf",
+            "The all_reduce_perf test is a great test for establishing network performance between groups of nodes. Pairwise tests of nodes should result in the same performance. When a slow pair of nodes is identified, retest with those nodes and different nodes to isolate the issue. In multi-rail network topologies, the tests can also be isolated to specific rails to determine which network interface is of concern."
+          ],
+          [
+            "Establishing a Pre-Production Baseline",
+            "It is advisable to run the network tests prior to putting systems into production and record the performance achieved. This will help you understand the performance of your network and provide a baseline for future comparisons. The performance of groups of nodes can vary depending on the system network topology. Coordinate with your network vendor/architect to help understand what performance should be achievable."
+          ]
+        ],
+        "commands": [
+          {
+            "title": "Single-node 8 GPU nccl-tests example",
+            "code": "./build/all_reduce_perf -b 8 -e 128M -f 2 -g 8",
+            "note": "Scans message sizes from 8 B to 128 MiB, doubling each step. Multi-node runs require building with MPI=1."
+          }
+        ]
+      },
+      {
+        "id": "13",
+        "group": "GPU Debug Guidelines",
+        "title": "Debugging Applications & Performance Profiling",
+        "sub": "CUDA-GDB, Compute Sanitizer, Nsight Systems & Compute",
+        "scope": "Debugging an application typically requires attaching a debugger to the user application and gathering as much data as possible up until the application crashes.",
+        "refs": [
+          "triage",
+          "best",
+          "cudagdb",
+          "sanitizer",
+          "systems",
+          "compute"
+        ],
+        "related": [
+          "8",
+          "11",
+          "13",
+          "25",
+          "31",
+          "32",
+          "43",
+          "68",
+          "69",
+          "80",
+          "137"
+        ],
+        "next": [
+          "triage",
+          "diag",
+          "collect"
+        ],
+        "steps": [
+          [
+            "Isolating Application Crashes",
+            "The issue causing the application crash could be related to the system software, but debugging the process is the fastest way to understand where the crash is and if it can be resolved from the application side. The data gathered from the debugger can be used by NVIDIA to start debugging system software issues."
+          ],
+          [
+            "CUDA-GDB and Compute Sanitizer",
+            "CUDA-GDB is the NVIDIA tool for debugging CUDA applications running on Linux and QNX. This enables developers to debug applications without the potential variations introduced by simulation and emulation environments. For suspected user programming issues, the XID Errors guide also recommends the Compute Sanitizer memcheck tool."
+          ],
+          [
+            "Performance Profiling with Nsight",
+            "If the issue is related to performance, one can use a performance profiler, such as Nsight Systems or Nsight Compute, to understand the performance and bottlenecks in an application. Changes in system software can cause changes in application performance so even if the application did not change, profiling the application is an important step. Profiler data can highlight performance issues in the CPU, storage, or GPUs which help understand where the performance issue may be originating."
+          ]
+        ],
+        "extracts": [
+          "13",
+          "31",
+          "137"
+        ],
+        "commands": [
+          {
+            "title": "Check memory accesses with Compute Sanitizer",
+            "code": "compute-sanitizer --tool memcheck ./your_app",
+            "note": "Replace your_app with the target binary and arguments; racecheck, initcheck, and synccheck are also available."
+          }
+        ]
+      },
+      {
+        "id": "health",
+        "group": "GPU Debug Guidelines",
+        "title": "Collecting Node Metrics & Catching Errors Early",
+        "sub": "Best Practices · Time-Series Telemetry and Prolog/Epilog Checks",
+        "scope": "Node performance and operation can be deduced from system metrics, and it is best to catch system issues before they affect user jobs.",
+        "refs": [
+          "best",
+          "telemetry",
+          "persistence",
+          "dcgm"
+        ],
+        "related": [],
+        "next": [
+          "diag",
+          "network",
+          "collect"
+        ],
+        "steps": [
+          [
+            "Collecting In-Band and Out-of-Band Node Metrics",
+            "Gathering time-series data of system metrics allows administrators to detect when nodes are starting to operate incorrectly or use them for proactive system maintenance. Metrics can be gathered both in-band with tools like the DCGM Prometheus plugin (a containerized version of DCGM is provided for Kubernetes deployments) and out-of-band with IPMI, and stored in a time-series database."
+          ],
+          [
+            "Creating Thermal and Airflow Alerts",
+            "• A rise in inlet temperature could be an indicator of an issue with datacenter cooling or other debris blocking airflow.\n• High GPU and GPU Memory Temperature will lead to GPU throttling and poor performance."
+          ],
+          [
+            "Catching Errors Before They Occur (Prolog / Epilog)",
+            "The best time to catch system issues before they affect user jobs is at the beginning of jobs via init-containers or prolog scripts or at the end of jobs with epilog scripts, using the GPU, NVSwitch, and non-GPU checks below."
+          ]
+        ],
+        "tables": [
+          {
+            "title": "Key Metrics to Collect on GPU-Based Systems",
+            "head": [
+              "Category",
+              "Metric"
+            ],
+            "rows": [
+              [
+                "PSU",
+                "Power draw of each power supply"
+              ],
+              [
+                "PDU",
+                "Power draw at the PDU; PDU Power factor"
+              ],
+              [
+                "CPU",
+                "CPU Power, and CPU Temperature"
+              ],
+              [
+                "GPU",
+                "GPU Power, GPU Temperature, GPU Memory Temperature and GPU clocks"
+              ],
+              [
+                "NVLink",
+                "NVLink metrics"
+              ],
+              [
+                "Chassis / Cooling",
+                "Node Fan Speed; Inlet Temperature"
+              ]
+            ]
+          },
+          {
+            "title": "Suggested Prolog / Epilog Checks",
+            "head": [
+              "Category",
+              "Checks to Include"
+            ],
+            "rows": [
+              [
+                "GPU Specific Checks",
+                "• Confirm key pieces of software are loaded: GPU driver, nv-peer-mem (GPUDirect RDMA), gdrdrv (GDRCopy), Fabric Manager for HGX systems.\n• Confirm specific GPU features of the nodes are correct (GPU Count, PCIe link speed, VBIOS, etc.).\n• Confirm driver persistence setting is correct (controlled through Persistence Daemon)."
+              ],
+              [
+                "NVSwitch Based Systems",
+                "• Confirm the fabric manager is running.\n• Confirm the NVLink fabric topology is correct.\n• Check for any recent XID errors.\n• Run dcgmi diag -r 2 for a quick check of system software and GPU functionality."
+              ],
+              [
+                "Other Non-GPU Checks",
+                "• Check all network links are active (and validate expected link speed, firmware, PCIe link width, etc.).\n• Check all expected filesystem mounts are present.\n• Check to ensure nodes are set up correctly by running sample CUDA workloads."
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "xid-intro",
+        "group": "XID Errors",
+        "title": "Introduction to Xid and SXid Messages",
+        "sub": "Definitions, Scope, and Usage",
+        "scope": "This section explains what Xid and SXid messages are and how to use them as a starting point for debugging GPU-related problems.",
+        "refs": [
+          "xid_intro",
+          "fm",
+          "gdg_overview"
+        ],
+        "related": [],
+        "next": [
+          "xid-working",
+          "xid-catalog",
+          "triage-xid"
+        ],
+        "steps": [
+          [
+            "What is an Xid Message",
+            "The Xid message is an error report from the NVIDIA driver that is printed to the operating system's kernel log or event log. Xid messages indicate that a general GPU error occurred, most often due to the driver programming the GPU incorrectly or to corruption of the commands sent to the GPU. The messages can be indicative of a hardware problem, an NVIDIA software problem, or a user application problem. The meaning of each message is consistent across driver versions."
+          ],
+          [
+            "What is an SXid Message",
+            "NVIDIA drivers for NVSwitch report error conditions relating to NVSwitch hardware in kernel logs through a similar mechanism to Xids. These \"Switch Xids,\" or SXids and guidelines for their usage are documented separately in the Fabric Manager User Guide."
+          ],
+          [
+            "How to Use Xid Messages",
+            "Xid messages are intended to be used as debugging guides. Because many problems can have multiple possible root causes, it is not always feasible to understand each issue from the Xid value alone. For example, an Xid error might indicate that a user program tried to access invalid memory, but memory corruption due to PCIe or frame buffer (\"FB\") problems could corrupt any command and thus cause almost any error. Use Xid classifications as a starting point for further investigation."
+          ]
+        ],
+        "note": "Note: SXid messages apply only to Hopper and earlier generation GPUs."
+      },
+      {
+        "id": "xid-working",
+        "group": "XID Errors",
+        "title": "Working with Xid Errors",
+        "sub": "Viewing Xid Strings, Tools, and Analyzing Issues",
+        "scope": "Under Linux, Xid error messages are logged in the kernel log buffer, and depending on Linux distribution these are typically logged to journal and flushed to files such as /var/log/messages or /var/log/syslog.",
+        "refs": [
+          "xid_working",
+          "smi",
+          "dcgm",
+          "sanitizer",
+          "cudagdb"
+        ],
+        "related": [
+          "48",
+          "54",
+          "79",
+          "119",
+          "120",
+          "154"
+        ],
+        "next": [
+          "xid-catalog",
+          "collect",
+          "diag"
+        ],
+        "steps": [
+          [
+            "Viewing Xid Messages",
+            "Grep for \"NVRM: Xid\" to find all the Xid messages. The first Xid in the log file is preceded by a line that contains the GPU GUID and device IDs:\n[...] NVRM: GPU at 0000:03:00: GPU-b850f46d-d5ea-c752-ddf3-c4453e44d3f7\n[...] NVRM: Xid (0000:03:00): 14, Channel 00000001\nHere \"GPU-b850...\" is the GUID (a globally unique, immutable identifier for each GPU), \"0000:03:00\" is the PCI Express bus, device, and function ID, \"14\" is the Xid error identifier, and \"Channel 00000001\" is data specific to that Xid error."
+          ],
+          [
+            "Tools that Provide Additional Information",
+            "• nvidia-smi: Reports basic monitoring and configuration data about each GPU. It can list ECC error counts (Xid 48), indicate if a power cable is unplugged (Xid 54), or provide any applicable GPU Recovery Action (Xid 154), among other things. Run nvidia-smi -q for detailed output.\n• NVIDIA Data Center GPU Manager (DCGM): Includes active health monitoring, comprehensive diagnostics, system alerts, and governance policies. DCGM diagnostics checks for ECC errors, PCIe problems, bandwidth issues, and general CUDA problems.\n• nvidia-bug-report.sh: Collects debug logs and command outputs from the system into nvidia-bug-report.log.gz."
+          ]
+        ],
+        "extracts": [
+          "54",
+          "79",
+          "119",
+          "120",
+          "154"
+        ],
+        "table": {
+          "title": "Analyzing Xid Errors",
+          "head": [
+            "Issue",
+            "Recommended Action"
+          ],
+          "rows": [
+            [
+              "Suspected User Programming Issues",
+              "Run the debugger tools. Refer to the Compute Sanitizer \"memcheck\" tool and CUDA-GDB documentation."
+            ],
+            [
+              "Suspected Hardware Problems",
+              "Contact the hardware vendor. They can run through their hardware diagnostic process."
+            ],
+            [
+              "Suspected Driver Problems",
+              "File a bug with NVIDIA, including output of the command nvidia-bug-report.sh. Refer to GPU Debug Guidelines for gathering additional information."
+            ]
+          ]
+        },
+        "commands": [
+          {
+            "title": "Search system logs for Xid messages",
+            "code": "grep \"NVRM: Xid\" /var/log/syslog",
+            "note": "Check /var/log/messages or journalctl -k depending on Linux distribution."
+          },
+          {
+            "title": "Query GPU status, ECC counts, and recovery action",
+            "code": "nvidia-smi -q",
+            "note": "Reports per-GPU configuration, ECC error counts, row remapping, and GPU Recovery Action."
+          }
+        ]
+      },
+      {
+        "id": "xid-catalog",
+        "group": "XID Errors",
+        "title": "Analyzing Xid Errors with the Xid Catalog",
+        "sub": "Five Worksheets and Four-Step Interpretation Procedure",
+        "scope": "For Ampere and newer GPUs (including PCIe form-factor GPUs), the Xid Catalog describes Xid events, their GPU applicability, and recommended recovery and investigation actions.",
+        "refs": [
+          "catalog"
+        ],
+        "related": [
+          "74",
+          "136",
+          "144",
+          "145",
+          "146",
+          "147",
+          "148",
+          "149",
+          "150",
+          "151",
+          "154",
+          "159"
+        ],
+        "next": [
+          "xid-working",
+          "reset",
+          "triage-xid"
+        ],
+        "steps": [
+          [
+            "Step 1: Identify the Xid and Retain the Event Context",
+            "Read the Xid code from the logged message after the GPU identifier (for example, NVRM: Xid (PCI:0000:5a:00): 79, GPU has fallen off the bus.). Retain the complete message and related log entries, including timestamps, GPU identifiers, and any accompanying Xids. Record the GPU model and the driver version that produced the event."
+          ],
+          [
+            "Step 2: Find the Xid and Decode Additional Fields Where Required",
+            "In the XIDs worksheet, find the entry with the matching Code and review its description, product applicability, and trigger conditions. An entry marked \"Unused\" may represent a deprecated code or one associated with an earlier GPU generation.\nFor Xids 144-150, also use the XID 144-150 Decode worksheet: match the Xid and subcode, then evaluate the applicable IntrInfo bitmask (using V1 for <R575 or V2 for >=R575; a dash denotes an unconstrained bit), Error Status, and severity. Review Reported Severity separately from Severity."
+          ],
+          [
+            "Step 3: Select the Applicable Tenant Actions",
+            "Review the XID Parsing Policy worksheet in Priority Order and use the first rule whose complete conditions (required, partially present, optionally present, and absent Xids, plus qualifiers) are satisfied:\n• Tenant In-Operation Action for recovery or continued operation.\n• Tenant Investigatory Action for further investigation or escalation.\nIf no policy rule matches, use the corresponding Tenant actions in XIDs or XID 144-150 Decode. Where the selected guidance directs you to an accompanying Xid 154, follow the recovery guidance reported by that event."
+          ],
+          [
+            "Step 4: Look Up and Follow the Action Definition",
+            "Action keys such as RESET_GPU, RESTART_APP, and CONTACT_SUPPORT are defined in the Guidance Classes worksheet. For workflow keys, follow the applicable conditions and branches in the definition rather than interpreting the key name alone. Before performing a GPU reset, review the reset prerequisites and platform or virtual-machine restrictions."
+          ]
+        ],
+        "extracts": [
+          "154"
+        ],
+        "table": {
+          "title": "Worksheets in the Xid Catalog Reference",
+          "head": [
+            "Worksheet",
+            "Contents"
+          ],
+          "rows": [
+            [
+              "User Guide",
+              "Explanations of the catalog fields and decoding notes."
+            ],
+            [
+              "XIDs",
+              "Xid codes, descriptions, applicability, trigger conditions, and Tenant actions."
+            ],
+            [
+              "XID 144-150 Decode",
+              "Additional decoding information for NVLink-related Xids 144-150."
+            ],
+            [
+              "Guidance Classes",
+              "Definitions of the action keys used throughout the catalog."
+            ],
+            [
+              "XID Parsing Policy",
+              "Rules for interpreting combinations of Xids and other qualifying information."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "48",
+        "group": "GPU Memory Error Management",
+        "title": "Error Containment & Row Remapping",
+        "sub": "NVIDIA Ampere and Later Generation Memory Recovery",
+        "scope": "Starting with the NVIDIA Ampere architecture, error containment and hardware row-remapping improve memory reliability and avoid impacting unaffected applications.",
+        "refs": [
+          "mem_containment",
+          "mem_remap",
+          "dpr",
+          "catalog"
+        ],
+        "related": [
+          "48",
+          "63",
+          "64",
+          "92",
+          "94",
+          "95",
+          "140"
+        ],
+        "next": [
+          "mem-rma",
+          "reset",
+          "triage-xid"
+        ],
+        "steps": [
+          [
+            "Error Containment",
+            "Uncorrectable ECC errors on prior architectures such as NVIDIA Volta impacted all of the currently executing GPU workloads. On NVIDIA data center-class GPUs starting with Ampere architecture, the impact is limited to the applications that encounter the error. All other workloads continue running unaffected both in terms of accuracy and performance, and new workloads can be launched. Unlike earlier GPU architectures, Ampere and later generation GPUs do not require an immediate GPU reset when contained memory errors occur."
+          ],
+          [
+            "Row Remapping",
+            "Row-remapping is a hardware mechanism to improve the reliability of frame buffer memory on GPUs starting with the NVIDIA Ampere architecture, replacing the page retirement scheme used in prior generation GPUs. Every bank in DRAM is equipped with spare rows in hardware. The row-remapper replaces degrading memory cells with spare ones at a hardware level without leaving software-visible holes in the address space. Row-remapping requires a GPU reset to take effect and remains persistent throughout the life of the GPU."
+          ]
+        ],
+        "note": "Note: While most frequently occurring classes of uncorrectable errors are contained, there can be rare cases where uncorrectable errors are still uncontained and might impact all the workloads being processed in the GPU.",
+        "extracts": [
+          "48",
+          "63",
+          "64",
+          "94",
+          "95",
+          "140"
+        ],
+        "table": {
+          "title": "Differences Between Page Retirement and Row-Remapping",
+          "head": [
+            "Feature",
+            "Page Retirement for Legacy GPUs",
+            "Row-Remapping for NVIDIA Ampere & Later Generation"
+          ],
+          "rows": [
+            [
+              "Available remappings/retirements",
+              "Supported a maximum of 64 retirements for the frame buffer.",
+              "Supports up to 512 remappings for the frame buffer."
+            ],
+            [
+              "Policy changes",
+              "Once a retirement takes effect, the page can never be unretired, regardless of correctable or uncorrectable errors.",
+              "Remapping due to correctable errors can be replaced by uncorrectable error remapping when the memory bank's reserved rows are exhausted."
+            ],
+            [
+              "RMA criteria",
+              "A threshold of page retirements on a GPU usually resulted in investigation of whether the GPU was worthy of an RMA.",
+              "Refer to RMA Policy."
+            ],
+            [
+              "Application of pending changes",
+              "Needed a kernel module reload or driver re-initialization or GPU reset.",
+              "GPU reset is required."
+            ]
+          ]
+        }
+      },
+      {
+        "id": "mem-rma",
+        "group": "GPU Memory Error Management",
+        "title": "RMA Policy & SRAM Uncorrectable Errors",
+        "sub": "Row-Remapping Failure Flag, Blackwell Channel Repair & SRAM Thresholds",
+        "scope": "The NVIDIA Field Diagnostic tool determines whether a GPU qualifies for RMA.",
+        "refs": [
+          "mem_rma",
+          "mem_sram",
+          "triage"
+        ],
+        "related": [
+          "48",
+          "63",
+          "64",
+          "92"
+        ],
+        "next": [
+          "48",
+          "diag",
+          "collect"
+        ],
+        "steps": [
+          [
+            "GPU DRAM Memory RMA Policy",
+            "Regarding row-remapping failures, the RMA criteria is met when the row-remapping failure flag is set and validated by the field diagnostic. The row-remapping failure flag is available through in-band (NVML/nvidia-smi) and out-of-band (SMBPBI) tools.\nFor Blackwell GPUs, a third remapping attempt for an uncorrectable memory error on a bank invokes HBM channel repair if there is a spare channel available. If the channel repair is successful, the hardware will be recovered and ready to use. Otherwise, the GPU will continue remapping until the Row-Remap Failure flag is set."
+          ],
+          [
+            "Events Triggering the Row-Remapping Failure Flag",
+            "Any of the following events will trigger a row-remapping failure flag:\n1. A remapping attempt for an uncorrectable memory error on a bank that already has eight uncorrectable error rows remapped.\n2. A remapping attempt for an uncorrectable memory error on a row that was already remapped and can occur with less than eight total remaps to the same bank.\n3. After 512 total remappings for an uncorrectable memory error have occurred."
+          ],
+          [
+            "GPU L2 Memory / SRAM Uncorrectable Errors RMA Policy",
+            "The NVIDIA Field Diagnostic tool will determine whether a GPU qualifies for RMA. Regarding SRAM uncorrectable errors, any of the following events will trigger the SRAM Threshold Exceeded flag:\n1. More than 4 UCE Unique Count events within an address bank for parity protected SRAMs.\n2. More than 2 UCE Unique Count events within an address bank for SECDED ECC protected SRAMs."
+          ]
+        ],
+        "table": {
+          "title": "DRAM and SRAM RMA Flag Thresholds",
+          "head": [
+            "Flag / Mechanism",
+            "Trigger Condition"
+          ],
+          "rows": [
+            [
+              "Row-Remapping Failure Flag",
+              "Remapping attempt on a bank with 8 uncorrectable rows already remapped; remapping attempt on an already-remapped row; or after 512 total uncorrectable remappings."
+            ],
+            [
+              "HBM Channel Repair (Blackwell)",
+              "Invoked on a third uncorrectable remapping attempt on a bank if a spare channel is available."
+            ],
+            [
+              "SRAM Threshold Exceeded (Parity)",
+              "More than 4 UCE Unique Count events within an address bank for parity protected SRAMs."
+            ],
+            [
+              "SRAM Threshold Exceeded (SECDED)",
+              "More than 2 UCE Unique Count events within an address bank for SECDED ECC protected SRAMs."
+            ]
+          ]
+        }
+      }
+    ]
   }
 }

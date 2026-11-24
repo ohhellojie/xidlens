@@ -10,6 +10,7 @@ def sha(path):
 
 def sources(root):
     paths = [p for p in (root / 'app').rglob('*') if p.is_file()
+             and p.relative_to(root / 'app').parts[0] != 'runtime'
              and '__pycache__' not in p.relative_to(root / 'app').parts
              and p.suffix not in {'.pyc', '.pyo'}]
     paths += [root / name for name in ('requirements-desktop.txt', 'requirements-build.txt',

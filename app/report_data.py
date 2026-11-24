@@ -60,6 +60,15 @@ def diagnostics(data):
         for refs in require(matrix.get('mappingEvidence', {}), dict, 'mappingEvidence').values():
             for ref in require(refs, list, 'mappingEvidence.refs'): evidence(ref)
     for row in data['cpuRows']: defaults(row, {'CPU': '', 'NODE': '', 'SOCKET': ''}, 'cpuRow')
+    if 'derivedMatrix' in data and data['derivedMatrix'] is not None:
+        dm = require(data['derivedMatrix'], dict, 'diagnostics.derivedMatrix')
+        defaults(dm, {'id': 'derived-lspci', 'source': 'lspci', 'mode': 'mp', 'labels': [], 'rows': [], 'mapping': {}, 'nicNames': {}, 'warnings': [], 'complete': True}, 'derivedMatrix')
+        for label in dm['labels']: require(label, str, 'derivedMatrix.label')
+        for address in dm['mapping'].values(): require(address, str, 'derivedMatrix.mapping')
+        for row in dm['rows']:
+            defaults(row, {'label': '', 'cells': [], 'numa': '', 'rootBus': '', 'path': []}, 'derivedMatrix.row')
+            for cell in row['cells']: require(cell, str, 'derivedMatrix.cell')
+            for node in row['path']: require(node, str, 'derivedMatrix.path')
 
 
 def optional_types(record, fields, path):

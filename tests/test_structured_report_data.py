@@ -14,7 +14,6 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'app'))
 import parser
 from report_data import normalize_report
-from sessions import combine
 from test_structured_events import dcgm, goe_document
 
 
@@ -131,7 +130,7 @@ class OptionalReportDataTests(unittest.TestCase):
         self.assertEqual(output['structured'], value['structured'])
         self.assertEqual(output['diagnostics'], value['diagnostics'])
 
-    def test_saved_read_is_read_only_and_healthy_parts_still_combine(self):
+    def test_saved_read_is_read_only_and_healthy_parts_still_load(self):
         with tempfile.TemporaryDirectory() as folder:
             spec = importlib.util.spec_from_file_location('structured_boundary_server', Path(__file__).resolve().parents[1] / 'app/server.py')
             server = importlib.util.module_from_spec(spec)
@@ -147,10 +146,7 @@ class OptionalReportDataTests(unittest.TestCase):
                 self.assertEqual(1, len(loaded['events']))
                 self.assertNotIn('structured', loaded)
                 self.assertNotIn('lifecycleEvents', loaded)
-                view = combine({'members': [{'reportId': key, 'source': loaded['source'], 'revision': revision}]}, {key: (loaded, revision)})
-                self.assertEqual(1, view['counts']['events'])
-                self.assertEqual([], view['lifecycleEvents'])
-                self.assertFalse(view['complete'])
+                self.assertFalse(loaded['complete'])
             finally:
                 server.KNOWLEDGE.close();server.READER.close();server.EXECUTOR.shutdown(wait=True,cancel_futures=True)
 

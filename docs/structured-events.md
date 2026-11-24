@@ -36,7 +36,7 @@ DCGM 未提供稳定的 JSON schema。解析兼容性以字段结构为准，同
 
 紧邻主记录、设备与 SXid 相同的 `Severity`、`Data` 补充行附在同一记录下，并分别保留行号。重复出现的主记录仍是多次记录；跨启动标记、不同设备或非连续补充行不会合并。只有补充行时，严重性显示未知。
 
-事件列表、时间线与联合分析使用独立的 NVSwitch 设备标识。相同 PCI 地址的 GPU 与 NVSwitch 分别筛选、分组及计数。补充行可从事件详情逐条打开。
+错误列表与 JSON 导出使用独立的 NVSwitch 设备标识。相同 PCI 地址的 GPU 与 NVSwitch 分别筛选、分组及计数，补充行可在原文中逐条核对。
 
 格式与适用范围见 [NVIDIA Fabric Manager](https://docs.nvidia.com/datacenter/tesla/fabric-manager-user-guide/index.html#runtime-nvswitch-and-gpu-errors)。SXid 的 fatal/non-fatal 机制不适用于所有代际的 NVSwitch，解读时需核对平台。
 
@@ -87,6 +87,6 @@ GOE 使用完整的“模块、类别、模块事件码”识别事件类型，�
 
 Legacy Xid 编号只作为关联提示，不自动合并 Xid 与 GOE。当前导入按来源文件独立处理，GOE 去重仅覆盖同一来源中标识和载荷完整一致的重复表示，不执行 Xid 与 GOE 的跨格式合并。输出的 `relations` 保留 Legacy Xid 提示及未合并原因，`occurrenceCount` 记录事件次数。
 
-时间线和联合分析显示完整事件类型与严重性范围。重复来源保留各自的行号和 JSON Pointer，按页查看；来源数量与事件次数分别显示。没有可靠 GPU 身份关联时，设备 UUID 独立保留。
+报告与 JSON 导出保留完整事件类型与严重性范围，重复来源保留各自的行号与 JSON Pointer；没有可靠 GPU 身份关联时，设备 UUID 独立保留。
 
 GOE 文档仍处于预览期，标识和字段可能随驱动变化。格式依据为 [事件分析](https://docs.nvidia.com/deploy/gpu-operational-events/analyzing-gpu-operational-events.html)和[事件格式](https://docs.nvidia.com/deploy/gpu-operational-events/event-formats.html)。

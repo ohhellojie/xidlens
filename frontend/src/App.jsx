@@ -1,51 +1,501 @@
-import React,{useState,useEffect,useLayoutEffect,useRef} from 'react';
-import {paths} from './icons';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { APP_VERSION, apiRequest, postJson, saveTextFile } from './lib/api';
+import { buildSummaryText, buildTsv } from './lib/analysis';
+import { Icon } from './lib/icons';
+import DevicesView from './views/DevicesView';
+import ErrorsView from './views/ErrorsView';
+import TopologyView from './views/TopologyView';
+import CompareView from './views/CompareView';
+import KnowledgeView from './views/KnowledgeView';
+import FullReaderView from './views/FullReaderView';
+import LogDrawer from './components/LogDrawer';
+import { CompareSourceModal, ImportModal, ReportsModal, UpdateModal } from './components/Modals';
 
-import {manualMatches} from './manuals';
-import ManualContent from './ManualContent';
-const official='https://docs.nvidia.com/deploy/xid-errors/analyzing-xid-catalog.html';
-const legacy='https://docs.nvidia.com/deploy/xid-errors/archive/index.html';
-const base='https://docs.nvidia.com/deploy/gpu-debug-guidelines/';
-const Icon=({name})=><svg className="icon" viewBox="0 0 24 24" aria-hidden="true"><path d={paths[name]||paths.book}/></svg>;
-const Link=({href,children})=><a href={href} target="_blank" rel="noreferrer">{children}<Icon name="external"/></a>;
-function ActionList({item,en=false}){return <div className="action-list">{item.actions.map((a,i)=><div className="action-row" key={i}><div className="eyebrow">{i===0?'即时操作':'调查操作'}</div><div><strong>{en?a.label:a.label.includes('（')?a.label.split('（')[1].replace('）',''):a.label}</strong>{a.text&&<details><summary>查看说明</summary><p className="prose">{a.text}</p></details>}</div></div>)}</div>}
-function Source({row,en=false,meta}){return <div className="source"><span>{en?'NVIDIA 英文原文':`中文资料 v${meta.version}`}</span><Link href={meta.sources[0].url}>官方来源</Link></div>}
-export function App({initialPage='xid',initialCode='',initialTopic='',onNavigate,onManageRules,packages,status,onUpdate,sessionState={}}){
- const data=packages.xid.content,{topics,sources}=packages.manual.content,codes=Object.keys(data.cn.codes),unused=new Set(data.unused);
- const firstCode=data.cn.codes[initialCode]?initialCode:(codes.find(k=>!unused.has(k))||codes[0]);
- const [page,setPage]=useState(initialPage),[selected,setSelected]=useState(sessionState.selected??firstCode),[q,setQ]=useState(sessionState.q??(data.cn.codes[initialCode]?'':initialCode)),[filter,setFilter]=useState(sessionState.filter??(unused.has(initialCode)?'all':'active')),[lang,setLang]=useState(sessionState.lang??'cn'),[topic,setTopic]=useState(sessionState.topic??(topics.some(t=>t.id===initialTopic)?initialTopic:topics[0].id)),[mq,setMq]=useState(sessionState.mq??''),[modal,setModal]=useState(null),[notice,setNotice]=useState('');
- const detail=useRef(),dialog=useRef(),lastFocus=useRef(),reader=useRef();
- useLayoutEffect(()=>{Object.assign(sessionState,{selected,q,filter,lang,topic,mq})});
- useLayoutEffect(()=>{const root=reader.current,index=root?.querySelector('.index-list'),pane=detail.current,position=sessionState.positions?.[page];if(position){if(index)index.scrollTop=position.index;if(pane)pane.scrollTop=position.detail;}return()=>{sessionState.positions??={};sessionState.positions[page]={index:index?.scrollTop||0,detail:pane?.scrollTop||0}}},[]);
- const firstDetail=useRef(true),firstIndex=useRef(true),firstManual=useRef(true);
- useEffect(()=>{if(!data.cn.codes[selected])setSelected(codes[0]);if(!topics.some(t=>t.id===topic))setTopic(topics[0].id)},[packages]);
- const activeCode=data.cn.codes[selected]?selected:codes[0];
- const item=data[lang].codes[activeCode],query=q.trim().toLowerCase().replace(/^xid\s*/,'');
- const matches=codes.filter(k=>(!query?(filter!=='active'||!unused.has(k))&&(filter!=='unused'||unused.has(k)):true)&&(!query||(/^\d+$/.test(query)?k===String(Number(query)):JSON.stringify([data.cn.codes[k],data.en.codes[k]]).toLowerCase().includes(query))));
- const manuals=topics.filter(t=>!mq||manualMatches(t,mq,data)),current=topics.find(t=>t.id===topic)||topics[0];
- useEffect(()=>{if(matches.length&&!matches.includes(selected))setSelected(matches[0]);if(manuals.length&&!manuals.some(t=>t.id===topic))setTopic(manuals[0].id)},[packages,q,mq,filter]);
- function go(p){onNavigate(p);setNotice('')}
- function showXid(k){setSelected(k);setQ(k);onNavigate('xid',k);setLang('cn')}
- function openModal(name){lastFocus.current=detail.current?.getRootNode().activeElement;setModal(name)}
- useEffect(()=>{if(firstDetail.current){firstDetail.current=false;return}detail.current?.scrollTo(0,0)},[selected,lang,page,topic]);
- useEffect(()=>{if(firstIndex.current){firstIndex.current=false;if(sessionState.positions?.xid)return}detail.current?.getRootNode().querySelector('.xid-row.selected')?.scrollIntoView({block:'center'})},[page,selected,filter]);
- useEffect(()=>{if(firstManual.current){firstManual.current=false;if(sessionState.positions?.manual)return}if(page==='manual')detail.current?.getRootNode().querySelector('.chapter.selected')?.scrollIntoView({block:'nearest'})},[page,topic,mq]);
- useEffect(()=>{if(modal){dialog.current.showModal();dialog.current.querySelector('button')?.focus()}else{dialog.current?.close();lastFocus.current?.focus()}},[modal]);
- useEffect(()=>{if(!notice)return;const t=setTimeout(()=>setNotice(''),3500);return()=>clearTimeout(t)},[notice]);
- function search(v){setQ(v);if(v.trim()){setFilter('all');const clean=v.toLowerCase().replace(/^xid\s*/,'');const found=codes.find(k=>/^\d+$/.test(clean)?k===String(Number(clean)):JSON.stringify([data.cn.codes[k],data.en.codes[k]]).toLowerCase().includes(clean));if(found)setSelected(found)}}
- return <div className="knowledge-root"><div className="page"><h1 className="sr-only">{page==='xid'?'Xid 查询':'排查手册'}</h1>
- {page==='xid'&&<><div className="toolbar"><label className="search"><Icon name="search"/><input aria-label="搜索 Xid" placeholder="搜索 Xid、名称或说明" value={q} onChange={e=>search(e.target.value)}/>{q&&<button className="icon-button" aria-label="清空搜索" onClick={()=>setQ('')}><Icon name="close"/></button>}</label><button className="btn library-update" onClick={()=>openModal('data')}><Icon name="refresh"/>版本与更新</button></div><div className="reader" ref={reader}><section className="index-pane" aria-label="Xid 列表"><div className="tabs" aria-label="条目筛选">{[['active','已定义'],['all','全部'],['unused','未使用']].map(([k,v])=><button key={k} className={filter===k?'selected':''} aria-pressed={filter===k} onClick={()=>{setFilter(k);setQ('');const found=codes.find(c=>k==='all'||(k==='unused'?unused.has(c):!unused.has(c)));if(k==='unused'&&!unused.has(selected)||k==='active'&&unused.has(selected))setSelected(found)}}>{v}</button>)}</div><div className="index-count">{query?'搜索结果':filter==='active'?'已定义条目':filter==='unused'?'当前目录未使用':'全部条目'}<span>{matches.length}</span></div><div className="index-list">{matches.length?matches.map(k=><button key={k} className={selected===k?'xid-row selected':'xid-row'} aria-pressed={selected===k} onClick={()=>setSelected(k)}><span className="xid-number">Xid {k}</span><span className="xid-name">{data.cn.codes[k].title}</span><Icon name="chevron"/></button>):<div className="empty"><Icon name="search"/><strong>未找到条目</strong></div>}</div><div className="index-foot">{packages.xid.scope||'Xid Catalog'}<Link href={legacy}>旧版目录</Link></div></section>
- <article className="detail" ref={detail} aria-label="Xid 详情">{matches.length?<><div className="detail-top"><span className="code-label">Xid {selected}</span><div className="segmented" aria-label="内容语言"><button aria-pressed={lang==='cn'} onClick={()=>setLang('cn')}>中文</button><button aria-pressed={lang==='en'} onClick={()=>setLang('en')}>English</button></div></div><h2>{item.title}</h2><div className="symbol">{item.symbol}</div><div className="chip-row">{Object.entries(item.architectures).filter(([,v])=>v==='YES'||v==='是').map(([k])=><span className="chip" key={k}>{k}</span>)}{unused.has(selected)&&<span className="chip">未使用</span>}</div>
- {unused.has(selected)&&<div className="note">部分编号在旧架构中仍有定义。{selected==='61'&&<span>旧版 Xid 61：内部微控制器断点／警告。</span>}<Link href={legacy}>查看旧版说明</Link></div>}
- {item.description&&<section className="reading-section"><h3>说明</h3><p className="prose">{item.description}</p></section>}
- {item.actions.length>0&&<section className="reading-section"><h3>处理建议</h3><ActionList key={selected+lang} item={item} en={lang==='en'}/></section>}
- {Number(selected)>=144&&Number(selected)<=150&&<div className="inline-action"><div><strong>NVLink 子代码与寄存器</strong><p>按驱动版本查看 IntrInfo 和 ErrorStatus。</p></div><button className="btn" onClick={()=>openModal('decode')}>查看解码表</button></div>}
- {item.association154&&<div className="association"><span>关联 Xid 154</span><span>{item.association154}</span><button className="text-button" onClick={()=>showXid('154')}>查看<Icon name="chevron"/></button></div>}
- {topics.some(t=>t.related.includes(selected))&&<section className="reading-section related"><h3>相关排查</h3>{topics.filter(t=>t.related.includes(selected)&&t.id!=='reset').map(t=><button key={t.id} onClick={()=>{onNavigate('manual',undefined,t.id)}}>{t.title}<Icon name="arrow"/></button>)}</section>}<Source row={item.row} en={lang==='en'} meta={packages.xid}/></>:<div className="empty wide"><h2>当前资料未包含该条目</h2><p>核对编号或查看官方目录。</p><Link href={official}>官方 Xid 目录</Link></div>}</article></div></>}
- {page==='manual'&&<><div className="toolbar"><label className="search"><Icon name="search"/><input aria-label="搜索排查手册" placeholder="搜索现象、Xid 或工具" value={mq} onChange={e=>{const v=e.target.value;setMq(v);const found=topics.find(t=>manualMatches(t,v,data));if(found)setTopic(found.id)}}/>{mq&&<button className="icon-button" aria-label="清空手册搜索" onClick={()=>setMq('')}><Icon name="close"/></button>}</label><button className="btn library-update" onClick={()=>openModal('manualData')}><Icon name="refresh"/>版本与更新</button></div><div className="reader" ref={reader}><section className="index-pane" aria-label="手册目录"><div className="index-list manual-index">{[...new Set(topics.map(t=>t.group))].map(group=><React.Fragment key={group}>{manuals.some(t=>t.group===group)&&<h3>{group}</h3>}{manuals.filter(t=>t.group===group).map(t=><button key={t.id} aria-pressed={topic===t.id} className={topic===t.id?'chapter selected':'chapter'} onClick={()=>setTopic(t.id)}><strong>{t.title}</strong><span>{t.sub}</span></button>)}</React.Fragment>)}{!manuals.length&&<div className="empty">未找到相关章节</div>}</div><div className="index-foot">{topics.length} 个主题</div></section><article className="detail manual-detail" ref={detail}>{!manuals.length?<div className="empty wide"><h2>未找到相关章节</h2></div>:<><div className="eyebrow">{current.group}</div><h2>{current.title}</h2><ManualContent key={current.id+packages.manual.version} current={current} topics={topics} sources={sources} data={data} xidMeta={packages.xid} manualMeta={packages.manual} onTopic={id=>{setMq('');setTopic(id)}} onXid={showXid} onNotice={setNotice} sessionState={sessionState}/ ></>}</article></div></>}
- </div>
- <dialog ref={dialog} onCancel={e=>{e.preventDefault();setModal(null)}}><div className="dialog-head"><h2>{modal==='decode'?`Xid ${selected} · 解码表`:'版本与更新'}</h2><button className="icon-button" aria-label="关闭" onClick={()=>setModal(null)}><Icon name="close"/></button></div><div className="dialog-body">
- {(modal==='data'||modal==='manualData')&&(()=>{const kind=modal==='data'?'xid':'manual',info=status[kind],s=info.state,working=s.state==='working';return <><h3>{kind==='xid'?'中文 Xid 资料':'排查手册'}</h3><dl className="version-info"><dt>当前版本</dt><dd>v{info.version} · {info.origin}</dd><dt>更新日期</dt><dd>{info.updatedAt}</dd><dt>资料来源</dt><dd className="reference-links">{info.sources.map(r=><Link key={r.url} href={r.url}>{r.title}</Link>)}</dd></dl>{info.warning&&<p className="note">{info.warning}</p>}<div className="reference-update">{(s.message||info.candidate)&&<p role="status">{s.message}{info.candidate&&` · v${info.candidate.version}`}</p>}<div className="actions"><button className="btn" disabled={working} onClick={()=>onUpdate(kind,'check')}>检查更新</button>{info.candidate&&<button className="btn primary" disabled={working} onClick={()=>onUpdate(kind,'apply')}>{working&&s.action==='apply'?'正在更新…':'更新资料'}</button>}{working&&<button className="text-button" onClick={()=>onUpdate(kind,'cancel')}>取消</button>}</div></div>{kind==='xid'&&<div className="inline-action"><button className="text-button" onClick={()=>{setModal(null);onManageRules()}}>管理解析规则</button></div>}</>})()}
- {modal==='decode'&&<><p className="muted">结合驱动版本、子代码、IntrInfo 和 ErrorStatus 查表。</p><div className="decode-list">{data.extra['Xid 144-150 Decode'].slice(1).filter(r=>r[0]===selected).map((r,i)=><details key={i}><summary><strong>{r[1]}</strong><code>{r[4]}</code><span>{r[10]}</span></summary><dl>{r.map((v,j)=>j>1&&v&&<React.Fragment key={j}><dt>{['Xid','子代码','IntrInfo · R575 之前','IntrInfo · R575 起','ErrorStatus','恢复操作','操作 2 · R575 之前','操作 2 · R575 起','操作 2','调查操作','严重程度','硬件／软件','本地／远端影响'][j]}</dt><dd>{v}</dd></React.Fragment>)}</dl></details>)}</div><details className="footnotes"><summary>字段说明与脚注</summary>{data.extra['Customer User Guide'].slice(10).map((r,i)=><section key={i}><h3>{r[1]}</h3><p className="prose">{r[2]}</p></section>)}</details><Source meta={packages.xid}/></>}
- </div></dialog>{notice&&<div className="toast" role="status"><Icon name="check"/>{notice}</div>}</div>
+const NAV_ANALYSIS = [
+  { id: 'devices', label: '设备状态', icon: 'devices' },
+  { id: 'errors', label: '错误记录', icon: 'errors' },
+  { id: 'topology', label: '机器拓扑', icon: 'topology' },
+  { id: 'compare', label: '日志对比', icon: 'compare' },
+];
+
+const NAV_REF = [
+  { id: 'reader', label: '完整日志', icon: 'log' },
+  { id: 'xid', label: 'Xid 目录', icon: 'search', title: 'Xid 目录 (Ctrl+K)' },
+  { id: 'manual', label: '排查手册', icon: 'book' },
+];
+
+const EXPORTS = {
+  tsv: { name: 'GPU设备清单.tsv', label: '设备清单', mime: 'text/tab-separated-values;charset=utf-8', content: buildTsv },
+  txt: { name: 'GPU日志摘要.txt', label: '排障摘要', mime: 'text/plain;charset=utf-8', content: buildSummaryText },
+  json: { name: 'GPU日志证据.json', label: '完整记录', mime: 'application/json;charset=utf-8', content: (report) => JSON.stringify(report, null, 2) },
+};
+
+export default function App() {
+  const [theme, setTheme] = useState(() => localStorage.getItem('xidlens-theme') || 'light');
+  const [page, setPage] = useState('devices');
+  const [prevPage, setPrevPage] = useState('devices');
+  const [cases, setCases] = useState([]);
+  const [currentId, setCurrentId] = useState('');
+  const [report, setReport] = useState(null);
+  const [selectedGpuId, setSelectedGpuId] = useState(0);
+  const [errorGpuFilter, setErrorGpuFilter] = useState('all');
+  const [selectedTopoAddr, setSelectedTopoAddr] = useState('');
+  const [knowledge, setKnowledge] = useState(null);
+  const [knowledgeStatus, setKnowledgeStatus] = useState(null);
+  const [online, setOnline] = useState(null);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [xidCode, setXidCode] = useState('79');
+  const [manualTopic, setManualTopic] = useState('start');
+  const [xidFocusSignal, setXidFocusSignal] = useState(0);
+
+  // Drawer, Reader & Modals
+  const [drawer, setDrawer] = useState({ open: false, line: 1 });
+  const [readerLine, setReaderLine] = useState(0);
+  const [modal, setModal] = useState(null); // 'import' | 'reports' | 'update' | null
+  const [compareSource, setCompareSource] = useState(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [toast, setToast] = useState('');
+  const toastTimer = useRef(null);
+
+  const notify = useCallback((msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(''), 2200);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem('xidlens-theme', theme);
+  }, [theme]);
+
+  const loadCase = useCallback(async (id) => {
+    if (!id) { setReport(null); setCurrentId(''); return; }
+    try {
+      const data = await apiRequest(`/api/case/${id}`);
+      setCurrentId(id);
+      setReport(data);
+      const firstErrGpu = (data.gpus || []).find((g) => g.errors > 0);
+      setSelectedGpuId(firstErrGpu ? firstErrGpu.id : (data.gpus?.[0]?.id ?? 0));
+      setErrorGpuFilter('all');
+      setSelectedTopoAddr('');
+    } catch (err) {
+      notify(err.message || '报告读取失败');
+    }
+  }, [notify]);
+
+  const refreshCases = useCallback(async (preferId = '') => {
+    try {
+      const res = await apiRequest('/api/cases');
+      const list = res.cases || [];
+      setCases(list);
+      const target = preferId && list.some((c) => c.id === preferId)
+        ? preferId
+        : (list.some((c) => c.id === currentId) ? currentId : (list.at(-1)?.id || ''));
+      if (target && target !== currentId) {
+        await loadCase(target);
+      } else if (!target) {
+        setCurrentId('');
+        setReport(null);
+      } else if (preferId && preferId === currentId) {
+        await loadCase(target);
+      }
+    } catch {}
+  }, [currentId, loadCase]);
+
+  const refreshKnowledge = useCallback(async () => {
+    try {
+      const { packages, status } = await apiRequest('/api/knowledge/content');
+      setKnowledge(packages);
+      setKnowledgeStatus(status);
+    } catch {}
+  }, []);
+
+  const refreshKnowledgeStatus = useCallback(async () => {
+    try {
+      setKnowledgeStatus(await apiRequest('/api/knowledge/status'));
+    } catch {}
+  }, []);
+
+  const refreshOnline = useCallback(async () => {
+    try {
+      const snap = await apiRequest('/api/online');
+      setOnline(snap);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    refreshCases();
+    refreshKnowledge();
+    refreshOnline();
+    const ready = () => window.pywebview?.api?.app_ready?.().catch((err) => notify(err.message || '启动确认失败'));
+    if (window.pywebview?.api?.app_ready) ready();
+    else window.addEventListener('pywebviewready', ready, { once: true });
+    return () => window.removeEventListener('pywebviewready', ready);
+  }, []);
+
+  // Poll online/knowledge status when modal is open and working
+  useEffect(() => {
+    if (modal !== 'update') return;
+    refreshOnline();
+    refreshKnowledgeStatus();
+    const id = setInterval(() => {
+      refreshOnline();
+      refreshKnowledgeStatus();
+    }, 1000);
+    return () => clearInterval(id);
+  }, [modal, refreshOnline, refreshKnowledgeStatus]);
+
+  useEffect(() => {
+    if (knowledgeStatus && ['xid', 'manual'].some((kind) => knowledge?.[kind]?.version !== knowledgeStatus[kind]?.version)) {
+      refreshKnowledge();
+    }
+  }, [knowledge, knowledgeStatus, refreshKnowledge]);
+
+  // Global keyboard shortcuts: Ctrl+K -> Xid catalog, Esc -> close overlays
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        if (modal || compareSource) return;
+        e.preventDefault();
+        setPage('xid');
+        setXidFocusSignal((n) => n + 1);
+      } else if (e.key === 'Escape') {
+        setExportOpen(false);
+        if (!modal && !compareSource && drawer.open) setDrawer((d) => ({ ...d, open: false }));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [modal, drawer.open, compareSource]);
+
+  useEffect(() => setExportOpen(false), [page, currentId, modal]);
+
+  async function handleDeleteCases(ids) {
+    const res = await postJson('/api/cases/delete', { ids });
+    await refreshCases();
+    notify(`已删除 ${res.deleted?.length || 0} 份报告`);
+  }
+
+  async function handleReparse(id) {
+    const res = await postJson(`/api/reparse/start?id=${encodeURIComponent(id)}`);
+    if (res.needsFile) {
+      notify('原日志副本已缺失，请重新导入原文件');
+      return;
+    }
+    while (true) {
+      await new Promise((r) => setTimeout(r, 250));
+      const job = await apiRequest(`/api/job/${res.job}`);
+      if (job.state === 'done') {
+        await refreshCases(id);
+        notify('重新解析完成');
+        return;
+      }
+      if (job.state === 'error' || job.state === 'cancelled') {
+        notify(job.message || '重新解析失败');
+        return;
+      }
+    }
+  }
+
+  async function handleExport(kind) {
+    setExportOpen(false);
+    if (!report) return;
+    const { name, label, mime, content } = EXPORTS[kind];
+    try {
+      if (await saveTextFile(name, content(report), mime)) notify(`已导出${label}`);
+    } catch (err) {
+      notify(err.message || '导出失败');
+    }
+  }
+
+  async function checkUpdates() {
+    setCheckingUpdates(true);
+    try {
+      const paths = ['/api/online/check-rules', '/api/knowledge/xid/check', '/api/knowledge/manual/check'];
+      if (online?.app?.state !== 'ready') paths.push('/api/online/check-app');
+      const results = await Promise.allSettled(paths.map((path) => postJson(path)));
+      await Promise.all([refreshOnline(), refreshKnowledgeStatus()]);
+      const failed = results.find((result) => result.status === 'rejected');
+      if (failed) notify(failed.reason.message || '更新检查未能全部启动');
+    } finally {
+      setCheckingUpdates(false);
+    }
+  }
+
+  async function handleOnlineAction(action) {
+    try {
+      if (action === 'install-app') {
+        const install = window.pywebview?.api?.install_update;
+        if (!install) throw new Error('请在 Windows 桌面版中安装更新');
+        await install();
+      } else {
+        setOnline(await postJson(`/api/online/${action}`));
+      }
+    } catch (err) {
+      notify(err.message || '操作失败');
+    }
+  }
+
+  async function handleKnowledgeAction(kind, action) {
+    try {
+      const status = await postJson(`/api/knowledge/${kind}/${action}`);
+      setKnowledgeStatus(status);
+    } catch (err) {
+      notify(err.message || '资料更新操作失败');
+    }
+  }
+
+  function openLineInDrawer(line) {
+    if (!report) return;
+    setDrawer({ open: true, line: Number(line) || 1 });
+  }
+
+  function openFullReaderAt(line) {
+    setDrawer((d) => ({ ...d, open: false }));
+    setPrevPage(page === 'reader' ? prevPage : page);
+    setReaderLine(Number(line) || 0);
+    setPage('reader');
+  }
+
+  function navigateKnowledge(targetPage, code, topicId) {
+    if (code) setXidCode(String(code));
+    if (topicId) setManualTopic(topicId);
+    setPage(targetPage);
+  }
+
+  const totalEvents = (report?.events || []).reduce(
+    (s, e) => s + (Number(e.occurrenceCount) > 0 ? Number(e.occurrenceCount) : 1),
+    0
+  );
+  const hasAppUpdate = Boolean(online?.app?.notify || online?.app?.state === 'ready');
+
+  const pageLabels = { devices: '设备状态', errors: '错误记录', topology: '机器拓扑', compare: '日志对比' };
+
+  return (
+    <div className="shell">
+      <aside className="sidebar" aria-label="主导航">
+        <div className="brand">
+          <img src="/logo.png" alt="XidLens" />
+          <span className="brand-name">XidLens</span>
+        </div>
+
+        <nav className="nav">
+          <div className="nav-group">
+            {NAV_ANALYSIS.map((item) => (
+              <button
+                key={item.id}
+                className={`nav-item ${page === item.id ? 'is-active' : ''}`}
+                onClick={() => setPage(item.id)}
+              >
+                <Icon name={item.icon} />
+                <span>{item.label}</span>
+                {item.id === 'errors' && totalEvents > 0 && (
+                  <span className="nav-count">{totalEvents}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="nav-sep" />
+
+          <div className="nav-group">
+            {NAV_REF.map((item) => (
+              <button
+                key={item.id}
+                className={`nav-item ${page === item.id ? 'is-active' : ''}`}
+                title={item.title || item.label}
+                onClick={() => {
+                  if (item.id === 'reader') {
+                    setPrevPage(page === 'reader' ? prevPage : page);
+                    setReaderLine(0);
+                  }
+                  setPage(item.id);
+                }}
+              >
+                <Icon name={item.icon} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        <div className="sidebar-foot">
+          <button className="update-btn" onClick={() => setModal('update')}>
+            <span className="update-icon-wrap">
+              <Icon name="refresh" size={14} />
+              {hasAppUpdate && <span className="update-dot" />}
+            </span>
+            <span>软件更新</span>
+          </button>
+          <div className="version-text">v{APP_VERSION}</div>
+        </div>
+      </aside>
+
+      <div className="workspace">
+        <header className="topbar">
+          <div className="topbar-left">
+            {cases.length > 0 && (
+              <select
+                className="select-report"
+                aria-label="切换报告"
+                value={currentId}
+                onChange={(e) => loadCase(e.target.value)}
+              >
+                {cases.slice().reverse().map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.source}{c.collected ? ` · ${c.collected}` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          <div className="topbar-right">
+            <button className="btn" onClick={() => setModal('reports')}>
+              报告{cases.length ? ` (${cases.length})` : ''}
+            </button>
+            <button className="btn primary" onClick={() => setModal('import')}>导入日志</button>
+
+            {report && <div className="dropdown-wrap">
+              <button
+                className="btn"
+                onClick={() => setExportOpen((v) => !v)}
+              >
+                导出
+              </button>
+              {exportOpen && (
+                <div className="dropdown-menu" role="menu">
+                  <button onClick={() => handleExport('tsv')}><span>设备清单</span><span className="mono muted">TSV</span></button>
+                  <button onClick={() => handleExport('txt')}><span>排障摘要</span><span className="mono muted">TXT</span></button>
+                  <button onClick={() => handleExport('json')}><span>完整记录</span><span className="mono muted">JSON</span></button>
+                </div>
+              )}
+            </div>}
+
+            <button
+              className="icon-btn"
+              aria-label="切换外观"
+              title={theme === 'dark' ? '切换浅色外观' : '切换深色外观'}
+              onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+            >
+              <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+            </button>
+          </div>
+        </header>
+
+        <main className="main" onClick={() => { if (exportOpen) setExportOpen(false); }}>
+          {page === 'devices' && (
+            <DevicesView
+              report={report}
+              selectedGpuId={selectedGpuId}
+              onSelectGpu={setSelectedGpuId}
+              onOpenLine={openLineInDrawer}
+              onJumpGpuErrors={(id) => { setErrorGpuFilter(String(id)); setPage('errors'); }}
+              onNotify={notify}
+            />
+          )}
+          {page === 'errors' && (
+            <ErrorsView
+              report={report}
+              knowledge={knowledge}
+              gpuFilter={errorGpuFilter}
+              onGpuFilterChange={setErrorGpuFilter}
+              onOpenLine={openLineInDrawer}
+              onOpenDevice={(id) => { setSelectedGpuId(id); setPage('devices'); }}
+              onOpenXid={(code) => navigateKnowledge('xid', code)}
+              onOpenManual={(topicId) => navigateKnowledge('manual', undefined, topicId)}
+              onOpenTopology={(addr) => { setSelectedTopoAddr(addr); setPage('topology'); }}
+            />
+          )}
+          {page === 'topology' && (
+            <TopologyView
+              report={report}
+              selectedAddress={selectedTopoAddr}
+              onSelectAddress={setSelectedTopoAddr}
+              onOpenLine={openLineInDrawer}
+              onOpenDevice={(id) => { setSelectedGpuId(id); setPage('devices'); }}
+            />
+          )}
+          {page === 'compare' && (
+            <CompareView
+              cases={cases}
+              currentReport={report}
+              onOpenCompareSource={setCompareSource}
+            />
+          )}
+          {page === 'reader' && (
+            <FullReaderView
+              key={report?.id}
+              report={report}
+              initialLine={readerLine}
+              backLabel={pageLabels[prevPage] || ''}
+              onBack={() => setPage(prevPage || 'devices')}
+            />
+          )}
+          {(page === 'xid' || page === 'manual') && (
+            <KnowledgeView
+              mode={page}
+              knowledge={knowledge}
+              selectedCode={xidCode}
+              onSelectCode={setXidCode}
+              selectedTopic={manualTopic}
+              onSelectTopic={setManualTopic}
+              onNavigate={navigateKnowledge}
+              onNotify={notify}
+              focusSignal={xidFocusSignal}
+            />
+          )}
+        </main>
+
+      </div>
+
+      <LogDrawer
+        open={drawer.open}
+        report={report}
+        targetLine={drawer.line}
+        onClose={() => setDrawer((d) => ({ ...d, open: false }))}
+        onOpenFullReader={openFullReaderAt}
+        onNotify={notify}
+      />
+
+      {modal === 'import' && (
+        <ImportModal
+          onClose={() => setModal(null)}
+          onImported={(id) => { refreshCases(id); notify('日志导入完成'); }}
+          onInterrupted={refreshCases}
+          onNotify={notify}
+        />
+      )}
+
+      {modal === 'reports' && (
+        <ReportsModal
+          cases={cases}
+          currentId={currentId}
+          onSelect={loadCase}
+          onDelete={handleDeleteCases}
+          onReparse={handleReparse}
+          onClose={() => setModal(null)}
+        />
+      )}
+
+      {modal === 'update' && (
+        <UpdateModal
+          appVersion={APP_VERSION}
+          online={online}
+          knowledgeStatus={knowledgeStatus}
+          checking={checkingUpdates}
+          onCheck={checkUpdates}
+          onOnlineAction={handleOnlineAction}
+          onKnowledgeAction={handleKnowledgeAction}
+          onClose={() => setModal(null)}
+        />
+      )}
+
+      {compareSource && (
+        <CompareSourceModal data={compareSource} onClose={() => setCompareSource(null)} />
+      )}
+
+      {toast && <div className="toast" role="status">{toast}</div>}
+    </div>
+  );
 }

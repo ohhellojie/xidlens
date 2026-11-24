@@ -258,5 +258,74 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(len(r['diagnostics']['snapshots'][0]['fields']), 1)
         self.assertEqual(r['gpus'][0]['model'], '')
 
+    def test_lspci_tree_and_derived_pcie_matrix(self):
+        text = '\n'.join([
+            '*** lspci -t',
+            '+-[0000:17]-+-00.0-[18-1c]----00.0-[19-1c]-+-00.0-[1a]----00.0',
+            '|           |                              +-01.0-[1b]----00.0',
+            '|           |                              \\-02.0-[1c]----00.0',
+            '|           \\-02.0-[20]----00.0',
+            '+-[0000:3a]---00.0-[3b]----00.0',
+            '\\-[0000:97]---00.0-[98]----00.0',
+            '*** lspci -Dnnvv',
+            '0000:18:00.0 PCI bridge: Switch Upstream [1000:c010]',
+            '    Capabilities: [40] Express (v2) Upstream Port',
+            '    Bus: primary=18, secondary=19, subordinate=1c',
+            '    NUMA node: 0',
+            '0000:1a:00.0 3D controller: NVIDIA H100 [10de:2330]',
+            '    NUMA node: 0',
+            '0000:1b:00.0 3D controller: NVIDIA H100 [10de:2330]',
+            '    NUMA node: 0',
+            '0000:1c:00.0 Infiniband controller: Mellanox ConnectX-7 [15b3:1021]',
+            '    NUMA node: 0',
+            '0000:20:00.0 3D controller: NVIDIA H100 [10de:2330]',
+            '    NUMA node: 0',
+            '0000:3b:00.0 3D controller: NVIDIA H100 [10de:2330]',
+            '    NUMA node: 0',
+            '0000:98:00.0 3D controller: NVIDIA H100 [10de:2330]',
+            '    NUMA node: 1',
+            '*** nvidia-smi --query-gpu=index,pci.bus_id,uuid --format=csv',
+            'index, pci.bus_id, uuid',
+            '0, 00000000:1a:00.0, GPU-AAA0',
+            '1, 00000000:1b:00.0, GPU-AAA1',
+            '2, 00000000:20:00.0, GPU-AAA2',
+            '3, 00000000:3b:00.0, GPU-AAA3',
+            '4, 00000000:98:00.0, GPU-AAA4',
+        ]) + '\n'
+        r = parse(text)
+        dm = r['diagnostics'].get('derivedMatrix')
+        self.assertIsNotNone(dm)
+        self.assertEqual(dm['source'], 'lspci')
+        idx = {label: i for i, label in enumerate(dm['labels'])}
+        rows = {row['label']: row for row in dm['rows']}
+        self.assertEqual(rows['GPU0']['cells'][idx['GPU0']], 'X')
+        self.assertEqual(rows['GPU0']['cells'][idx['GPU1']], 'PIX')
+        self.assertEqual(rows['GPU0']['cells'][idx['NIC0']], 'PIX')
+        self.assertEqual(rows['GPU0']['cells'][idx['GPU2']], 'PHB')
+        self.assertEqual(rows['GPU0']['cells'][idx['GPU3']], 'NODE')
+        self.assertEqual(rows['GPU0']['cells'][idx['GPU4']], 'SYS')
+        self.assertEqual(rows['GPU0']['path'][-1], '0000:1a:00.0')
+        self.assertIn('0000:18:00.0', rows['GPU0']['path'])
+
+    def test_derived_matrix_pxb_multilevel_switch(self):
+        text = '\n'.join([
+            '*** lspci -t',
+            '-[0000:17]---00.0-[18-1f]----00.0-[19-1f]-+-00.0-[1a-1b]----00.0-[1b]----00.0',
+            '                                          \\-01.0-[1c-1d]----00.0-[1d]----00.0',
+            '*** lspci -Dnnvv',
+            '0000:1b:00.0 3D controller: NVIDIA H100 [10de:2330]',
+            '    NUMA node: 0',
+            '0000:1d:00.0 3D controller: NVIDIA H100 [10de:2330]',
+            '    NUMA node: 0',
+            '*** nvidia-smi --query-gpu=index,pci.bus_id,uuid --format=csv',
+            'index, pci.bus_id, uuid',
+            '0, 00000000:1b:00.0, GPU-BBB0',
+            '1, 00000000:1d:00.0, GPU-BBB1',
+        ]) + '\n'
+        r = parse(text)
+        dm = r['diagnostics'].get('derivedMatrix')
+        self.assertIsNotNone(dm)
+        self.assertEqual(dm['rows'][0]['cells'], ['X', 'PXB'])
+
 
 if __name__ == '__main__': unittest.main()

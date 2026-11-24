@@ -2,12 +2,12 @@
 import hashlib
 import importlib.metadata
 from pathlib import Path
+import re
+from runpy import run_path
 import sys
 import zipfile
 from build_receipt import verify as verify_receipt
 from privacy_guard import Guard
-
-VERSION = '1.9.1'
 
 def main():
     root = Path(__file__).resolve().parent.parent
@@ -15,11 +15,15 @@ def main():
     if not exe.is_file():
         raise SystemExit('Build dist/XidLens.exe first.')
     verify_receipt(root)
+    version = run_path(str(root/'app/version.py'))['VERSION']
+    resources = (root/'packaging/windows-version.txt').read_text(encoding='utf-8')
+    if re.findall(r"StringStruct\('(?:FileVersion|ProductVersion)', '([^']+)'\)", resources) != [version, version]:
+        raise SystemExit('The Windows executable resource version does not match the app version.')
     privacy = Guard(root)
     privacy.asset(exe.read_bytes(), exe.name)
     if privacy.errors:
         raise SystemExit('\n'.join(sorted(privacy.errors)))
-    if f'v{VERSION}' not in (root/'packaging/使用说明.txt').read_text(encoding='utf-8').splitlines()[0]:
+    if not (root/'packaging/使用说明.txt').read_text(encoding='utf-8').splitlines()[0].endswith(f' v{version}'):
         raise SystemExit('The bundled instructions version does not match the package version.')
     out = root/'dist/release'
     out.mkdir(parents=True, exist_ok=True)
@@ -51,7 +55,7 @@ def main():
                 files['licenses/'+project+'/'+Path(str(item)).name]=Path(distribution.locate_file(item))
     for project in ('react','react-dom','scheduler'):
         files['licenses/'+project+'/LICENSE'] = root/'frontend/node_modules'/project/'LICENSE'
-    archive = out/f'XidLens_v{VERSION}_Windows_x64.zip'
+    archive = out/f'XidLens_v{version}_Windows_x64.zip'
     with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
         for name, source in files.items():
             z.write(source, 'XidLens/'+name)

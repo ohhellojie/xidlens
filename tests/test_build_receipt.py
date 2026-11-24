@@ -20,8 +20,8 @@ class BuildReceiptTests(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
-        for name in ('app/online.py', 'app/index.html', 'app/app.js', 'app/overview.css',
-                     'app/demo.txt', 'app/logo.png', 'app/xid_catalog.json', 'app/reader/reader.js',
+        for name in ('app/online.py', 'app/web/index.html', 'app/web/assets/app.js', 'app/web/assets/app.css',
+                     'app/version.py', 'app/logo.png', 'app/xid_catalog.json',
                      'app/knowledge/manual.json', 'requirements-desktop.txt', 'requirements-build.txt',
                      'tools/build_windows.py', 'tools/build_receipt.py', 'tools/privacy_guard.py',
                      'tools/create_icon.py', 'LICENSE', '.privacy-policy.json', 'packaging/windows-version.txt',
@@ -43,6 +43,12 @@ class BuildReceiptTests(unittest.TestCase):
         self.archive.toc = {'certifi/cacert.pem': None}
         receipt.verify(self.root)
 
+    def test_local_runtime_data_does_not_invalidate_build(self):
+        path = self.root / 'app/runtime/results/local.json'
+        path.parent.mkdir(parents=True)
+        path.write_text('{}', encoding='utf-8')
+        receipt.verify(self.root)
+
     def test_rejects_stale_source_and_replaced_executable(self):
         for name in ('app/online.py', 'tools/privacy_guard.py', '.privacy-policy.json', 'dist/XidLens.exe'):
             with self.subTest(name=name):
@@ -61,8 +67,8 @@ class BuildReceiptTests(unittest.TestCase):
             receipt.verify(self.root)
 
     def test_rejects_changed_frontend_assets_catalog_and_icon_inputs(self):
-        for name in ('app/index.html', 'app/app.js', 'app/overview.css', 'app/demo.txt',
-                     'app/logo.png', 'app/xid_catalog.json', 'app/reader/reader.js',
+        for name in ('app/web/index.html', 'app/web/assets/app.js', 'app/web/assets/app.css', 'app/version.py',
+                     'app/logo.png', 'app/xid_catalog.json',
                      'app/knowledge/manual.json', 'tools/create_icon.py', 'LICENSE'):
             with self.subTest(name=name):
                 path = self.root / name
@@ -72,12 +78,12 @@ class BuildReceiptTests(unittest.TestCase):
                 path.write_bytes(b'fixture')
 
     def test_rejects_added_and_removed_application_files(self):
-        added = self.root / 'app/new-feature.css'
+        added = self.root / 'app/web/assets/extra.css'
         added.write_bytes(b'new asset')
         with self.assertRaisesRegex(ValueError, 'rebuild before packaging'):
             receipt.verify(self.root)
         added.unlink()
-        (self.root / 'app/reader/reader.js').unlink()
+        (self.root / 'app/web/assets/app.js').unlink()
         with self.assertRaisesRegex(ValueError, 'rebuild before packaging'):
             receipt.verify(self.root)
 

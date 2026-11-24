@@ -21,30 +21,8 @@ jobs:
           node-version: '24.22.1'
       - run: python -m pip install -r requirements-desktop.txt
       - run: python -m unittest discover -s tests -v
-      - run: node tests/test_analysis.cjs
-      - run: node tests/test_comparison.cjs
-      - run: node tests/test_comparison_host.cjs
-      - run: node tests/test_topology.cjs
-      - run: node tests/test_report_time.cjs
-      - run: node tests/test_exports.cjs
-      - run: node tests/test_diagnostics.cjs
-      - run: node tests/test_overview.cjs
-      - run: node tests/test_overview_host.cjs
-      - run: node tests/test_sessions_ui.cjs
-      - run: node tests/test_session_host.cjs
-      - run: node tests/test_timeline.cjs
-      - run: node tests/test_timeline_host.cjs
-      - run: node tests/test_import_ui.cjs
-      - run: node tests/test_update_ui.cjs
-      - run: node tests/test_state_ui.cjs
-      - run: node tests/test_reader_ui.cjs
-      - run: node tests/test_evidence_ui.cjs
-      - run: node tests/test_evidence_host.cjs
-      - run: node tests/test_assistant_ui.cjs
-      - run: node tests/test_evidence_assistant.cjs
-      - run: node tests/test_assistant_host.cjs
-      - run: node tests/test_structured_ui.cjs
-      - run: node tests/test_structured_views.cjs
-      - run: node tests/test_structured_host.cjs
+      - run: node tests/test_frontend_analysis.mjs
+      - run: npm ci && npm run build
+        working-directory: frontend
       - run: python tools/check_repository.py
       - run: git diff --check

@@ -194,7 +194,11 @@ class Parser(BaseParser):
             m=re.match(r'Physical Slot:\s*(.+)',s)
             if m:self.put(fields,'slot',m[1],n,line,'lspci Physical Slot')
             m=re.match(r'Bus:\s*primary=([\da-f]+),\s*secondary=([\da-f]+),\s*subordinate=([\da-f]+)',s,re.I)
-            if m:self.put(fields,'secondary',m[2].lower(),n,line,'lspci Bus secondary')
+            if m:
+                self.put(fields,'secondary',m[2].lower(),n,line,'lspci Bus secondary')
+                self.put(fields,'subordinate',m[3].lower(),n,line,'lspci Bus subordinate')
+            m=re.match(r'Capabilities:\s*\[[\da-f]+\]\s*Express\s*(?:\([^)]+\)\s*)?(Root Port|Upstream Port|Downstream Port|Endpoint|Legacy Endpoint)',s,re.I)
+            if m:self.put(fields,'pcie_port_type',m[1],n,line,'lspci Express')
             m=re.match(r'NUMA node:\s*(-?\d+)',s)
             if m and int(m[1])>=0:self.put(fields,'numa',m[1],n,line,'lspci NUMA node')
             m=re.match(r'(LnkCap|LnkSta):.*?Speed\s+([\d.]+GT/s).*?Width\s+(x\d+)',s)
@@ -236,7 +240,7 @@ class Parser(BaseParser):
 
     def parse(self,stream):
         result=super().parse(stream);self.flush_slot()
-        result['diagnostic_collector']={key:getattr(self.diagnostics,key) for key in ('snapshots','matrices','paths','cpu_rows','nic_paths')}
+        result['diagnostic_collector']={key:getattr(self.diagnostics,key) for key in ('snapshots','matrices','paths','tree_paths','tree_roots','cpu_rows','nic_paths')}
         core.check_cancel(self.cancel_event)
         result['structured_import']=self.structured.finish()
         core.check_cancel(self.cancel_event)

@@ -69,6 +69,9 @@ class Collector:
     def __init__(self, owner):
         self.owner = owner
         self.snapshots, self.matrices, self.paths, self.cpu_rows = [], [], {}, []
+        self.tree_paths, self.tree_roots = {}, {}
+        self.tree_stack = []
+        self.in_lspci_tree = False
         self.nic_paths = {}
         self.sysfs_nic = None
         self.snapshot = self.matrix = self.pci = None
@@ -80,6 +83,73 @@ class Collector:
     def evidence(self, n, line):
         return self.owner.evidence(n, line)
 
+    def consume_lspci_tree(self, line, n):
+        raw = ANSI_CSI.sub('', line.rstrip('\r\n'))
+        if not raw.strip():
+            self.tree_stack = []
+            return False
+        expanded = raw.expandtabs(8)
+        root_m = re.match(r'^([ |+\\-]*)\[(?:([\da-fA-F]{4,8}):)?([\da-fA-F]{2})\]', expanded)
+        if root_m:
+            self.in_lspci_tree = True
+            domain = (root_m[2] or '0000').lower().zfill(4)
+            bus = root_m[3].lower()
+            root_bus = f'{domain}:{bus}'
+            pos = root_m.end()
+            self.tree_stack = [{'col': pos, 'domain': domain, 'bus': bus, 'chain': [], 'root': root_bus}]
+            self._consume_lspci_tree_tail(expanded, pos, n, raw)
+            return True
+        if not self.tree_stack:
+            return False
+        cont_m = re.match(r'^([ |]*)[+\\]-([\da-fA-F]{2}\.[0-7])', expanded)
+        if not cont_m:
+            if not re.match(r'^[ |]+$', expanded):
+                self.tree_stack = []
+                self.in_lspci_tree = False
+            return False
+        branch_col = len(cont_m[1])
+        while len(self.tree_stack) > 1 and self.tree_stack[-1]['col'] > branch_col:
+            self.tree_stack.pop()
+        self._consume_lspci_tree_tail(expanded, branch_col, n, raw)
+        return True
+
+    def _consume_lspci_tree_tail(self, expanded, pos, n, raw):
+        token_re = re.compile(r'[-+\\]+([\da-fA-F]{2}\.[0-7])(?:-+\[([\da-fA-F]{2})(?:-[\da-fA-F]{2})?\])?')
+        ev = None
+        last_address = None
+        while pos < len(expanded):
+            m = token_re.match(expanded, pos)
+            if not m:
+                break
+            parent_ctx = self.tree_stack[-1]
+            devfn = m[1].lower()
+            address = core.bdf(f"{parent_ctx['domain']}:{parent_ctx['bus']}:{devfn}")
+            last_address = address
+            chain = parent_ctx['chain'] + [address]
+            node = self.owner.r['pci_nodes'].setdefault(address, {'address': address, 'fields': {}, 'bridge': False, 'gpu': False, 'kind': 'device'})
+            if m[2]:
+                node['bridge'] = True
+                if node.get('kind', 'device') == 'device':
+                    node['kind'] = 'bridge'
+            if ev is None:
+                ev = self.evidence(n, raw)
+            if 'evidence' not in node:
+                node['evidence'] = ev
+            self.tree_paths.setdefault(address, []).append({'path': chain, 'evidence': ev})
+            self.tree_roots.setdefault(address, set()).add(parent_ctx['root'])
+            self.count += 1
+            self.owner.r['recognized'] = True
+            pos = m.end()
+            if m[2]:
+                self.tree_stack.append({'col': pos, 'domain': parent_ctx['domain'], 'bus': m[2].lower(), 'chain': chain, 'root': parent_ctx['root']})
+                self.owner.put(node['fields'], 'secondary', m[2].lower(), n, raw, 'lspci -t')
+        if last_address and pos < len(expanded):
+            desc = expanded[pos:].strip()
+            if desc:
+                node = self.owner.r['pci_nodes'].get(last_address)
+                if node and not node.get('description'):
+                    node['description'] = desc
+
     def consume(self, line, n):
         s = LOG_PREFIX.sub('', ANSI_CSI.sub('', line).strip())
         boundary = core.section_boundary(s)
@@ -89,12 +159,16 @@ class Collector:
             self.snapshot = self.matrix = self.pci = None
             self.hierarchy = []
             self.cpu_columns = None
+            self.tree_stack = []
+            self.in_lspci_tree = bool(re.search(r'\blspci\b[^\n]*\s-[A-Za-z]*t', s))
             self.mode = 'mp' if command and command[1] == '-mp' else 'm' if command else 'unsupported' if other_topo else 'unknown'
             nic = re.search(r'/sys/class/(?:infiniband|net)/([^/\s]+)/device', s)
             self.sysfs_nic = nic[1] if nic else None
         if self.count >= 50000:
             self.owner.r['complete'] = False
             self.owner.warn('状态与拓扑字段达到 50000 条保存上限。')
+            return
+        if self.consume_lspci_tree(line, n):
             return
         m = core.SMI_GPU_RE.match(line)
         if m:
@@ -289,24 +363,33 @@ def finish(r, collector, gpus, events, cancel_event=None):
         if node.get('bridge'):
             secondary = unique(node['fields'], 'secondary')
             if secondary: parent_index.setdefault((address.split(':')[0], secondary), []).append(address)
+    tree_paths = getattr(collector, 'tree_paths', {}) or {}
+    tree_roots = getattr(collector, 'tree_roots', {}) or {}
     for address, node in nodes.items():
         core.check_cancel(cancel_event)
         matches = [p for p in parent_index.get(tuple(address.split(':')[:2]), []) if p != address]
         explicit = {tuple(x['path']) for x in collector.paths.get(address, [])}
+        tree_explicit = {tuple(x['path']) for x in tree_paths.get(address, [])}
         parent = matches[0] if len(matches) == 1 else ''
         evidence = []
-        ambiguous = len(matches) > 1 or len(explicit) > 1
+        ambiguous = len(matches) > 1 or len(explicit) > 1 or (not explicit and len(tree_explicit) > 1)
         if explicit:
             evidence = [x['evidence'] for x in collector.paths[address]]
             if len(explicit) == 1:
                 chain = next(iter(explicit)); candidate = chain[-2] if len(chain) > 1 else ''
                 ambiguous |= bool(parent and candidate and parent != candidate)
                 parent = candidate
+        elif tree_explicit:
+            evidence = [x['evidence'] for x in tree_paths[address]]
+            if len(tree_explicit) == 1:
+                chain = next(iter(tree_explicit)); candidate = chain[-2] if len(chain) > 1 else ''
+                ambiguous |= bool(parent and candidate and parent != candidate)
+                parent = candidate
         if ambiguous: parent = ''
         if parent and not evidence: evidence = [x['evidence'] for x in nodes.get(parent, {}).get('fields', {}).get('secondary', [])]
         if node.get('physicalFunction'):
             parent = node['physicalFunction']; evidence = node['virtualizationEvidence']; ambiguous = False
-        root_confirmed = not ambiguous and bool(explicit) and len(next(iter(explicit))) == 1
+        root_confirmed = not ambiguous and ((bool(explicit) and len(next(iter(explicit))) == 1) or (not explicit and bool(tree_explicit) and len(next(iter(tree_explicit))) == 1))
         topology.append({'address': address, 'parent': parent, 'rootConfirmed': root_confirmed, 'ambiguous': ambiguous, 'evidence': evidence})
     # Reject cycles, including malformed bus numbering.
     parents = {n['address']: n['parent'] for n in topology}
@@ -315,6 +398,7 @@ def finish(r, collector, gpus, events, cancel_event=None):
         while p and p not in seen:
             seen.add(p); p = parents.get(p)
         if p: node.update(parent='', ambiguous=True)
+    derived_matrix = derive_pcie_matrix(nodes, topology, gpus, collector.nic_paths, tree_roots, cancel_event)
     for matrix in collector.matrices:
         core.check_cancel(cancel_event)
         for row in matrix['rows']:
@@ -381,4 +465,157 @@ def finish(r, collector, gpus, events, cancel_event=None):
     for matrix in collector.matrices:
         if not matrix['complete']: add('topology-data', '', 'missing', '互联矩阵不完整', '；'.join(matrix['warnings']) or '部分设备行缺失。', '重新采集完整矩阵，保留表头和命令。', [matrix['evidence']])
     if not r['complete']: add('incomplete', '', 'missing', '日志读取不完整', '检查结果仅覆盖已读取内容。', '查看读取提示并重新采集完整日志。')
-    return {'version': 1, 'snapshots': collector.snapshots, 'matrices': collector.matrices, 'topology': topology, 'cpuRows': collector.cpu_rows, 'checks': checks, 'references': [SMI_DOC, AER_DOC]}
+    result = {'version': 1, 'snapshots': collector.snapshots, 'matrices': collector.matrices, 'topology': topology, 'cpuRows': collector.cpu_rows, 'checks': checks, 'references': [SMI_DOC, AER_DOC]}
+    if derived_matrix:
+        result['derivedMatrix'] = derived_matrix
+    return result
+
+
+def derive_pcie_matrix(nodes, topology, gpus, nic_paths, tree_roots, cancel_event=None):
+    """Derive a PCIe-only interconnect matrix (equivalent to topo -mp) from lspci/sysfs topology."""
+    edge_map = {e['address']: e for e in topology}
+
+    def chain_of(address):
+        chain = []
+        seen = set()
+        cur = address
+        while cur and cur not in seen:
+            chain.insert(0, cur)
+            seen.add(cur)
+            edge = edge_map.get(cur)
+            if not edge or edge.get('ambiguous') or not edge.get('parent'):
+                break
+            cur = edge['parent']
+        return chain
+
+    def numa_of(address):
+        chain = chain_of(address)
+        for addr in reversed(chain):
+            val = unique(nodes.get(addr, {}).get('fields', {}), 'numa')
+            if val:
+                return val
+        return ''
+
+    def root_bus_of(address):
+        roots = tree_roots.get(address)
+        if roots and len(roots) == 1:
+            return next(iter(roots))
+        chain = chain_of(address)
+        top = chain[0]
+        top_roots = tree_roots.get(top)
+        if top_roots and len(top_roots) == 1:
+            return next(iter(top_roots))
+        edge = edge_map.get(top)
+        if edge and (edge.get('rootConfirmed') or (len(chain) > 1 and unique(nodes.get(top, {}).get('fields', {}), 'pcie_port_type').lower() == 'root port')):
+            parts = top.split(':')
+            if len(parts) >= 2:
+                return f'{parts[0]}:{parts[1]}'
+        return ''
+
+    def port_type_of(address):
+        return unique(nodes.get(address, {}).get('fields', {}), 'pcie_port_type').lower()
+
+    def relation(a_info, b_info):
+        if a_info['address'] == b_info['address']:
+            return 'X'
+        anc_a = a_info['path'][:-1]
+        anc_b = b_info['path'][:-1]
+        lca_idx = -1
+        for i in range(min(len(anc_a), len(anc_b))):
+            if anc_a[i] == anc_b[i]:
+                lca_idx = i
+            else:
+                break
+        if lca_idx >= 0:
+            rem_a = anc_a[lca_idx + 1:]
+            rem_b = anc_b[lca_idx + 1:]
+            lca_type = port_type_of(anc_a[lca_idx])
+            if not rem_a and not rem_b:
+                return 'PIX'
+            if len(rem_a) <= 1 and len(rem_b) <= 1 and lca_type != 'root port':
+                return 'PIX'
+            return 'PXB'
+        if a_info['rootBus'] and b_info['rootBus'] and a_info['rootBus'] == b_info['rootBus']:
+            return 'PHB'
+        if a_info['numa'] and b_info['numa']:
+            return 'NODE' if a_info['numa'] == b_info['numa'] else 'SYS'
+        return ''
+
+    devices = []
+    seen_addr = set()
+    ordered_gpus = sorted(gpus, key=lambda g: (int(g['index']) if str(g.get('index', '')).isdigit() else 9999, g.get('id', 0)))
+    for i, g in enumerate(ordered_gpus):
+        addr = g.get('pci')
+        if not addr or addr in seen_addr:
+            continue
+        seen_addr.add(addr)
+        idx = g['index'] if str(g.get('index', '')).isdigit() else str(i)
+        devices.append({
+            'label': f'GPU{idx}',
+            'kind': 'gpu',
+            'address': addr,
+            'path': chain_of(addr),
+            'numa': numa_of(addr) or (g.get('numa') if g.get('numa') not in ('', '冲突') else ''),
+            'rootBus': root_bus_of(addr),
+        })
+
+    addr_to_nic_name = {}
+    for nic_name, refs in (nic_paths or {}).items():
+        addrs = {x['address'] for x in refs if x.get('address')}
+        if len(addrs) == 1:
+            addr_to_nic_name.setdefault(next(iter(addrs)), []).append(nic_name)
+
+    nic_addrs = sorted(a for a, n in nodes.items() if n.get('kind') == 'nic' and not n.get('physicalFunction') and a not in seen_addr)
+    nic_names = {}
+    for idx, addr in enumerate(nic_addrs):
+        if len(devices) >= 256:
+            break
+        seen_addr.add(addr)
+        label = f'NIC{idx}'
+        names = sorted(set(addr_to_nic_name.get(addr, [])))
+        if names:
+            nic_names[label] = [{'name': nm} for nm in names]
+        devices.append({
+            'label': label,
+            'kind': 'nic',
+            'address': addr,
+            'path': chain_of(addr),
+            'numa': numa_of(addr),
+            'rootBus': root_bus_of(addr),
+        })
+
+    if len(devices) < 2:
+        return None
+
+    rows = []
+    has_relation = False
+    for a in devices:
+        core.check_cancel(cancel_event)
+        cells = []
+        for b in devices:
+            rel = relation(a, b)
+            if rel and rel != 'X':
+                has_relation = True
+            cells.append(rel)
+        rows.append({
+            'label': a['label'],
+            'cells': cells,
+            'numa': a['numa'],
+            'rootBus': a['rootBus'],
+            'path': a['path'],
+        })
+
+    if not has_relation:
+        return None
+
+    return {
+        'id': 'derived-lspci',
+        'source': 'lspci',
+        'mode': 'mp',
+        'labels': [d['label'] for d in devices],
+        'mapping': {d['label']: d['address'] for d in devices},
+        'nicNames': nic_names,
+        'rows': rows,
+        'complete': True,
+        'warnings': [],
+    }

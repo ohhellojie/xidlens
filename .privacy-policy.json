@@ -64,37 +64,19 @@
     "recovery",
     "report_data",
     "server",
+    "sessions",
+    "structured_events",
     "update_install",
     "version",
-    "window_layout",
-    "sessions",
-    "structured_events"
+    "window_layout"
   ],
   "public_data_files": [
-    "analysis.js",
-    "comparison.js",
-    "app.js",
-    "diagnostics.css",
-    "diagnostics.js",
-    "overview.js",
-    "overview.css",
-    "demo.txt",
-    "index.html",
-    "knowledge/knowledge.js",
     "knowledge/manual.json",
     "knowledge/xid.json",
-    "reader/reader.js",
-    "xid_catalog.json",
-    "sessions.js",
-    "sessions.css",
-    "timeline.js",
-    "timeline.css",
-    "evidence.js",
-    "evidence.css",
-    "assistant.js",
-    "assistant.css",
-    "structured.js",
-    "structured.css"
+    "web/index.html",
+    "web/assets/app.js",
+    "web/assets/app.css",
+    "xid_catalog.json"
   ],
   "public_git_names": [
     "ohhellojie",
@@ -103,7 +85,7 @@
   ],
   "packaged_data_directories": [
     "knowledge",
-    "reader"
+    "web"
   ],
   "dependency_data_prefixes": [
     "PIL/",
